@@ -19,6 +19,8 @@ export default defineConfig([
     'examples',
     'templates',
     'site',
+    // `make sites` builds into build/sites/.
+    'build',
     '.umccr-docs',
     '.venv',
   ]),
