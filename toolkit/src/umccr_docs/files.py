@@ -1,0 +1,85 @@
+"""Which files make up a site."""
+
+import os
+import subprocess
+from pathlib import Path
+
+
+def repo_root_for(path: Path) -> Path:
+    """The git repository containing `path`, or `path` itself outside a repository."""
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(path), "rev-parse", "--show-toplevel"],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        return Path(result.stdout.strip()).resolve()
+    except (OSError, subprocess.CalledProcessError):
+        return path.resolve()
+
+
+def _is_hidden(relative: Path) -> bool:
+    return any(part.startswith(".") for part in relative.parts)
+
+
+def source_files(repo_root: Path, docs_dir: Path) -> list[Path]:
+    """
+    Files under `docs_dir` that git would commit: tracked files plus new files git does not ignore. Anything git
+    ignores (local scratch, `.local/`, editor state) is never built, so a local preview matches CI, which only has
+    what was pushed. Dotfiles and dot-directories, such as `.obsidian/`, are skipped too.
+
+    Returned relative to `docs_dir`, sorted.
+    """
+    docs_dir = docs_dir.resolve()
+    try:
+        relative_docs = docs_dir.relative_to(repo_root)
+        result = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(repo_root),
+                "ls-files",
+                "-z",
+                "--cached",
+                "--others",
+                "--exclude-standard",
+                "--",
+                str(relative_docs),
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except (OSError, subprocess.CalledProcessError, ValueError):
+        result = None
+
+    if result is not None:
+        files = set()
+        for entry in filter(None, result.stdout.split("\0")):
+            path = repo_root / entry
+            if not (path.is_file() or path.is_symlink()):
+                continue  # deleted in the working tree
+            relative = Path(os.path.relpath(path, docs_dir))
+            if not _is_hidden(relative):
+                files.add(relative)
+        return sorted(files)
+
+    # Not a git checkout: fall back to every non-hidden file.
+    return sorted(
+        path.relative_to(docs_dir)
+        for path in docs_dir.rglob("*")
+        if path.is_file() and not _is_hidden(path.relative_to(docs_dir))
+    )
+
+
+def symlinks_leaving(root: Path, base: Path, files: list[Path]) -> list[Path]:
+    """Files under `base` that are symlinks resolving outside `root`."""
+    escaping = []
+    for relative in files:
+        path = base / relative
+        if path.is_symlink():
+            target = path.resolve()
+            if root.resolve() not in target.parents and target != root.resolve():
+                escaping.append(relative)
+    return escaping

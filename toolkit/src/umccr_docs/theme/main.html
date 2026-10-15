@@ -1,0 +1,14 @@
+{#-
+  UMCCR docs theme: Material for MkDocs with template overrides. Zensical supports the same overrides.
+
+  Every site on docs.umccr.org is built with this theme, so pages look alike and every script on the origin is the
+  platform's own (assets/umccr/umccr.js). Projects cannot add scripts; see app/site/docs/authoring.md.
+-#}
+{% extends "base.html" %}
+
+{#- Optional classification banner, e.g. `extra: { classification: "Internal: UMCCR staff only" }`. -#}
+{% block announce %}
+  {%- if config.extra.classification -%}
+    <p class="umccr-classification">{{ config.extra.classification }}</p>
+  {%- endif -%}
+{% endblock %}

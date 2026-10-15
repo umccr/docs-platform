@@ -1,0 +1,30 @@
+{#-
+  Footer: the site's source and build, so a reader can tell where a page came from and how fresh it is.
+  Values come from `extra.umccr`, set by `umccr-docs build`.
+-#}
+{%- set umccr = config.extra.umccr or {} -%}
+<div class="md-copyright">
+  {%- if config.copyright %}
+    <div class="md-copyright__highlight">{{ config.copyright }}</div>
+  {%- endif %}
+  <div class="umccr-provenance">
+    {%- if umccr.source %}
+      Source:
+      {% if umccr.source_url -%}
+        <a href="{{ umccr.source_url }}">{{ umccr.source }}</a>
+      {%- else -%}
+        {{ umccr.source }}
+      {%- endif -%}
+    {%- endif %}
+    {%- if umccr.commit %}
+      · commit
+      {% if umccr.source_url -%}
+        <a href="{{ umccr.source_url }}/commit/{{ umccr.commit }}"><code>{{ umccr.commit }}</code></a>
+      {%- else -%}
+        <code>{{ umccr.commit }}</code>
+      {%- endif -%}
+    {%- endif %}
+    {%- if umccr.built %} · built {{ umccr.built }}{% endif %}
+    · <a href="/platform/">All UMCCR documentation</a>
+  </div>
+</div>

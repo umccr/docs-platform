@@ -1,0 +1,20 @@
+# A synthetic Obsidian vault exercising every Obsidian feature the platform supports. CI builds it strictly.
+site_name: Example vault
+site_description: A synthetic Obsidian vault for the docs.umccr.org Obsidian adapter.
+site_url: https://docs.umccr.org/example-vault/
+repo_url: https://github.com/umccr/docs-platform
+repo_name: umccr/docs-platform
+edit_uri: edit/main/examples/obsidian-vault/vault/
+docs_dir: vault
+
+extra:
+  platform:
+    source_format: obsidian
+    home: Home.md
+    properties: [status, priority, lead, members, domains, updated]
+    obsidian:
+      # "alpha" exists in both Inbox/ and Projects/; links mean the project.
+      prefer_folders: [Projects]
+      # Lowest first, so a DESC sort lists High first.
+      sort_orders:
+        priority: [Low, Medium, High]

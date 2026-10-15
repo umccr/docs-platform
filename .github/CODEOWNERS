@@ -1,0 +1,10 @@
+# Platform owners must review changes to what builds and publishes every site.
+#
+# TODO(platform owners): replace the placeholder team below with the docs platform owners' GitHub team, then
+# require code-owner review on main. Until then these rules are inactive (the lines are commented out).
+#
+# *                             @umccr/<docs-platform-owners>
+# /.github/                     @umccr/<docs-platform-owners>
+# /toolkit/src/umccr_docs/      @umccr/<docs-platform-owners>
+# /requirements/                @umccr/<docs-platform-owners>
+# /scripts/                     @umccr/<docs-platform-owners>

@@ -1,0 +1,50 @@
+# Changelog
+
+All notable changes to the docs platform: the infrastructure, the `umccr-docs` toolkit and the theme. Sites pick
+toolkit and theme changes up when their registry entry's `toolkitRef` moves to a release; see
+[docs/operating/releasing.md](docs/operating/releasing.md).
+
+## Unreleased
+
+- The fetch build's role may read the GitHub connection (`codeconnections:GetConnection`), which CodeBuild checks
+  before a build that clones through it can start. Without it, every dispatch failed with `OAuthProviderException`.
+- `UMCCR-DocsSitesPipeline`'s source action has its own role, which may read every object under `sources/`. CDK's role
+  could read only the placeholder key, so every release failed at Source with "Forbidden".
+- The site pipeline is `UMCCR-DocsSitesPipeline`, named like the organisation's other pipelines, and its Slack
+  failure rule is `UMCCR-DocsSitesPipeline-Failures`. Deploying the rename replaces the pipeline, and the old
+  `DocsSitesPipeline` and its run history go.
+- A release whose `toolkitRef` has no toolkit, such as `main` before this repository is merged, stops at Build with
+  that reason, instead of pip's missing-file error.
+- Theme: the chat panel stops reading an answer at its `error` or `done` event, so nothing is appended after an
+  error message.
+- Pipelines: `infrastructure/toolchain/deployment-pipeline.ts`, adapted from the OrcaBus `DeploymentStackPipeline`,
+  replaces it, so nothing is named for OrcaBus: pipeline 1 is `UMCCR-DocsInfrastructure`, with stages `Beta`,
+  `Gamma` and `Prod` and its own artifact bucket and key; the hosting stack is `UMCCR-DocsHostingStack` in every
+  stage account, tagged `umccr-org:Product: Docs`.
+- Layout: the `/platform/` site, with its `mkdocs.yml`, moved to `app/site/`. `docs/` now holds the platform team's
+  design pages and records, plans, issues, runbooks and the deploy guide (`docs/deploy.md`, replacing
+  `deploy-dev.md`), and is not published: the design records, runbooks and "Releasing the platform" left the site.
+- The infrastructure moved here from `umccr/frontend-infrastructure-pipelines` `lib/docs/`
+  ([ADR-0008](docs/design/adr/0008-infrastructure-in-docs-platform.md)): the CDK app in `bin/` and `infrastructure/`, the
+  code it deploys in `app/`. Stack names and hosting templates are unchanged.
+- Dispatched publishing ([ADR-0006](docs/design/adr/0006-dispatched-publishing.md)): an organisation webhook, a dispatcher
+  Lambda, a fetch build and one shared site pipeline, `UMCCR-DocsSitesPipeline`, publishing to dev then prod. One
+  `docs-publisher` role per stage replaces the per-site GitHub OIDC roles. The registry gains `branch`,
+  `configPath`, `docsPaths`, `toolkitRef` and `stages`.
+- Removed the reusable workflow (`.github/workflows/docs.yml`), `site.yml` and the caller-workflow template: site
+  repositories need no workflow.
+- `umccr-docs export-kb`: pages as plain Markdown with metadata, for OrcaSonar.
+- `umccr-docs publish`: `--role-arn` (assume `docs-publisher` narrowed to the site, bucket names from SSM),
+  `--release` (newer release wins) and `--documents` (mirror the export into OrcaSonar's ingest bucket).
+- Theme: chat panel ([ADR-0007](docs/design/adr/0007-chat-through-orcasonar.md)), calling OrcaSonar with the reader's
+  Cognito ID token through `/_auth/token.js`. The content pages' Content Security Policy allows OrcaSonar and the
+  Cognito API.
+
+### Earlier on this branch
+
+- Reusable workflow `.github/workflows/docs.yml`: contract check, strict build, pre-publish checks, and OIDC
+  publishing from the caller's GitHub environment.
+- `umccr-docs` toolkit: `check`, `preprocess`, `build`, `serve`, `verify-site`, `publish`.
+- Obsidian support: wikilinks with `prefer_folders`, Bases table views, callouts, comments, properties table.
+- Theme: UMCCR colours, account menu with sign-out, catalogue, classification banner, provenance footer.
+- Engine: Material for MkDocs 9.7.7 on MkDocs 1.6.1, hash-pinned; Zensical available for evaluation.

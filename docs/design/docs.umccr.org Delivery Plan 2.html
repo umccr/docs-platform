@@ -1,0 +1,447 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>docs.umccr.org Delivery Plan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans+Condensed:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap">
+<style>
+/* Layout: an engineering reference sheet. A 72ch reading column, figures that break out to 1240px, and four
+   flow colours (read, sign-in, publish, provision) that mean the same thing in every figure. */
+:root {
+  --bg: #f4f6fa;
+  --surface: #ffffff;
+  --surface-2: #e9eef6;
+  --fg: #0f172a;
+  --muted: #4a5870;
+  --line: #cfd7e3;
+  --line-strong: #8592a7;
+  --accent: #1e40af;
+  --flow-read: #1d4ed8;
+  --flow-auth: #b45309;
+  --flow-pub: #047857;
+  --flow-deploy: #6d28d9;
+  --badge-fg: #ffffff;
+  --font-display: "IBM Plex Sans Condensed", "Roboto Condensed", "Arial Narrow", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0b1120;
+    --surface: #121b2f;
+    --surface-2: #1a2540;
+    --fg: #e5ebf4;
+    --muted: #9aa8bf;
+    --line: #2a3651;
+    --line-strong: #5d6d8a;
+    --accent: #8ab4ff;
+    --flow-read: #6aa8ff;
+    --flow-auth: #f5b041;
+    --flow-pub: #3fd09a;
+    --flow-deploy: #b49cff;
+    --badge-fg: #0b1120;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0b1120;
+  --surface: #121b2f;
+  --surface-2: #1a2540;
+  --fg: #e5ebf4;
+  --muted: #9aa8bf;
+  --line: #2a3651;
+  --line-strong: #5d6d8a;
+  --accent: #8ab4ff;
+  --flow-read: #6aa8ff;
+  --flow-auth: #f5b041;
+  --flow-pub: #3fd09a;
+  --flow-deploy: #b49cff;
+  --badge-fg: #0b1120;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font: 400 16px/1.6 var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+.page { max-width: 1280px; margin: 0 auto; padding-inline: 20px; padding-block: 40px 72px; }
+@media (max-width: 640px) { .page { padding-inline: 16px; padding-block: 24px 48px; } }
+
+header.top { display: grid; gap: 14px; padding-bottom: 32px; }
+.eyebrow { margin: 0; font: 600 12px/1.4 var(--font-display); letter-spacing: .1em; text-transform: uppercase; color: var(--accent); }
+h1 { margin: 0; font: 600 clamp(2.1rem, 4.4vw, 3rem)/1.05 var(--font-display); letter-spacing: -.01em; text-wrap: balance; }
+h2 { margin: 0; font: 600 1.6rem/1.15 var(--font-display); text-wrap: balance; }
+h3 { margin: 0; font: 600 1.05rem/1.3 var(--font-display); text-wrap: balance; }
+p { margin: 0; }
+.lede { max-width: 68ch; font-size: 1.08rem; }
+.meta { max-width: 84ch; color: var(--muted); font-size: .92rem; }
+nav.toc { display: flex; flex-wrap: wrap; gap: 6px 20px; font: 500 15px/1.5 var(--font-display); }
+nav.toc a { color: var(--fg); text-decoration: none; border-bottom: 1px solid var(--line-strong); }
+nav.toc a:hover { color: var(--accent); border-bottom-color: var(--accent); }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 3px; }
+
+section { display: grid; gap: 20px; padding-block: 44px 8px; border-top: 1px solid var(--line); scroll-margin-top: 16px; }
+section > * { min-width: 0; }
+.prose { max-width: 72ch; display: grid; gap: 12px; }
+code {
+  font-family: var(--font-mono);
+  font-size: .86em;
+  background: var(--surface-2);
+  padding: .06em .32em;
+  border-radius: 4px;
+  overflow-wrap: anywhere;
+}
+
+figure { margin: 0; display: grid; gap: 14px; min-width: 0; }
+figcaption { color: var(--muted); font-size: .92rem; max-width: 92ch; }
+figcaption strong { color: var(--fg); font-weight: 600; }
+.dg-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); }
+.dg { display: block; width: 100%; min-width: 1000px; height: auto; }
+
+.dg text { font-family: var(--font-display); fill: var(--fg); }
+.dg .zone { fill: none; stroke: var(--line-strong); stroke-width: 1.2; }
+.dg .subzone { fill: none; stroke: var(--line-strong); stroke-width: 1; stroke-dasharray: 5 4; }
+.dg .node { fill: var(--surface); stroke: var(--line-strong); stroke-width: 1; }
+.dg .node-inner { fill: var(--surface-2); stroke: var(--line); stroke-width: 1; }
+.dg .node-ext { fill: var(--bg); stroke: var(--line-strong); stroke-width: 1; stroke-dasharray: 3 3; }
+.dg .note { fill: var(--surface); stroke: var(--line-strong); stroke-width: 1; }
+.dg .out-read, .dg .n-read { stroke: var(--flow-read); stroke-width: 1.4; }
+.dg .out-auth, .dg .n-auth { stroke: var(--flow-auth); stroke-width: 1.4; }
+.dg .out-pub, .dg .n-pub { stroke: var(--flow-pub); stroke-width: 1.4; }
+.dg .out-neutral { stroke: var(--line-strong); }
+.dg .tag-r { fill: var(--bg); stroke: var(--line-strong); stroke-width: 1; }
+.dg .t-zone { font-size: 10.5px; font-weight: 600; letter-spacing: .08em; fill: var(--muted); }
+.dg .t-title { font-size: 12.5px; font-weight: 600; }
+.dg .t-sub { font-size: 11px; fill: var(--muted); }
+.dg .t-mono { font-family: var(--font-mono); font-size: 10.5px; }
+.dg .t-note { font-size: 11px; }
+.dg .t-tag { font-size: 8.5px; font-weight: 600; letter-spacing: .06em; fill: var(--muted); }
+.dg .t-new { font-size: 9px; font-weight: 600; letter-spacing: .08em; fill: var(--flow-deploy); }
+.dg .t-label, .dg .t-msg, .dg .t-phase, .dg .t-gate {
+  paint-order: stroke;
+  stroke: var(--bg);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+}
+.dg .t-label { font-size: 11px; font-weight: 500; }
+.dg .t-label-mono { font-family: var(--font-mono); font-size: 10.5px; font-weight: 400; }
+.dg .t-msg { font-size: 11px; }
+.dg .t-msg-mono { font-family: var(--font-mono); font-size: 10.5px; }
+.dg .t-phase { font-size: 11.5px; font-weight: 600; }
+.dg .t-gate { font-size: 11.5px; font-weight: 600; }
+.dg .t-badge { font-size: 9px; font-weight: 600; fill: var(--badge-fg); }
+.dg .ln { fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.dg .dash { stroke-dasharray: 5 4; }
+.dg .lifeline { stroke: var(--line-strong); stroke-width: 1; stroke-dasharray: 2 4; }
+.dg .rule { stroke: var(--line); stroke-width: 1; }
+.dg .gate { stroke: var(--fg); stroke-width: 1.2; stroke-dasharray: 8 5; }
+.dg .boundary { stroke: var(--line-strong); stroke-width: 1.2; stroke-dasharray: 8 5; }
+.dg .c-read { stroke: var(--flow-read); }
+.dg .c-auth { stroke: var(--flow-auth); }
+.dg .c-pub { stroke: var(--flow-pub); }
+.dg .c-deploy { stroke: var(--flow-deploy); }
+.dg .c-neutral { stroke: var(--line-strong); }
+.dg .ah-read, .dg .bg-read, .dg .tc-read { fill: var(--flow-read); }
+.dg .ah-auth, .dg .bg-auth, .dg .tc-auth { fill: var(--flow-auth); }
+.dg .ah-pub, .dg .bg-pub, .dg .tc-pub { fill: var(--flow-pub); }
+.dg .ah-deploy, .dg .bg-deploy, .dg .tc-deploy { fill: var(--flow-deploy); }
+.dg .ah-neutral { fill: var(--line-strong); }
+.dg .tc-neutral { fill: var(--muted); }
+
+.flow-toggle { display: flex; flex-wrap: wrap; gap: 8px; }
+.flow-toggle button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  font: 500 14px/1.2 var(--font-display);
+  color: var(--fg);
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  cursor: pointer;
+}
+.flow-toggle button:hover { border-color: var(--fg); }
+.flow-toggle button[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+.swatch { display: inline-block; width: 18px; height: 0; border-top: 3px solid var(--line-strong); flex: none; }
+.s-read { border-top-color: var(--flow-read); }
+.s-auth { border-top-color: var(--flow-auth); }
+.s-pub { border-top-color: var(--flow-pub); }
+.s-deploy { border-top-color: var(--flow-deploy); border-top-style: dashed; }
+
+.flow-keys { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 22px 28px; }
+@media (max-width: 1040px) { .flow-keys { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 600px) { .flow-keys { grid-template-columns: minmax(0, 1fr); } }
+.flow-key { display: grid; gap: 10px; align-content: start; min-width: 0; }
+.flow-key h3 { display: flex; align-items: center; gap: 10px; }
+.flow-key ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 9px; font-size: .9rem; line-height: 1.5; }
+.flow-key li { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 8px; align-items: start; }
+.bdg {
+  display: inline-grid;
+  place-items: center;
+  height: 19px;
+  margin-top: 2px;
+  border-radius: 10px;
+  font: 600 11px/1 var(--font-display);
+  color: var(--badge-fg);
+  font-variant-numeric: tabular-nums;
+}
+.b-read { background: var(--flow-read); }
+.b-auth { background: var(--flow-auth); }
+.b-pub { background: var(--flow-pub); }
+.b-deploy { background: var(--flow-deploy); }
+
+#overview .flow, #overview .flow-key { transition: opacity .18s ease; }
+#overview[data-focus="read"] .flow:not(.f-read),
+#overview[data-focus="auth"] .flow:not(.f-auth),
+#overview[data-focus="pub"] .flow:not(.f-pub),
+#overview[data-focus="deploy"] .flow:not(.f-deploy) { opacity: .1; }
+#overview[data-focus="read"] .flow-key:not(.k-read),
+#overview[data-focus="auth"] .flow-key:not(.k-auth),
+#overview[data-focus="pub"] .flow-key:not(.k-pub),
+#overview[data-focus="deploy"] .flow-key:not(.k-deploy) { opacity: .35; }
+@media (prefers-reduced-motion: reduce) { #overview .flow, #overview .flow-key { transition: none; } }
+
+.cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px 32px; max-width: 1240px; }
+@media (max-width: 900px) { .cols { grid-template-columns: minmax(0, 1fr); } }
+.cols > div { display: grid; gap: 6px; align-content: start; min-width: 0; }
+.cols p { font-size: .95rem; }
+
+.table-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+table { width: 100%; min-width: 680px; border-collapse: collapse; font-size: .9rem; line-height: 1.5; }
+th, td { padding: 9px 14px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); }
+th { font: 600 12px/1.3 var(--font-display); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); background: var(--surface-2); }
+tr:last-child td { border-bottom: 0; }
+td code { overflow-wrap: normal; }
+.ref { display: grid; gap: 28px; }
+.ref h3 { margin-bottom: 10px; }
+.note-text { color: var(--muted); font-size: .9rem; max-width: 92ch; margin-top: 10px; }
+
+footer.sources { display: grid; gap: 10px; padding-block: 40px 0; border-top: 1px solid var(--line); margin-top: 40px; }
+footer.sources ul { margin: 0; padding-left: 1.2em; color: var(--muted); font-size: .9rem; display: grid; gap: 4px; }
+
+:root { --flow-agent: #be185d; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --flow-agent: #f472b6; } }
+:root[data-theme="dark"] { --flow-agent: #f472b6; }
+.dg .c-agent { stroke: var(--flow-agent); }
+.dg .ah-agent, .dg .bg-agent, .dg .tc-agent { fill: var(--flow-agent); }
+.b-agent { background: var(--flow-agent); }
+.s-agent { border-top-color: var(--flow-agent); }
+.dg .node-new { stroke: var(--accent); stroke-width: 1.6; }
+.dg .node-ghost { fill: none; stroke: var(--line-strong); stroke-width: 1; stroke-dasharray: 4 4; }
+.dg .ghost text { fill: var(--muted); }
+.s-new { border: 0; width: 18px; height: 12px; border-radius: 3px; outline: 1.6px solid var(--accent); outline-offset: -1.6px; }
+.s-ghost { border: 0; width: 18px; height: 12px; border-radius: 3px; outline: 1px dashed var(--line-strong); outline-offset: -1px; }
+
+.status { display: inline-flex; align-items: center; gap: 8px; padding: 4px 10px; border: 1px solid var(--line-strong);
+  border-radius: 999px; font: 600 12px/1.2 var(--font-display); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); width: fit-content; }
+.summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px 40px; }
+@media (max-width: 860px) { .summary { grid-template-columns: minmax(0, 1fr); } }
+.summary > div { display: grid; gap: 10px; align-content: start; padding-top: 14px; border-top: 2px solid var(--accent); min-width: 0; }
+.summary ul { margin: 0; padding-left: 1.1em; display: grid; gap: 6px; font-size: .95rem; }
+.part { display: grid; gap: 6px; }
+.part-label { margin: 0; font: 600 12px/1.4 var(--font-display); letter-spacing: .1em; text-transform: uppercase; color: var(--accent); }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 22px; color: var(--muted); font-size: .88rem; align-items: center; }
+.legend span { display: inline-flex; align-items: center; gap: 8px; }
+
+.nodes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 36px; margin: 0; }
+@media (max-width: 860px) { .nodes { grid-template-columns: minmax(0, 1fr); } }
+.nodes > div { display: grid; gap: 4px; align-content: start; padding-top: 10px; border-top: 1px solid var(--line); min-width: 0; }
+.nodes dt { font: 600 1rem/1.3 var(--font-display); }
+.nodes dd { margin: 0; font-size: .93rem; line-height: 1.55; }
+.steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 9px; max-width: 92ch; }
+.steps li { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 10px; align-items: start; font-size: .95rem; }
+.steps .bdg { margin-top: 3px; }
+.subhead { display: grid; gap: 12px; }
+pre.example { margin: 0; padding: 14px 16px; overflow-x: auto; background: var(--surface); border: 1px solid var(--line);
+  border-radius: 10px; font: 400 12.5px/1.55 var(--font-mono); color: var(--fg); }
+.phases { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; max-width: 96ch; counter-reset: phase; }
+.phases li { display: grid; grid-template-columns: 38px minmax(0, 1fr); gap: 12px; align-items: start; }
+.phases li::before { counter-increment: phase; content: counter(phase); display: grid; place-items: center; width: 30px; height: 30px;
+  border-radius: 50%; border: 1.6px solid var(--accent); color: var(--accent); font: 600 14px/1 var(--font-display); }
+.phases strong { font-family: var(--font-display); font-size: 1.02rem; }
+.phases p { font-size: .95rem; }
+.phases .done { color: var(--muted); font-size: .9rem; }
+table.wide { min-width: 900px; }
+.decisions { margin: 0; padding-left: 1.3em; display: grid; gap: 8px; max-width: 92ch; }
+
+.chip { display: inline-block; padding: 2px 9px; border-radius: 999px; font: 600 11px/1.5 var(--font-display); letter-spacing: .06em; text-transform: uppercase; }
+.chip-decided { color: var(--flow-pub); border: 1px solid var(--flow-pub); }
+.chip-proposed { color: var(--flow-auth); border: 1px solid var(--flow-auth); }
+</style>
+
+<div class="page">
+<header class="top">
+  <p class="eyebrow">UMCCR Platform Services · delivery plan</p>
+  <h1>docs.umccr.org delivery plan</h1>
+  <p class="lede">How docs.umccr.org takes on any number of documentation repositories with two pipelines in total, and adds a budget-capped chat over the documentation on Amazon Bedrock. This replaces the earlier proposal with the decisions the team has made.</p>
+  <p class="status">Plan · decisions recorded 8 October 2026 · nothing built yet</p>
+  <p class="meta">Builds on the dev deployment of branch <code>feat/docs-umccr-org</code> (see the <a href="https://claude.ai/artifact/TUtBrjcoBmfaLZApu11pAW">architecture</a> page) and reviews the earlier <a href="https://claude.ai/artifact/5bBm8WEpWYvB3c1zY7CMMn">pipelines and chat proposal</a>. AWS and GitHub details checked on 8 October 2026.</p>
+  <nav class="toc" aria-label="Sections">
+    <a href="#decisions">Decisions</a>
+    <a href="#changes">What changed</a>
+    <a href="#publishing">Publishing</a>
+    <a href="#release">One release</a>
+    <a href="#scale">Adding sites</a>
+    <a href="#kb">Knowledge base</a>
+    <a href="#chat">Chat</a>
+    <a href="#cost">Cost</a>
+    <a href="#records">Records</a>
+    <a href="#plan">Plan</a>
+  </nav>
+</header>
+
+<section id="decisions" aria-labelledby="decisions-h">
+  <div class="prose"><h2 id="decisions-h">Decisions</h2></div>
+  <div class="table-scroll"><table class=""><thead><tr><th scope="col">Topic</th><th scope="col">Decision</th><th scope="col">Status</th></tr></thead><tbody><tr><td>Building and publishing sites</td><td>One shared site pipeline in the toolchain account, started per release by a dispatcher behind an organisation-wide GitHub webhook, with the repository and commit as variables. Built with CodePipeline and CodeBuild, the way the portal builds its apps.</td><td><span class="chip chip-decided">decided</span></td></tr><tr><td>Number of pipelines</td><td>Two in total, however many sites join: DocsInfrastructurePipeline (existing) and DocsSitesPipeline (new). The platform site is just another registry entry.</td><td><span class="chip chip-decided">decided</span></td></tr><tr><td>Approval before prod</td><td>None. Documentation changes no data and no running system; a release goes to dev and then straight to prod, and a failure in dev stops it.</td><td><span class="chip chip-decided">decided</span></td></tr><tr><td>Knowledge base</td><td>Bedrock managed knowledge base, serverless and pay as you go, with the default minimal configuration.</td><td><span class="chip chip-decided">decided</span></td></tr><tr><td>Questions and answers</td><td>Kept 30 days in a bucket, for evaluation.</td><td><span class="chip chip-decided">decided</span></td></tr><tr><td>Chat budget</td><td>$50 a month for the prod chat, enforced by the application (below).</td><td><span class="chip chip-proposed">proposed</span></td></tr></tbody></table></div>
+</section>
+
+<section id="changes" aria-labelledby="changes-h">
+  <div class="prose">
+    <h2 id="changes-h">What changed from the earlier proposal</h2>
+    <p>The earlier proposal generated one pipeline per site. That is simple for a handful of sites but adds a pipeline, its projects and its roles for every repository, in an organisation account that already holds about 100 pipelines. This plan keeps the number of pipelines fixed at two and moves the per-site detail into the registry and the variables of each run.</p>
+  </div>
+  <div class="table-scroll"><table class="wide"><thead><tr><th scope="col">Topic</th><th scope="col">Previous proposal</th><th scope="col">This plan</th><th scope="col">Why</th></tr></thead><tbody><tr><td>Site pipelines</td><td>one generated pipeline per site</td><td>one shared pipeline, started by a dispatcher</td><td>the org account already holds about 100 pipelines; docs should add a fixed number however many repositories join</td></tr><tr><td>Trigger</td><td>a CodeConnections push trigger per pipeline</td><td>one organisation webhook, filtered against the registry by the dispatcher</td><td>one integration covers every current and future repository</td></tr><tr><td>Fetching the code</td><td>the pipeline’s own source action</td><td>a fetch build that clones through CodeConnections, then an S3 source set per run</td><td>still no personal access token; the webhook’s signing secret is the only secret</td></tr><tr><td>Prod gate</td><td>optional approval per site</td><td>none: dev, then prod automatically</td><td>decided; dev acts as the smoke test</td></tr><tr><td>Publisher roles</td><td>one per site and stage</td><td>one per stage, narrowed to the site on every run with a session policy</td><td>no new IAM role per site</td></tr><tr><td>Out-of-order releases</td><td>not an issue with one pipeline per site</td><td>a release number per site; publishing skips a release older than the live one</td><td>parallel runs can finish in any order</td></tr><tr><td>Knowledge-base ingestion</td><td>each publish starts a job</td><td>a check every 15 minutes starts at most one job, plus the managed daily sync</td><td>many sites can publish at once, and ingestion jobs on one data source can’t overlap</td></tr><tr><td>Chat cost</td><td>open</td><td>$50 a month, with daily team and per-reader allowances</td><td>proposed</td></tr><tr><td>Questions and answers</td><td>open</td><td>30 days in a records bucket; curated examples kept for evaluation</td><td>decided</td></tr></tbody></table></div>
+</section>
+
+<section id="publishing" aria-labelledby="publishing-h">
+  <div class="prose">
+    <h2 id="publishing-h">Publishing: one webhook, one dispatcher, two pipelines</h2>
+    <p>Every push in the organisation reaches one small Lambda. It drops everything that isn’t a push to a registered docs repository, and turns the rest into a run of the one shared site pipeline, with the site and commit as variables. Code is fetched through the AWS Connector app the organisation already uses, so no personal access token or GitHub App key is involved.</p>
+  </div>
+  <figure>
+    <div class="dg-scroll"><svg class="dg" viewBox="0 0 1240 714" role="img" aria-label="Publishing through the dispatcher. An organisation webhook sends every push to a dispatcher Lambda in the toolchain account, which checks it against the registry, records the delivery and a release number in DynamoDB and starts a fetch build. The fetch build clones the repository at the commit through the existing CodeConnections app, zips it to a source bucket and starts the one shared site pipeline with that object and the release&#x27;s variables. The pipeline builds read-only, then publishes to dev and straight on to prod through one publisher role per stage, narrowed to the site for each run. The managed knowledge base ingests changed files within 15 minutes. DocsInfrastructurePipeline deploys all of it from the registry."><defs><marker id="dp-ah-read" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path class="ah-read" d="M0,0.8 L10,5 L0,9.2 z"/></marker><marker id="dp-ah-auth" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path class="ah-auth" d="M0,0.8 L10,5 L0,9.2 z"/></marker><marker id="dp-ah-pub" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path class="ah-pub" d="M0,0.8 L10,5 L0,9.2 z"/></marker><marker id="dp-ah-deploy" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path class="ah-deploy" d="M0,0.8 L10,5 L0,9.2 z"/></marker><marker id="dp-ah-neutral" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path class="ah-neutral" d="M0,0.8 L10,5 L0,9.2 z"/></marker><marker id="dp-ah-agent" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path class="ah-agent" d="M0,0.8 L10,5 L0,9.2 z"/></marker></defs><rect class="zone" x="16" y="16" width="1208" height="120" rx="12"/><text x="28" y="34" class="t-zone">GITHUB · UMCCR ORGANISATION</text><rect class="node" x="32" y="52" width="300" height="72" rx="6"/><text x="42" y="70" class="t-title">Docs repositories, any number</text><text x="42" y="85" class="t-mono">umccr/docs-platform → /platform/</text><text x="42" y="100" class="t-mono">umccr/management-knowledgebase</text><text x="42" y="115" class="t-sub">Markdown and mkdocs.yml only</text><path class="ln c-neutral" d="M332,88 L355,88" marker-end="url(#dp-ah-neutral)"/><rect class="node node-new" x="356" y="52" width="250" height="72" rx="6"/><text x="366" y="70" class="t-title">Organisation webhook</text><text x="366" y="85" class="t-sub">push events from every repository,</text><text x="366" y="100" class="t-sub">signed with a shared secret</text><text x="366" y="115" class="t-sub">(X-Hub-Signature-256)</text><rect class="node" x="630" y="52" width="260" height="72" rx="6"/><text x="640" y="70" class="t-title">AWS Connector for GitHub</text><text x="640" y="85" class="t-sub">the existing CodeConnections app;</text><text x="640" y="100" class="t-sub">lets CodeBuild clone private</text><text x="640" y="115" class="t-sub">repositories, with no token</text><rect class="node" x="914" y="52" width="294" height="72" rx="6"/><text x="924" y="70" class="t-title">frontend-infrastructure-pipelines</text><text x="924" y="85" class="t-mono">lib/docs/sites.ts</text><text x="924" y="100" class="t-sub">registry: repository → slug, branch,</text><text x="924" y="115" class="t-sub">docs paths, stages, toolkit tag</text><rect class="zone" x="16" y="172" width="1208" height="300" rx="12"/><text x="28" y="190" class="t-zone">TOOLCHAIN AWS ACCOUNT</text><rect class="node node-new" x="32" y="208" width="236" height="117" rx="6"/><text x="42" y="226" class="t-title">Dispatcher Lambda</text><text x="42" y="241" class="t-mono">function URL, public</text><text x="42" y="256" class="t-sub">checks the signature, drops</text><text x="42" y="271" class="t-sub">repeat deliveries, looks up the</text><text x="42" y="286" class="t-sub">registry, ignores pushes outside</text><text x="42" y="301" class="t-sub">docs paths, numbers the release</text><rect class="node node-new" x="32" y="349" width="236" height="72" rx="6"/><text x="42" y="367" class="t-title">Dispatch table (DynamoDB)</text><text x="42" y="382" class="t-sub">delivery IDs, so a repeat is a no-op;</text><text x="42" y="397" class="t-sub">the next release number per site</text><rect class="node node-new" x="292" y="208" width="200" height="102" rx="6"/><text x="302" y="226" class="t-title">Fetch build (CodeBuild)</text><text x="302" y="241" class="t-sub">clones the repository at</text><text x="302" y="256" class="t-sub">the commit through</text><text x="302" y="271" class="t-sub">CodeConnections, zips it,</text><text x="302" y="286" class="t-sub">then starts the pipeline</text><rect class="node node-new" x="292" y="349" width="200" height="72" rx="6"/><text x="302" y="367" class="t-title">Source bucket</text><text x="302" y="382" class="t-mono">sources/&lt;slug&gt;/&lt;commit&gt;.zip</text><text x="302" y="397" class="t-sub">objects expire after 30 days</text><rect class="node" x="516" y="208" width="692" height="57" rx="6"/><text x="526" y="226" class="t-title">Pipeline 1 · DocsInfrastructurePipeline (existing)</text><text x="526" y="241" class="t-sub">deploys DocsHostingStack to each stage, and the dispatcher, fetch build and site pipeline in this account</text><text x="526" y="256" class="t-sub">so one registry change reaches routing, the catalogue and the dispatcher together</text><rect class="subzone" x="516" y="285" width="692" height="172" rx="12"/><text x="1196" y="303" class="t-zone" text-anchor="end">PIPELINE 2 · DOCSSITESPIPELINE · CODEPIPELINE V2, PARALLEL RUNS</text><rect class="node node-new" x="532" y="315" width="152" height="102" rx="6"/><text x="542" y="333" class="t-title">1 · Source</text><text x="542" y="348" class="t-sub">S3 action; the object</text><text x="542" y="363" class="t-sub">key is set for each run</text><text x="542" y="378" class="t-sub">→ the commit’s files</text><rect class="node node-new" x="702" y="315" width="152" height="102" rx="6"/><text x="712" y="333" class="t-title">2 · Build</text><text x="712" y="348" class="t-sub">CodeBuild, read-only:</text><text x="712" y="363" class="t-sub">check, build, verify</text><text x="712" y="378" class="t-sub">and export-kb, with</text><text x="712" y="393" class="t-sub">the pinned toolkit</text><g class="badge"><circle class="bg-pub" cx="840" cy="315" r="9"/><text x="840" y="318.2" class="t-badge" text-anchor="middle">R7</text></g><path class="ln c-pub" d="M684,366 L701,366" marker-end="url(#dp-ah-pub)"/><rect class="node node-new" x="872" y="315" width="152" height="102" rx="6"/><text x="882" y="333" class="t-title">3 · Publish dev</text><text x="882" y="348" class="t-sub">narrowed dev role;</text><text x="882" y="363" class="t-sub">site and kb/ files;</text><text x="882" y="378" class="t-sub">skips if a newer</text><text x="882" y="393" class="t-sub">release got there first</text><g class="badge"><circle class="bg-pub" cx="1010" cy="315" r="9"/><text x="1010" y="318.2" class="t-badge" text-anchor="middle">R8</text></g><path class="ln c-pub" d="M854,366 L871,366" marker-end="url(#dp-ah-pub)"/><rect class="node node-new" x="1042" y="315" width="152" height="102" rx="6"/><text x="1052" y="333" class="t-title">4 · Publish prod</text><text x="1052" y="348" class="t-sub">same artifacts, prod</text><text x="1052" y="363" class="t-sub">account, straight after</text><text x="1052" y="378" class="t-sub">dev succeeds;</text><text x="1052" y="393" class="t-sub">no approval</text><g class="badge"><circle class="bg-pub" cx="1180" cy="315" r="9"/><text x="1180" y="318.2" class="t-badge" text-anchor="middle">R9</text></g><path class="ln c-pub" d="M1024,366 L1041,366" marker-end="url(#dp-ah-pub)"/><rect class="zone" x="16" y="508" width="596" height="190" rx="12"/><text x="28" y="526" class="t-zone">DEV ACCOUNT · DOCSHOSTINGSTACK</text><rect class="node node-new" x="32" y="544" width="164" height="132" rx="6"/><text x="42" y="562" class="t-title">Managed knowledge base</text><text x="42" y="577" class="t-sub">a 15-minute check starts</text><text x="42" y="592" class="t-sub">ingestion when kb/ has</text><text x="42" y="607" class="t-sub">changed; the daily</text><text x="42" y="622" class="t-sub">managed sync catches</text><text x="42" y="637" class="t-sub">anything missed</text><rect class="node" x="222" y="544" width="176" height="57" rx="6"/><text x="232" y="562" class="t-title">Content bucket</text><text x="232" y="577" class="t-mono">sites/&lt;slug&gt;/</text><text x="232" y="592" class="t-sub">served by CloudFront</text><rect class="node node-new" x="222" y="619" width="176" height="57" rx="6"/><text x="232" y="637" class="t-title">Knowledge-base bucket</text><text x="232" y="652" class="t-mono">kb/&lt;slug&gt;/</text><text x="232" y="667" class="t-sub">never served</text><rect class="node node-new" x="432" y="544" width="164" height="132" rx="6"/><text x="442" y="562" class="t-title">docs-publisher</text><text x="442" y="577" class="t-sub">one role per stage;</text><text x="442" y="592" class="t-sub">each run narrows it</text><text x="442" y="607" class="t-sub">to sites/&lt;slug&gt;/ and</text><text x="442" y="622" class="t-sub">kb/&lt;slug&gt;/ with a</text><text x="442" y="637" class="t-sub">session policy</text><path class="ln c-pub" d="M432,572 L399,572" marker-end="url(#dp-ah-pub)"/><path class="ln c-pub" d="M432,647 L399,647" marker-end="url(#dp-ah-pub)"/><path class="ln c-pub" d="M222,647 L197,647" marker-end="url(#dp-ah-pub)"/><rect class="zone" x="628" y="508" width="596" height="190" rx="12"/><text x="640" y="526" class="t-zone">PROD ACCOUNT · DOCSHOSTINGSTACK</text><rect class="node node-new" x="644" y="544" width="164" height="132" rx="6"/><text x="654" y="562" class="t-title">Managed knowledge base</text><text x="654" y="577" class="t-sub">a 15-minute check starts</text><text x="654" y="592" class="t-sub">ingestion when kb/ has</text><text x="654" y="607" class="t-sub">changed; the daily</text><text x="654" y="622" class="t-sub">managed sync catches</text><text x="654" y="637" class="t-sub">anything missed</text><rect class="node" x="834" y="544" width="176" height="57" rx="6"/><text x="844" y="562" class="t-title">Content bucket</text><text x="844" y="577" class="t-mono">sites/&lt;slug&gt;/</text><text x="844" y="592" class="t-sub">served by CloudFront</text><rect class="node node-new" x="834" y="619" width="176" height="57" rx="6"/><text x="844" y="637" class="t-title">Knowledge-base bucket</text><text x="844" y="652" class="t-mono">kb/&lt;slug&gt;/</text><text x="844" y="667" class="t-sub">never served</text><rect class="node node-new" x="1044" y="544" width="164" height="132" rx="6"/><text x="1054" y="562" class="t-title">docs-publisher</text><text x="1054" y="577" class="t-sub">one role per stage;</text><text x="1054" y="592" class="t-sub">each run narrows it</text><text x="1054" y="607" class="t-sub">to sites/&lt;slug&gt;/ and</text><text x="1054" y="622" class="t-sub">kb/&lt;slug&gt;/ with a</text><text x="1054" y="637" class="t-sub">session policy</text><path class="ln c-pub" d="M1044,572 L1011,572" marker-end="url(#dp-ah-pub)"/><path class="ln c-pub" d="M1044,647 L1011,647" marker-end="url(#dp-ah-pub)"/><path class="ln c-pub" d="M834,647 L809,647" marker-end="url(#dp-ah-pub)"/><g class="badge"><circle class="bg-pub" cx="209" cy="647" r="9"/><text x="209" y="650.2" class="t-badge" text-anchor="middle">R10</text></g><path class="ln c-pub" d="M420,124 L420,148 L240,148 L240,207" marker-end="url(#dp-ah-pub)"/><g class="badge"><circle class="bg-pub" cx="340" cy="148" r="9"/><text x="340" y="151.2" class="t-badge" text-anchor="middle">R1</text></g><text x="254" y="144" class="t-label tc-pub" text-anchor="start">signed POST</text><path class="ln c-pub" d="M150,325 L150,348" marker-start="url(#dp-ah-pub)" marker-end="url(#dp-ah-pub)"/><g class="badge"><circle class="bg-pub" cx="170" cy="337" r="9"/><text x="170" y="340.2" class="t-badge" text-anchor="middle">R2</text></g><path class="ln c-pub" d="M268,240 L291,240" marker-end="url(#dp-ah-pub)"/><g class="badge"><circle class="bg-pub" cx="280" cy="240" r="9"/><text x="280" y="243.2" class="t-badge" text-anchor="middle">R3</text></g><path class="ln c-pub" d="M760,124 L760,164 L392,164 L392,207" marker-end="url(#dp-ah-pub)"/><g class="badge"><circle class="bg-pub" cx="560" cy="164" r="9"/><text x="560" y="167.2" class="t-badge" text-anchor="middle">R4</text></g><text x="680" y="159" class="t-label tc-pub" text-anchor="middle">clone at the commit</text><path class="ln c-pub" d="M392,310 L392,348" marker-end="url(#dp-ah-pub)"/><g class="badge"><circle class="bg-pub" cx="406" cy="329" r="9"/><text x="406" y="332.2" class="t-badge" text-anchor="middle">R5</text></g><path class="ln c-pub" d="M492,260 L504,260 L504,352 L531,352" marker-end="url(#dp-ah-pub)"/><g class="badge"><circle class="bg-pub" cx="504" cy="306" r="9"/><text x="504" y="309.2" class="t-badge" text-anchor="middle">R6</text></g><path class="ln c-neutral dash" d="M492,395 L531,395"/><path class="ln c-pub" d="M948,417 L948,490 L514,490 L514,543" marker-end="url(#dp-ah-pub)"/><text x="530" y="503" class="t-label tc-pub" text-anchor="start">assume the dev role, narrowed to this site</text><path class="ln c-pub" d="M1118,417 L1118,543" marker-end="url(#dp-ah-pub)"/><text x="1108" y="494" class="t-label tc-pub" text-anchor="end">assume the prod role</text><path class="ln c-deploy dash" d="M1061,124 L1061,207" marker-end="url(#dp-ah-deploy)"/><g class="badge"><circle class="bg-deploy" cx="1061" cy="186" r="9"/><text x="1061" y="189.2" class="t-badge" text-anchor="middle">D1</text></g><text x="1075" y="152" class="t-label tc-deploy" text-anchor="start">registry change</text></svg></div>
+    <div class="legend">
+      <span><span class="swatch s-new" aria-hidden="true"></span>new or changed</span>
+      <span><span class="swatch s-pub" aria-hidden="true"></span>a release</span>
+      <span><span class="swatch s-deploy" aria-hidden="true"></span>a registry change</span>
+    </div>
+    <figcaption>The prod account mirrors the dev account; only the dev side carries the R10 badge. Pipeline 1 deploys everything outlined in blue, in the toolchain and in each stage.</figcaption>
+  </figure>
+  <div class="subhead"><h3>Each step</h3><ol class="steps"><li><span class="bdg b-deploy">D1</span><span>A registry change merges in <code>frontend-infrastructure-pipelines</code>. DocsInfrastructurePipeline updates routing and the catalogue in each stage, and the dispatcher’s copy of the registry.</span></li><li><span class="bdg b-pub">R1</span><span>A writer pushes to <code>main</code>. GitHub posts the push event, signed with the webhook secret, to the dispatcher’s URL.</span></li><li><span class="bdg b-pub">R2</span><span>The dispatcher checks the signature and the registry, records the delivery so a repeat does nothing, and takes the site’s next release number.</span></li><li><span class="bdg b-pub">R3</span><span>It starts the fetch build for that repository and commit, and answers GitHub straight away.</span></li><li><span class="bdg b-pub">R4</span><span>The fetch build clones the repository at the commit through the AWS Connector app.</span></li><li><span class="bdg b-pub">R5</span><span>It zips the files to <code>sources/&lt;slug&gt;/&lt;commit&gt;.zip</code> in the source bucket.</span></li><li><span class="bdg b-pub">R6</span><span>It starts the site pipeline with that object key and the variables <code>SLUG</code>, <code>REPO</code>, <code>COMMIT</code>, <code>RELEASE</code> and <code>TOOLKIT_REF</code>.</span></li><li><span class="bdg b-pub">R7</span><span>Build runs the toolkit: check, strict build, verify-site and export-kb. It can’t write anywhere.</span></li><li><span class="bdg b-pub">R8</span><span>Publish dev assumes the dev publisher role, narrowed to this site, and publishes the pages and the knowledge-base files.</span></li><li><span class="bdg b-pub">R9</span><span>Publish prod does the same in prod, as soon as dev succeeds.</span></li><li><span class="bdg b-pub">R10</span><span>Within 15 minutes, the knowledge base in each stage ingests the changed files.</span></li></ol></div>
+  <div class="subhead"><h3>Each node</h3><dl class="nodes"><div><dt>Docs repositories</dt><dd>Markdown and <code>mkdocs.yml</code>, nothing else: no workflow, no environments, no secrets. <code>umccr/docs-platform</code> is one of them and publishes <code>/platform/</code>.</dd></div><div><dt>Organisation webhook</dt><dd>Created once by an organisation owner. It sends push events for every repository in the umccr organisation, including repositories created later, to the dispatcher’s URL. Each delivery is signed with a secret kept in Secrets Manager.</dd></div><div><dt>AWS Connector for GitHub</dt><dd>The CodeConnections GitHub App UMCCR’s pipelines already use. CodeBuild can clone any repository the app can see at any commit, with no token. If the app is installed for selected repositories, an organisation owner adds each docs repository.</dd></div><div><dt>Registry, <code>lib/docs/sites.ts</code></dt><dd>One entry per site: repository, slug, branch, docs paths, stages, toolkit tag, title. It drives routing, the catalogue and the dispatcher. On the platform side, onboarding a site is merging one entry.</dd></div><div><dt>Pipeline 1 · DocsInfrastructurePipeline</dt><dd>The existing self-mutating pipeline. It keeps deploying <code>DocsHostingStack</code> to each stage, and now also the dispatcher, the fetch build and the site pipeline in the toolchain account.</dd></div><div><dt>Dispatcher Lambda</dt><dd>Answers GitHub within a second or two. Rejects anything without a valid signature. Ignores events from repositories, branches or paths that aren’t in the registry, so pushes from the organisation’s other repositories cost a few milliseconds each. The slug always comes from the registry, never from the event.</dd></div><div><dt>Dispatch table</dt><dd>A DynamoDB table holding delivery IDs, which expire after a few days so a repeated delivery does nothing, and a release counter per site.</dd></div><div><dt>Fetch build</dt><dd>A CodeBuild project started once per release, with its source location, commit and CodeConnections authorisation set for that run. It clones the commit, zips the checkout without <code>.git</code>, and starts the site pipeline.</dd></div><div><dt>Source bucket</dt><dd>Holds one zip per release under <code>sources/&lt;slug&gt;/&lt;commit&gt;.zip</code>, so any run can be repeated from exactly the same files. Objects expire after 30 days.</dd></div><div><dt>Pipeline 2 · DocsSitesPipeline</dt><dd>A CodePipeline V2 in parallel mode: releases of different sites run side by side, up to 50 at once. Every run carries its site and commit in pipeline variables, so the execution history reads as a release log.</dd></div><div><dt>1 · Source</dt><dd>An S3 source action allowed to take its object key from the start request, so each run reads exactly the zip the fetch build wrote.</dd></div><div><dt>2 · Build</dt><dd>CodeBuild with no write access, running the toolkit at the tag the registry pins: <code>umccr-docs check</code>, <code>build</code>, <code>verify-site</code> and the new <code>export-kb</code>. Repository content never runs with publishing rights.</dd></div><div><dt>3 · Publish dev</dt><dd>Assumes the dev account’s <code>docs-publisher</code> role with a session policy that allows only <code>sites/&lt;slug&gt;/</code> and <code>kb/&lt;slug&gt;/</code>. Publishes pages and knowledge-base files, and records the release number in <code>_publish.json</code>. If the live release is newer, it skips instead.</dd></div><div><dt>4 · Publish prod</dt><dd>The same step in the prod account with the same artifacts, as soon as dev succeeds. No approval.</dd></div><div><dt><code>docs-publisher</code></dt><dd>One role per stage account, replacing the role per site. It trusts only the site pipeline’s publish role and may write <code>sites/*</code> and <code>kb/*</code>; each run narrows it to one site.</dd></div><div><dt>Content bucket</dt><dd>Unchanged. CloudFront serves <code>sites/&lt;slug&gt;/</code> to signed-in readers.</dd></div><div><dt>Knowledge-base bucket</dt><dd>Private, per stage, never served. Holds the processed Markdown and metadata from <code>export-kb</code>.</dd></div><div><dt>Managed knowledge base</dt><dd>One per stage, in the default configuration below. A small scheduled check, every 15 minutes, starts an ingestion job when any <code>kb/</code> file is newer than the last job. The managed daily sync catches anything missed.</dd></div></dl></div>
+</section>
+
+<section id="release" aria-labelledby="release-h">
+  <div class="prose">
+    <h2 id="release-h">One release, end to end</h2>
+    <p>The order of events for a single push, and the two rules that keep shared, parallel runs safe.</p>
+  </div>
+  <figure>
+    <div class="dg-scroll"><svg class="dg" viewBox="0 0 1240 804" role="img" aria-label="One release, end to end. GitHub posts a signed push event; the dispatcher validates it against the registry, answers immediately, numbers the release and starts the fetch build, which clones the commit, zips it and starts the site pipeline. The pipeline builds, publishes to dev unless a newer release is already live, then to prod, and the knowledge base ingests the changes within 15 minutes."><defs><marker id="rl-ah-read" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path class="ah-read" d="M0,0.8 L10,5 L0,9.2 z"/></marker><marker id="rl-ah-auth" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path class="ah-auth" d="M0,0.8 L10,5 L0,9.2 z"/></marker><marker id="rl-ah-pub" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path class="ah-pub" d="M0,0.8 L10,5 L0,9.2 z"/></marker><marker id="rl-ah-deploy" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path class="ah-deploy" d="M0,0.8 L10,5 L0,9.2 z"/></marker><marker id="rl-ah-neutral" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path class="ah-neutral" d="M0,0.8 L10,5 L0,9.2 z"/></marker><marker id="rl-ah-agent" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path class="ah-agent" d="M0,0.8 L10,5 L0,9.2 z"/></marker></defs><line class="lifeline" x1="110" y1="60" x2="110" y2="790"/><line class="lifeline" x1="314" y1="60" x2="314" y2="790"/><line class="lifeline" x1="518" y1="60" x2="518" y2="790"/><line class="lifeline" x1="722" y1="60" x2="722" y2="790"/><line class="lifeline" x1="926" y1="60" x2="926" y2="790"/><line class="lifeline" x1="1130" y1="60" x2="1130" y2="790"/><rect class="node" x="30" y="16" width="160" height="44" rx="6"/><text x="110" y="35" class="t-title" text-anchor="middle">GitHub</text><text x="110" y="51" class="t-sub" text-anchor="middle">organisation webhook</text><rect class="node" x="234" y="16" width="160" height="44" rx="6"/><text x="314" y="35" class="t-title" text-anchor="middle">Dispatcher</text><text x="314" y="51" class="t-sub" text-anchor="middle">Lambda + DynamoDB</text><rect class="node" x="438" y="16" width="160" height="44" rx="6"/><text x="518" y="35" class="t-title" text-anchor="middle">Fetch build</text><text x="518" y="51" class="t-sub" text-anchor="middle">CodeBuild</text><rect class="node" x="642" y="16" width="160" height="44" rx="6"/><text x="722" y="35" class="t-title" text-anchor="middle">Site pipeline</text><text x="722" y="51" class="t-sub" text-anchor="middle">CodePipeline V2</text><rect class="node" x="846" y="16" width="160" height="44" rx="6"/><text x="926" y="35" class="t-title" text-anchor="middle">Dev, then prod</text><text x="926" y="51" class="t-sub" text-anchor="middle">docs-publisher role</text><rect class="node" x="1050" y="16" width="160" height="44" rx="6"/><text x="1130" y="35" class="t-title" text-anchor="middle">Knowledge base</text><text x="1130" y="51" class="t-sub" text-anchor="middle">managed, per stage</text><line class="rule" x1="16" y1="80" x2="1224" y2="80"/><text x="16" y="100" class="t-phase">1 · A push reaches the dispatcher</text><path class="ln c-pub" d="M110,132 L313,132" marker-end="url(#rl-ah-pub)"/><text x="122" y="125" class="t-msg" text-anchor="start">POST push event</text><text x="122" y="147" class="t-msg" text-anchor="start">X-Hub-Signature-256</text><rect class="note n-pub" x="201.7" y="158" width="224.6" height="57" rx="5"/><text x="213.7" y="175" class="t-note">signature valid? delivery ID new?</text><text x="213.7" y="190" class="t-note">repository and branch in the registry?</text><text x="213.7" y="205" class="t-note">any changed file under its docs paths?</text><path class="ln c-pub dash" d="M314,245 L111,245" marker-end="url(#rl-ah-pub)"/><text x="302" y="238" class="t-msg" text-anchor="end">202 within a second or two</text><rect class="note n-pub" x="214.9" y="257" width="198.2" height="27" rx="5"/><text x="226.9" y="274" class="t-note">next release number for this site</text><path class="ln c-pub" d="M314,314 L517,314" marker-end="url(#rl-ah-pub)"/><text x="326" y="307" class="t-msg" text-anchor="start">StartBuild: repository, commit</text><line class="rule" x1="16" y1="328" x2="1224" y2="328"/><text x="16" y="348" class="t-phase">2 · Fetch</text><rect class="note n-pub" x="389.8" y="362" width="256.3" height="42" rx="5"/><text x="401.8" y="379" class="t-note">clone at the commit through CodeConnections;</text><text x="401.8" y="394" class="t-note">zip to sources/&lt;slug&gt;/&lt;commit&gt;.zip</text><path class="ln c-pub" d="M518,434 L721,434" marker-end="url(#rl-ah-pub)"/><text x="530" y="427" class="t-msg" text-anchor="start">StartPipelineExecution</text><text x="530" y="449" class="t-msg" text-anchor="start">S3 key + SLUG, COMMIT, RELEASE</text><line class="rule" x1="16" y1="462" x2="1224" y2="462"/><text x="16" y="482" class="t-phase">3 · Build and publish, one parallel run per release</text><rect class="note n-pub" x="633.4" y="496" width="177.1" height="42" rx="5"/><text x="645.4" y="513" class="t-note">Build: check, build (strict),</text><text x="645.4" y="528" class="t-note">verify-site, export-kb</text><path class="ln c-pub" d="M722,568 L925,568" marker-end="url(#rl-ah-pub)"/><text x="734" y="561" class="t-msg" text-anchor="start">Publish dev (newer release wins)</text><path class="ln c-pub dash" d="M926,598 L723,598" marker-end="url(#rl-ah-pub)"/><text x="914" y="591" class="t-msg" text-anchor="end">published, release recorded</text><path class="ln c-pub" d="M722,628 L925,628" marker-end="url(#rl-ah-pub)"/><text x="734" y="621" class="t-msg" text-anchor="start">Publish prod, the same artifacts</text><path class="ln c-pub dash" d="M926,658 L723,658" marker-end="url(#rl-ah-pub)"/><text x="914" y="651" class="t-msg" text-anchor="end">published</text><line class="rule" x1="16" y1="672" x2="1224" y2="672"/><text x="16" y="692" class="t-phase">4 · Knowledge base, within 15 minutes</text><path class="ln c-pub" d="M926,724 L1129,724" marker-end="url(#rl-ah-pub)"/><text x="938" y="717" class="t-msg" text-anchor="start">kb/&lt;slug&gt;/ files changed</text><rect class="note n-pub" x="990" y="736" width="219.4" height="42" rx="5"/><text x="1002" y="753" class="t-note">scheduled check: kb/ newer than</text><text x="1002" y="768" class="t-note">the last ingestion? StartIngestionJob</text></svg></div>
+    <figcaption>Solid arrows are requests, dashed arrows are responses. A typical release is live in prod a few minutes after the push.</figcaption>
+  </figure>
+  <div class="cols">
+    <div><h3>Newer release wins</h3><p>Runs of the same site can overlap and finish in any order. Each run carries the site’s release number, and the publish step compares it with the one in the live <code>_publish.json</code>: an older release is skipped, not published over a newer one.</p></div>
+    <div><h3>Repeats do nothing</h3><p>GitHub can deliver an event twice, and a person can redeliver one from the webhook’s settings. The dispatcher records each delivery ID, so the second copy starts nothing.</p></div>
+    <div><h3>No approval, still a gate</h3><p>Prod publishing waits for dev to succeed. A broken build, a failed check or a failed publish in dev stops the release before prod, and the pipeline’s failure notification says why.</p></div>
+  </div>
+</section>
+
+<section id="scale" aria-labelledby="scale-h">
+  <div class="prose">
+    <h2 id="scale-h">Adding sites</h2>
+    <p>Nothing in the AWS accounts grows with the number of sites except objects in the buckets.</p>
+  </div>
+  <div class="table-scroll"><table class=""><thead><tr><th scope="col">What it takes to add a site</th><th scope="col">Per new site</th></tr></thead><tbody><tr><td>Registry entry in <code>lib/docs/sites.ts</code></td><td>one, reviewed in a pull request</td></tr><tr><td>Pipelines, CodeBuild projects, IAM roles</td><td>none</td></tr><tr><td>Workflows, environments or secrets in the site repository</td><td>none</td></tr><tr><td>GitHub</td><td>add the repository to the AWS Connector app, only if the app is limited to selected repositories</td></tr><tr><td>Edge function</td><td>one slug in its route table; CloudFront’s 10 KB limit fits about 50 long slugs, after which the table should go and unknown paths fall through to S3’s 404</td></tr></tbody></table></div>
+</section>
+
+<section id="kb" aria-labelledby="kb-h">
+  <div class="prose">
+    <h2 id="kb-h">Knowledge base: the minimal managed setup</h2>
+    <p>Bedrock’s managed knowledge base is serverless and charged by use: storage of the index and the number of retrievals, with parsing, embeddings and reranking included. Start with its defaults and change only what the spike shows is needed.</p>
+  </div>
+  <div class="table-scroll"><table class=""><thead><tr><th scope="col">Setting</th><th scope="col">Start with</th><th scope="col">Why</th></tr></thead><tbody><tr><td>Knowledge bases</td><td>one per stage (dev, prod), in ap-southeast-2</td><td>dev content never mixes with prod</td></tr><tr><td>Data source</td><td>the S3 connector on the stage’s knowledge-base bucket, prefix <code>kb/</code>, metadata files alongside each page</td><td>one data source for every site; the metadata carries url, slug and title</td></tr><tr><td>Embeddings, reranker</td><td>the managed defaults</td><td>included in the price, nothing to choose or maintain</td></tr><tr><td>Retrieval</td><td>standard retrieval, top 8 passages</td><td>agentic retrieval costs five times as much; add it later for a Plan mode if needed</td></tr><tr><td>Document-level access control</td><td>off</td><td>every reader can read every site (ADR-0005). It can’t be switched on later, but a new data source and a re-ingest are cheap</td></tr><tr><td>Sync</td><td>the 15-minute check, plus the managed daily schedule</td><td>the daily schedule alone would leave chat up to a day behind the site</td></tr><tr><td>Infrastructure as code</td><td>in <code>DocsHostingStack</code></td><td>CloudFormation models managed connectors; confirm the knowledge base resource during the spike, or use a small custom resource</td></tr></tbody></table></div>
+</section>
+
+<section id="chat" aria-labelledby="chat-h">
+  <div class="prose">
+    <h2 id="chat-h">Chat</h2>
+    <p>Readers ask on any docs page and get answers drawn only from UMCCR documentation, with links to the pages used. The design is the earlier proposal’s, plus the budget ledger and the records bucket.</p>
+  </div>
+  <figure>
+    <div class="dg-scroll"><svg class="dg" viewBox="0 0 1240 628" role="img" aria-label="Docs chat. The chat panel posts to /_api/chat on the existing distribution; the edge function checks the session cookie and forwards to the chat Lambda through origin access control. The Lambda checks the budget ledger, retrieves passages from the managed knowledge base, calls Claude Sonnet 5 through the Australian profile with a guardrail, streams the answer back and writes a record to a 30-day records bucket. The site pipeline writes knowledge-base files, which are ingested; later, AI tools reach the knowledge base over MCP through AgentCore Gateway."><defs><marker id="ch-ah-read" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path class="ah-read" d="M0,0.8 L10,5 L0,9.2 z"/></marker><marker id="ch-ah-auth" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path class="ah-auth" d="M0,0.8 L10,5 L0,9.2 z"/></marker><marker id="ch-ah-pub" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path class="ah-pub" d="M0,0.8 L10,5 L0,9.2 z"/></marker><marker id="ch-ah-deploy" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path class="ah-deploy" d="M0,0.8 L10,5 L0,9.2 z"/></marker><marker id="ch-ah-neutral" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path class="ah-neutral" d="M0,0.8 L10,5 L0,9.2 z"/></marker><marker id="ch-ah-agent" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path class="ah-agent" d="M0,0.8 L10,5 L0,9.2 z"/></marker></defs><rect class="zone" x="16" y="48" width="220" height="300" rx="12"/><text x="28" y="66" class="t-zone">READER’S BROWSER</text><rect class="node" x="28" y="78" width="196" height="57" rx="6"/><text x="38" y="96" class="t-title">Docs page</text><text x="38" y="111" class="t-mono">/&lt;slug&gt;/…</text><text x="38" y="126" class="t-sub">any page on any site</text><rect class="node node-new" x="28" y="147" width="196" height="87" rx="6"/><text x="38" y="165" class="t-title">Chat panel</text><text x="38" y="180" class="t-sub">part of the UMCCR theme</text><text x="38" y="195" class="t-sub">script: Search and Ask;</text><text x="38" y="210" class="t-sub">streams the answer and</text><text x="38" y="225" class="t-sub">lists its sources as links</text><rect class="node" x="28" y="246" width="196" height="57" rx="6"/><text x="38" y="264" class="t-title">Session cookie</text><text x="38" y="279" class="t-mono">__Host-docs_session</text><text x="38" y="294" class="t-sub">the same sign-in as pages</text><rect class="zone" x="16" y="372" width="220" height="110" rx="12"/><text x="28" y="390" class="t-zone">OTHER AI TOOLS (LATER)</text><rect class="node node-new" x="28" y="402" width="196" height="57" rx="6"/><text x="38" y="420" class="t-title">Claude Code, agents</text><text x="38" y="435" class="t-sub">any MCP client with</text><text x="38" y="450" class="t-sub">IAM or OAuth credentials</text><rect class="zone" x="264" y="16" width="724" height="596" rx="12"/><text x="276" y="34" class="t-zone">PROD AWS ACCOUNT (DEV THE SAME)</text><rect class="subzone" x="280" y="48" width="220" height="300" rx="12"/><text x="292" y="66" class="t-zone">GLOBAL</text><rect class="node" x="292" y="78" width="196" height="266" rx="6"/><text x="302" y="96" class="t-title">CloudFront distribution</text><text x="302" y="111" class="t-mono">docs.umccr.org</text><rect class="node-inner node-new" x="304" y="122" width="172" height="87" rx="6"/><text x="314" y="140" class="t-title">Viewer-request function</text><text x="314" y="155" class="t-sub">checks the session cookie;</text><text x="314" y="170" class="t-sub">401 without one; sets</text><text x="314" y="185" class="t-sub">x-docs-sub for the Lambda</text><path class="ln c-read" d="M390,209 L390,228" marker-end="url(#ch-ah-read)"/><rect class="node-inner node-new" x="304" y="229" width="172" height="102" rx="6"/><text x="314" y="247" class="t-title">Behaviour /_api/*</text><text x="314" y="262" class="t-sub">new: POST allowed,</text><text x="314" y="277" class="t-sub">never cached; origin is</text><text x="314" y="292" class="t-sub">the chat Lambda’s URL,</text><text x="314" y="307" class="t-sub">via origin access control</text><rect class="subzone" x="520" y="48" width="452" height="548" rx="12"/><text x="532" y="66" class="t-zone">AP-SOUTHEAST-2</text><rect class="node node-new" x="536" y="78" width="190" height="102" rx="6"/><text x="546" y="96" class="t-title">Chat Lambda</text><text x="546" y="111" class="t-mono">function URL, streaming</text><text x="546" y="126" class="t-sub">budget → Retrieve →</text><text x="546" y="141" class="t-sub">prompt → ConverseStream</text><text x="546" y="156" class="t-sub">→ answer, sources, record</text><rect class="node node-new" x="770" y="78" width="186" height="72" rx="6"/><text x="780" y="96" class="t-title">Budget ledger (DynamoDB)</text><text x="780" y="111" class="t-sub">spend today per reader;</text><text x="780" y="126" class="t-sub">team spend this month</text><rect class="node node-new" x="536" y="230" width="190" height="102" rx="6"/><text x="546" y="248" class="t-title">Managed knowledge base</text><text x="546" y="263" class="t-sub">defaults: managed embeddings,</text><text x="546" y="278" class="t-sub">hybrid search, managed</text><text x="546" y="293" class="t-sub">reranker; chunks keep</text><text x="546" y="308" class="t-sub">url, slug and title</text><rect class="node node-new" x="770" y="230" width="186" height="72" rx="6"/><text x="780" y="248" class="t-title">Bedrock Guardrail</text><text x="780" y="263" class="t-sub">refused topics, grounding</text><text x="780" y="278" class="t-sub">check, personal-data masking</text><rect class="node node-new" x="536" y="376" width="190" height="72" rx="6"/><text x="546" y="394" class="t-title">AgentCore Gateway (later)</text><text x="546" y="409" class="t-sub">the knowledge base as</text><text x="546" y="424" class="t-sub">an MCP tool</text><rect class="node node-new" x="770" y="376" width="186" height="72" rx="6"/><text x="780" y="394" class="t-title">Knowledge-base bucket</text><text x="780" y="409" class="t-mono">kb/&lt;slug&gt;/</text><text x="780" y="424" class="t-sub">written by pipeline 2</text><rect class="node node-new" x="536" y="492" width="190" height="72" rx="6"/><text x="546" y="510" class="t-title">Records bucket</text><text x="546" y="525" class="t-mono">records/date=…/</text><text x="546" y="540" class="t-sub">kept 30 days for evaluation</text><rect class="node node-new" x="770" y="492" width="186" height="72" rx="6"/><text x="780" y="510" class="t-title">Logs and alarms</text><text x="780" y="525" class="t-sub">no question text in logs;</text><text x="780" y="540" class="t-sub">AWS Budgets alarm at $50</text><rect class="zone" x="1012" y="196" width="212" height="148" rx="12"/><text x="1024" y="214" class="t-zone">CLAUDE ON BEDROCK · AU</text><rect class="node" x="1024" y="230" width="188" height="87" rx="6"/><text x="1034" y="248" class="t-title">Claude Sonnet 5</text><text x="1034" y="263" class="t-mono">au.anthropic.</text><text x="1034" y="278" class="t-mono">claude-sonnet-5</text><text x="1034" y="293" class="t-sub">Sydney, Melbourne (and NZ)</text><text x="1034" y="308" class="t-sub">per the model card</text><rect class="zone" x="1012" y="360" width="212" height="104" rx="12"/><text x="1024" y="378" class="t-zone">TOOLCHAIN AWS ACCOUNT</text><rect class="node" x="1024" y="390" width="188" height="57" rx="6"/><text x="1034" y="408" class="t-title">Site pipeline</text><text x="1034" y="423" class="t-sub">pipeline 2; its publish</text><text x="1034" y="438" class="t-sub">steps write kb/&lt;slug&gt;/</text><g class="flow f-read"><path class="ln c-read" d="M236,190 L303,190" marker-start="url(#ch-ah-read)" marker-end="url(#ch-ah-read)"/><g class="badge"><circle class="bg-read" cx="250" cy="190" r="9"/><text x="250" y="193.2" class="t-badge" text-anchor="middle">Q1</text></g><text x="264" y="177" class="t-label tc-read" text-anchor="middle">POST</text><path class="ln c-read" d="M476,280 L510,280 L510,129 L535,129" marker-end="url(#ch-ah-read)"/><g class="badge"><circle class="bg-read" cx="510" cy="205" r="9"/><text x="510" y="208.2" class="t-badge" text-anchor="middle">Q2</text></g><path class="ln c-read" d="M726,110 L769,110" marker-start="url(#ch-ah-read)" marker-end="url(#ch-ah-read)"/><g class="badge"><circle class="bg-read" cx="748" cy="110" r="9"/><text x="748" y="113.2" class="t-badge" text-anchor="middle">Q3</text></g><text x="748" y="95" class="t-label tc-read" text-anchor="middle">budget</text><path class="ln c-read" d="M604,180 L604,229" marker-end="url(#ch-ah-read)"/><g class="badge"><circle class="bg-read" cx="604" cy="205" r="9"/><text x="604" y="208.2" class="t-badge" text-anchor="middle">Q4</text></g><text x="618" y="214" class="t-label tc-read" text-anchor="start">Retrieve</text><path class="ln c-read" d="M700,180 L700,194 L1190,194 L1190,229" marker-end="url(#ch-ah-read)"/><g class="badge"><circle class="bg-read" cx="760" cy="194" r="9"/><text x="760" y="197.2" class="t-badge" text-anchor="middle">Q5</text></g><text x="900" y="188" class="t-label tc-read" text-anchor="middle">ConverseStream with the guardrail</text><path class="ln c-read" d="M536,165 L528,165 L528,528 L535,528" marker-end="url(#ch-ah-read)"/><g class="badge"><circle class="bg-read" cx="528" cy="470" r="9"/><text x="528" y="473.2" class="t-badge" text-anchor="middle">Q6</text></g></g><path class="ln c-neutral dash" d="M863,230 L863,195"/><g class="flow f-pub"><path class="ln c-pub" d="M1024,418 L957,418" marker-end="url(#ch-ah-pub)"/><g class="badge"><circle class="bg-pub" cx="990" cy="418" r="9"/><text x="990" y="421.2" class="t-badge" text-anchor="middle">I1</text></g><text x="990" y="404" class="t-label tc-pub" text-anchor="middle">writes</text><path class="ln c-pub" d="M770,400 L746,400 L746,300 L727,300" marker-end="url(#ch-ah-pub)"/><g class="badge"><circle class="bg-pub" cx="746" cy="350" r="9"/><text x="746" y="353.2" class="t-badge" text-anchor="middle">I2</text></g><text x="760" y="354" class="t-label tc-pub" text-anchor="start">ingest</text></g><g class="flow f-agent"><path class="ln c-agent" d="M224,430 L535,430" marker-end="url(#ch-ah-agent)"/><g class="badge"><circle class="bg-agent" cx="250" cy="430" r="9"/><text x="250" y="433.2" class="t-badge" text-anchor="middle">M1</text></g><text x="400" y="422" class="t-label tc-agent" text-anchor="middle">MCP over HTTPS</text><path class="ln c-agent" d="M604,376 L604,333" marker-end="url(#ch-ah-agent)"/><g class="badge"><circle class="bg-agent" cx="604" cy="354" r="9"/><text x="604" y="357.2" class="t-badge" text-anchor="middle">M2</text></g><text x="618" y="358" class="t-label tc-agent" text-anchor="start">Retrieve</text></g></svg></div>
+    <div class="legend">
+      <span><span class="swatch s-new" aria-hidden="true"></span>new or changed</span>
+      <span><span class="swatch s-read" aria-hidden="true"></span>a question</span>
+      <span><span class="swatch s-pub" aria-hidden="true"></span>ingestion</span>
+      <span><span class="swatch s-agent" aria-hidden="true"></span>AI tools over MCP, later</span>
+    </div>
+    <figcaption>Shown for prod; dev has the same pieces with its own budget. The chat is only reachable by readers who are already signed in.</figcaption>
+  </figure>
+  <div class="subhead"><h3>Each step</h3><ol class="steps"><li><span class="bdg b-read">Q1</span><span>The chat panel posts the question to <code>/_api/chat</code> with the session cookie; the answer streams back the same way.</span></li><li><span class="bdg b-read">Q2</span><span>The edge function checks the cookie; CloudFront forwards the request to the chat Lambda, signed with origin access control.</span></li><li><span class="bdg b-read">Q3</span><span>The Lambda checks today’s team and reader spend in the budget ledger, and records the cost afterwards.</span></li><li><span class="bdg b-read">Q4</span><span>It retrieves the best-matching passages. In Search mode it stops here and lists them.</span></li><li><span class="bdg b-read">Q5</span><span>In Ask mode it calls Claude Sonnet 5 with the passages and the guardrail, and streams the answer, then the source links.</span></li><li><span class="bdg b-read">Q6</span><span>It writes the exchange to the records bucket.</span></li><li><span class="bdg b-pub">I1</span><span>Pipeline 2’s publish steps write processed Markdown and metadata under <code>kb/&lt;slug&gt;/</code>.</span></li><li><span class="bdg b-pub">I2</span><span>The 15-minute check starts ingestion when anything changed.</span></li><li><span class="bdg b-agent">M1</span><span>Later: an AI tool calls the knowledge base’s MCP tool through AgentCore Gateway.</span></li><li><span class="bdg b-agent">M2</span><span>The gateway runs a retrieval and returns the passages.</span></li></ol></div>
+  <div class="subhead"><h3>Each node</h3><dl class="nodes"><div><dt>Chat panel</dt><dd>Part of the UMCCR theme script, so every site gets it with no work per site. Two modes to start: Search, which lists passages, and Ask, which answers. It sends the SHA-256 of the request body, which origin access control requires for a POST to a function URL.</dd></div><div><dt>Viewer-request function and <code>/_api/*</code></dt><dd>The existing session check covers chat too: no session, 401. A new behaviour sends <code>/_api/*</code> uncached to the chat Lambda through origin access control. The function adds <code>x-docs-sub</code> from the verified cookie.</dd></div><div><dt>Chat Lambda</dt><dd>Checks the budget, retrieves, builds the prompt, calls Claude with the guardrail, streams the answer through CloudFront, records the cost and writes the exchange to the records bucket. Its logs hold the reader’s <code>sub</code> and the outcome, never the question.</dd></div><div><dt>Budget ledger</dt><dd>A DynamoDB table with today’s spend per reader and the team’s spend this month, priced from the token counts Bedrock returns with every answer.</dd></div><div><dt>Managed knowledge base</dt><dd>Default configuration (above). Each chunk keeps its page’s url, slug and title, so sources become links and a question can be limited to the current site.</dd></div><div><dt>Bedrock Guardrail</dt><dd>Applied to every call: topics to refuse, masking of personal data in answers, and a grounding check that flags answers the sources don’t support.</dd></div><div><dt>Claude Sonnet 5</dt><dd>Through <code>au.anthropic.claude-sonnet-5</code>, which keeps processing in Australia and New Zealand. Haiku 4.5 is the cheaper option if the answers are good enough.</dd></div><div><dt>Records bucket</dt><dd>One JSON record per exchange, deleted after 30 days (evaluation, below).</dd></div><div><dt>Logs and alarms</dt><dd>Lambda errors and latency, spend per day, and an AWS Budgets alarm on Bedrock at $50, with an action that removes the chat Lambda’s Bedrock access.</dd></div><div><dt>AgentCore Gateway (later)</dt><dd>Exposes the knowledge base to MCP clients such as Claude Code. Not part of the first release.</dd></div></dl></div>
+  <figure>
+    <div class="dg-scroll"><svg class="dg" viewBox="0 0 1240 742" role="img" aria-label="Asking a question. The chat panel posts the question with the session cookie; the edge function checks it and CloudFront forwards it to the chat Lambda. The Lambda checks today&#x27;s spend in the budget ledger, retrieves passages, calls Claude with the guardrail and streams the answer with source links, then adds the cost to the ledger and writes a record to the records bucket, which keeps it for 30 days."><defs><marker id="qs-ah-read" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path class="ah-read" d="M0,0.8 L10,5 L0,9.2 z"/></marker><marker id="qs-ah-auth" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path class="ah-auth" d="M0,0.8 L10,5 L0,9.2 z"/></marker><marker id="qs-ah-pub" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path class="ah-pub" d="M0,0.8 L10,5 L0,9.2 z"/></marker><marker id="qs-ah-deploy" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path class="ah-deploy" d="M0,0.8 L10,5 L0,9.2 z"/></marker><marker id="qs-ah-neutral" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path class="ah-neutral" d="M0,0.8 L10,5 L0,9.2 z"/></marker><marker id="qs-ah-agent" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path class="ah-agent" d="M0,0.8 L10,5 L0,9.2 z"/></marker></defs><line class="lifeline" x1="96" y1="60" x2="96" y2="728"/><line class="lifeline" x1="271" y1="60" x2="271" y2="728"/><line class="lifeline" x1="446" y1="60" x2="446" y2="728"/><line class="lifeline" x1="621" y1="60" x2="621" y2="728"/><line class="lifeline" x1="796" y1="60" x2="796" y2="728"/><line class="lifeline" x1="971" y1="60" x2="971" y2="728"/><line class="lifeline" x1="1146" y1="60" x2="1146" y2="728"/><rect class="node" x="16" y="16" width="160" height="44" rx="6"/><text x="96" y="35" class="t-title" text-anchor="middle">Browser</text><text x="96" y="51" class="t-sub" text-anchor="middle">chat panel</text><rect class="node" x="191" y="16" width="160" height="44" rx="6"/><text x="271" y="35" class="t-title" text-anchor="middle">CloudFront</text><text x="271" y="51" class="t-sub" text-anchor="middle">viewer-request function</text><rect class="node" x="366" y="16" width="160" height="44" rx="6"/><text x="446" y="35" class="t-title" text-anchor="middle">Chat Lambda</text><text x="446" y="51" class="t-sub" text-anchor="middle">function URL</text><rect class="node" x="541" y="16" width="160" height="44" rx="6"/><text x="621" y="35" class="t-title" text-anchor="middle">Budget ledger</text><text x="621" y="51" class="t-sub" text-anchor="middle">DynamoDB</text><rect class="node" x="716" y="16" width="160" height="44" rx="6"/><text x="796" y="35" class="t-title" text-anchor="middle">Knowledge base</text><text x="796" y="51" class="t-sub" text-anchor="middle">managed</text><rect class="node" x="891" y="16" width="160" height="44" rx="6"/><text x="971" y="35" class="t-title" text-anchor="middle">Bedrock</text><text x="971" y="51" class="t-sub" text-anchor="middle">Claude + guardrail</text><rect class="node" x="1066" y="16" width="160" height="44" rx="6"/><text x="1146" y="35" class="t-title" text-anchor="middle">Records bucket</text><text x="1146" y="51" class="t-sub" text-anchor="middle">30 days</text><line class="rule" x1="16" y1="80" x2="1224" y2="80"/><text x="16" y="100" class="t-phase">1 · Ask</text><rect class="note n-read" x="16" y="114" width="166.6" height="42" rx="5"/><text x="28" y="131" class="t-note">hash the body (SHA-256) for</text><text x="28" y="146" class="t-note">x-amz-content-sha256</text><path class="ln c-read" d="M96,186 L270,186" marker-end="url(#qs-ah-read)"/><text x="108" y="179" class="t-msg" text-anchor="start">POST /_api/chat</text><text x="108" y="201" class="t-msg" text-anchor="start">session cookie</text><rect class="note n-read" x="177.2" y="212" width="187.7" height="42" rx="5"/><text x="189.2" y="229" class="t-note">valid cookie? otherwise 401;</text><text x="189.2" y="244" class="t-note">sets x-docs-sub and x-docs-host</text><path class="ln c-read" d="M271,284 L445,284" marker-end="url(#qs-ah-read)"/><text x="283" y="277" class="t-msg" text-anchor="start">forwarded, signed by OAC</text><line class="rule" x1="16" y1="298" x2="1224" y2="298"/><text x="16" y="318" class="t-phase">2 · Check the budget, then retrieve</text><path class="ln c-read" d="M446,350 L620,350" marker-end="url(#qs-ah-read)"/><text x="458" y="343" class="t-msg" text-anchor="start">spend today: team, reader</text><path class="ln c-read dash" d="M621,380 L447,380" marker-end="url(#qs-ah-read)"/><text x="609" y="373" class="t-msg" text-anchor="end">within today’s allowance</text><path class="ln c-read" d="M446,410 L795,410" marker-end="url(#qs-ah-read)"/><text x="458" y="403" class="t-msg" text-anchor="start">Retrieve: the question, top 8 passages</text><path class="ln c-read dash" d="M796,440 L447,440" marker-end="url(#qs-ah-read)"/><text x="784" y="433" class="t-msg" text-anchor="end">passages with url, title and slug</text><line class="rule" x1="16" y1="454" x2="1224" y2="454"/><text x="16" y="474" class="t-phase">3 · Answer (Search mode stops after step 2 and lists the passages)</text><rect class="note n-read" x="349.5" y="488" width="193" height="42" rx="5"/><text x="361.5" y="505" class="t-note">prompt: rules, numbered sources,</text><text x="361.5" y="520" class="t-note">the last few turns, the question</text><path class="ln c-read" d="M446,560 L970,560" marker-end="url(#qs-ah-read)"/><text x="458" y="553" class="t-msg" text-anchor="start">ConverseStream, au.anthropic.claude-sonnet-5, guardrail, output cap</text><path class="ln c-read dash" d="M971,590 L447,590" marker-end="url(#qs-ah-read)"/><text x="959" y="583" class="t-msg" text-anchor="end">answer stream, then token usage</text><path class="ln c-read dash" d="M446,620 L97,620" marker-end="url(#qs-ah-read)"/><text x="434" y="613" class="t-msg" text-anchor="end">streamed answer, then the sources as docs.umccr.org links</text><line class="rule" x1="16" y1="634" x2="1224" y2="634"/><text x="16" y="654" class="t-phase">4 · Account for it and keep a record</text><path class="ln c-read" d="M446,686 L620,686" marker-end="url(#qs-ah-read)"/><text x="458" y="679" class="t-msg" text-anchor="start">add this exchange’s cost</text><path class="ln c-read" d="M446,716 L1145,716" marker-end="url(#qs-ah-read)"/><text x="458" y="709" class="t-msg" text-anchor="start">question, answer, sources, cost, reader sub</text></svg></div>
+    <figcaption>One question in Ask mode. Solid arrows are requests, dashed arrows are responses.</figcaption>
+  </figure>
+</section>
+
+<section id="cost" aria-labelledby="cost-h">
+  <div class="prose">
+    <h2 id="cost-h">Cost, and keeping it under $50 a month</h2>
+    <p>Model tokens are almost the whole bill. After about $2 a month of fixed costs, $48 is left for questions: about $1.60 a day.</p>
+  </div>
+  <div class="table-scroll"><table class=""><thead><tr><th scope="col">Item</th><th scope="col">Price</th></tr></thead><tbody><tr><td>Claude Sonnet 5, <code>au.</code> profile</td><td>$2.20 per million input tokens, $11 per million output tokens</td></tr><tr><td>Claude Haiku 4.5, <code>au.</code> profile</td><td>$1.10 per million input tokens, $5.50 per million output tokens</td></tr><tr><td>Knowledge base</td><td>$0.001 per retrieval; storage $5 per GB-month (well under $1 for the docs)</td></tr><tr><td>Guardrail</td><td>$0.10 to $0.15 per 1,000 characters checked, per check type</td></tr><tr><td>Lambda, DynamoDB, records bucket, logs</td><td>about $2 a month together</td></tr></tbody></table></div>
+  <div class="table-scroll"><table class=""><thead><tr><th scope="col">Use</th><th scope="col">Tokens assumed</th><th scope="col">Cost each</th><th scope="col">Within $48 a month</th></tr></thead><tbody><tr><td>Search: ranked passages and links, no model</td><td>none</td><td>$0.001</td><td>unlimited in practice</td></tr><tr><td>Ask, with Sonnet 5</td><td>5,000 in, 400 out</td><td>about $0.019</td><td>2,500 a month, 84 a day</td></tr><tr><td>Ask, with Haiku 4.5</td><td>5,000 in, 400 out</td><td>about $0.011</td><td>4,250 a month, 140 a day</td></tr><tr><td>Plan (later), Sonnet 5 with agentic retrieval</td><td>12,000 in, 2,000 out</td><td>about $0.06</td><td>790 a month, 26 a day</td></tr></tbody></table></div>
+  <div class="prose">
+    <h3>How the limit works</h3>
+    <ol class="decisions">
+      <li><strong>Count dollars, not questions.</strong> Bedrock returns the tokens used by every answer, so the Lambda prices each exchange and adds it to the budget ledger.</li>
+      <li><strong>A team allowance per day</strong>: the money left this month divided by the days left. It starts near $1.60 and unused budget carries forward. When it runs out, Ask replies “try again tomorrow”; Search keeps working, as it costs a tenth of a cent.</li>
+      <li><strong>A cap per reader of $0.40 a day</strong>, about 20 answers. It takes four readers at their cap to use up a day, so one person can’t block everyone else.</li>
+      <li><strong>Limits per request</strong> on answer length, passages and conversation history keep the most expensive single answer to about 8 cents.</li>
+      <li><strong>A backstop</strong>: an AWS Budgets alarm at $50 that removes the chat Lambda’s Bedrock access. Budgets data updates only a few times a day, so the ledger is the real control.</li>
+    </ol>
+    <p class="note-text">Token counts per request are estimates; the spike measures them. Answering with Haiku 4.5 instead stretches the same budget by about 70%.</p>
+  </div>
+</section>
+
+<section id="records" aria-labelledby="records-h">
+  <div class="prose">
+    <h2 id="records-h">Questions and answers: 30 days, for evaluation</h2>
+    <p>Every exchange is kept for 30 days in a private bucket and then deleted. Examples worth keeping longer are copied, without reader identifiers, into an evaluation set that measures answer quality before anything changes.</p>
+  </div>
+  <figure>
+    <div class="dg-scroll"><svg class="dg" viewBox="0 0 1240 182" role="img" aria-label="Keeping questions and answers for evaluation. The chat Lambda writes one record per exchange to a records bucket that deletes them after 30 days; a weekly review copies selected, de-identified examples into a long-lived evaluation set, which a Bedrock evaluation job scores before any model, prompt or toolkit change."><defs><marker id="ev-ah-read" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path class="ah-read" d="M0,0.8 L10,5 L0,9.2 z"/></marker><marker id="ev-ah-auth" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path class="ah-auth" d="M0,0.8 L10,5 L0,9.2 z"/></marker><marker id="ev-ah-pub" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path class="ah-pub" d="M0,0.8 L10,5 L0,9.2 z"/></marker><marker id="ev-ah-deploy" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path class="ah-deploy" d="M0,0.8 L10,5 L0,9.2 z"/></marker><marker id="ev-ah-neutral" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path class="ah-neutral" d="M0,0.8 L10,5 L0,9.2 z"/></marker><marker id="ev-ah-agent" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path class="ah-agent" d="M0,0.8 L10,5 L0,9.2 z"/></marker></defs><rect class="zone" x="16" y="16" width="1208" height="150" rx="12"/><text x="28" y="34" class="t-zone">PROD AWS ACCOUNT</text><rect class="node node-new" x="32" y="52" width="214" height="87" rx="6"/><text x="42" y="70" class="t-title">Chat Lambda</text><text x="42" y="85" class="t-sub">one JSON record per</text><text x="42" y="100" class="t-sub">exchange: question, answer,</text><text x="42" y="115" class="t-sub">sources, cost, feedback</text><rect class="node node-new" x="270" y="52" width="214" height="87" rx="6"/><text x="280" y="70" class="t-title">Records bucket</text><text x="280" y="85" class="t-mono">records/date=YYYY-MM-DD/</text><text x="280" y="100" class="t-sub">deleted after 30 days;</text><text x="280" y="115" class="t-sub">platform team only</text><path class="ln c-read" d="M246,95 L269,95" marker-end="url(#ev-ah-read)"/><rect class="node node-new" x="508" y="52" width="214" height="87" rx="6"/><text x="518" y="70" class="t-title">Weekly review</text><text x="518" y="85" class="t-sub">a person picks thumbs-down</text><text x="518" y="100" class="t-sub">answers and good examples,</text><text x="518" y="115" class="t-sub">and removes reader IDs</text><path class="ln c-read" d="M484,95 L507,95" marker-end="url(#ev-ah-read)"/><rect class="node node-new" x="746" y="52" width="214" height="87" rx="6"/><text x="756" y="70" class="t-title">Evaluation set</text><text x="756" y="85" class="t-mono">eval-set/</text><text x="756" y="100" class="t-sub">kept: questions and the</text><text x="756" y="115" class="t-sub">pages that should answer</text><path class="ln c-read" d="M722,95 L745,95" marker-end="url(#ev-ah-read)"/><rect class="node node-new" x="984" y="52" width="214" height="87" rx="6"/><text x="994" y="70" class="t-title">Bedrock evaluation</text><text x="994" y="85" class="t-sub">a judge model scores the</text><text x="994" y="100" class="t-sub">passages and the answers</text><text x="994" y="115" class="t-sub">before any change ships</text><path class="ln c-read" d="M960,95 L983,95" marker-end="url(#ev-ah-read)"/></svg></div>
+    <figcaption>Readers are told in the chat panel, and on the platform’s reading page, that questions are kept for 30 days to improve answers.</figcaption>
+  </figure>
+  <ol class="steps"><li><span class="bdg b-read">E1</span><span>The chat Lambda writes one JSON record per exchange: question, answer, cited pages and scores, model, tokens, cost, response time, guardrail outcome, and the reader’s Cognito <code>sub</code>. Feedback arrives later as its own record.</span></li><li><span class="bdg b-read">E2</span><span>The records bucket deletes everything after 30 days. Only the platform team and the evaluation role can read it.</span></li><li><span class="bdg b-read">E3</span><span>Once a week, someone copies thumbs-down answers and good examples into the evaluation set, with reader IDs removed.</span></li><li><span class="bdg b-read">E4</span><span>The evaluation set is kept: each question, and the pages that should answer it.</span></li><li><span class="bdg b-read">E5</span><span>Before a change to the model, the prompt or the toolkit ships, a Bedrock evaluation job scores retrieval and answers against the set.</span></li></ol>
+  <p class="note-text">Bedrock’s own model invocation logging is a setting for the whole account and Region, and would capture every Bedrock call in the account with full prompts. The chat writes its own records instead; turn invocation logging on only if docs chat is the account’s only Bedrock user.</p>
+</section>
+
+<section id="plan" aria-labelledby="plan-h">
+  <div class="prose"><h2 id="plan-h">Plan</h2></div>
+  
+  <ol class="phases">
+    <li><div><strong>Spike in dev</strong><p>Create the managed knowledge base by hand on a dev bucket, prototype <code>export-kb</code> on the knowledgebase vault, and try about 20 real questions in Search and Ask. Confirm the CloudFormation resource for managed knowledge bases, and ask AWS where the managed embedding and reranking models run.</p><p class="done">Done when answers are useful, sources open the right pages, and the residency answer is in.</p></div></li>
+    <li><div><strong>Dispatched publishing</strong><p>The organisation webhook, the dispatcher, the fetch build, DocsSitesPipeline and one <code>docs-publisher</code> role per stage, all deployed by DocsInfrastructurePipeline. Move <code>/platform/</code> first, then the knowledgebase, and remove their publish workflows.</p><p class="done">Done when a push to either repository is live in dev and prod within minutes, with nothing in the repositories but docs.</p></div></li>
+    <li><div><strong>Chat, first release</strong><p>Search and Ask, the budget ledger and its $50 limit, the guardrail, the records bucket, alarms, and the 15-minute ingestion check: in dev, then prod.</p><p class="done">Done when readers use it in prod and the first evaluation set exists.</p></div></li>
+    <li><div><strong>Later</strong><p>Pull-request checks run by the dispatcher (a check-only build reporting back to GitHub), a Plan mode, rebuilding every site when the toolkit tag moves, and the MCP endpoint through AgentCore Gateway.</p><p class="done">Each when someone needs it.</p></div></li>
+  </ol>
+  <div class="prose">
+    <h3>To confirm</h3>
+    <ol class="decisions">
+      <li>An organisation owner to create the webhook, and where its secret lives (Secrets Manager in the toolchain account).</li>
+      <li>Whether the AWS Connector app is installed for all repositories or for selected ones.</li>
+      <li>The $50 monthly chat budget, and the $0.40 daily cap per reader.</li>
+      <li>CloudFormation support for the managed knowledge base resource, and where its managed models run.</li>
+    </ol>
+  </div>
+</section>
+
+<footer class="sources">
+  <h2>Sources</h2>
+  <ul>
+    <li>Pipelines: <a href="https://docs.aws.amazon.com/codepipeline/latest/userguide/pipelines-trigger-source-overrides.html">starting a pipeline with a source override</a>; <a href="https://docs.aws.amazon.com/codepipeline/latest/APIReference/API_SourceRevisionOverride.html">S3 object key overrides</a>; <a href="https://docs.aws.amazon.com/codepipeline/latest/userguide/execution-modes.html">execution modes</a>; <a href="https://aws.amazon.com/codepipeline/pricing">CodePipeline pricing</a>; <a href="https://docs.aws.amazon.com/codebuild/latest/APIReference/API_StartBuild.html">CodeBuild StartBuild source and CodeConnections overrides</a></li>
+    <li>GitHub: <a href="https://docs.github.com/en/webhooks/types-of-webhooks">types of webhooks</a>; <a href="https://docs.github.com/en/webhooks/webhook-events-and-payloads">push event payloads</a></li>
+    <li>Knowledge base: <a href="https://aws.amazon.com/about-aws/whats-new/2026/06/amazon-bedrock-managed-knowledge-base/">managed knowledge base</a>; <a href="https://aws.amazon.com/about-aws/whats-new/2026/09/amazon-bedrock-managed-knowledge-base-automatic-sync-scheduling-data-source-connectors/">sync schedules</a>; <a href="https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-properties-bedrock-datasource-syncschedule.html">CloudFormation sync schedule</a>; <a href="https://docs.aws.amazon.com/bedrock/latest/userguide/kb-managed-ds-s3.html">S3 connector</a>; <a href="https://aws.amazon.com/blogs/machine-learning/build-enterprise-search-for-agents-with-amazon-bedrock-managed-knowledge-base/">pricing</a></li>
+    <li>Models and guardrails: <a href="https://elevata.io/en/claude-sonnet-5-default-model-aws-bedrock">Claude Sonnet 5 on Bedrock</a>; <a href="https://www.cloudzero.com/blog/amazon-bedrock-pricing/">regional pricing and Haiku 4.5</a>; <a href="https://cloudchipr.com/blog/amazon-bedrock-pricing">Guardrails pricing</a></li>
+  </ul>
+</footer>
+</div>
+
+</body></html>
