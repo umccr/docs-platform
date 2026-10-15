@@ -71,7 +71,8 @@ Everything runs in ap-southeast-2, except the docs certificate, which CloudFront
 | AWS CLI | v2 | every step |
 | Terraform | 1.5.7 or later | step 1 |
 | Node.js with Corepack | 22 or later (`.nvmrc`); Corepack provides pnpm 10.34.5. If another pnpm is first on your `PATH`, run `corepack pnpm@10.34.5 …` instead: a newer pnpm rewrites `packageManager` in `package.json` and adds itself to `pnpm-lock.yaml` | steps 3 and 4 |
-| Python | 3.12 | publishing by hand only |
+| Python | 3.12 | step 3, where `make install` creates `.venv`; publishing by hand |
+| [pre-commit](https://pre-commit.com) | any recent | step 3, where `make install` installs its git hook |
 | `git`, `curl`, `dig`, `jq` | any recent | every step |
 
 **Checkouts:** `umccr/infrastructure`, `umccr/docs-platform` and `umccr/management-knowledgebase`, side by side.

@@ -74,7 +74,7 @@ Makefile runs everything; the toolkit lives in a virtualenv, `.venv`.
 
 ```sh
 corepack enable
-make install     # pnpm packages, and .venv with the hash-pinned engine, the dev tools and the toolkit
+make install     # pnpm packages; .venv with the hash-pinned engine, the dev tools and the toolkit; the git hook
 make check       # dependency audit, formatting, lint (CDK app and toolkit), workflows, pre-commit hooks
 make test        # jest with cdk-nag, and pytest
 make sites       # strict builds of the examples and the /platform/ site, as CI runs them
@@ -84,8 +84,9 @@ make fix         # formatting and lint fixes
 make audit-fix   # overrides forcing patched dependency versions
 ```
 
-`make check` runs the pre-commit hooks, including the information-boundary check, on every tracked file. To run a
-toolkit command yourself, use `.venv/bin/umccr-docs`, or `source .venv/bin/activate` first.
+`make install` installs the pre-commit hooks, including the information-boundary check, as a git hook: each commit
+runs them on the files it changes, and `make check` runs them on every tracked file. To run a toolkit command
+yourself, use `.venv/bin/umccr-docs`, or `source .venv/bin/activate` first.
 
 ## Repository visibility
 

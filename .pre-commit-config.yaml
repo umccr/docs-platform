@@ -1,4 +1,5 @@
-# Local hooks mirroring CI (.github/workflows/ci.yml). Install with: pip install pre-commit && pre-commit install
+# Local hooks mirroring CI (.github/workflows/ci.yml). `make install` installs them as the git pre-commit hook, and
+# `make check` runs them on every tracked file. Both need pre-commit itself: https://pre-commit.com/#install
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
@@ -29,15 +30,17 @@ repos:
         entry: scripts/check-boundary.sh
         language: system
         pass_filenames: false
+      # The virtualenv's ruff, pinned in requirements/dev.txt, as `make check` and CI use. A commit from an editor
+      # often runs without .venv/bin on its PATH.
       - id: ruff
         name: ruff
-        entry: ruff check toolkit
+        entry: .venv/bin/ruff check toolkit
         language: system
         pass_filenames: false
         files: ^toolkit/
       - id: ruff-format
         name: ruff format
-        entry: ruff format --check toolkit
+        entry: .venv/bin/ruff format --check toolkit
         language: system
         pass_filenames: false
         files: ^toolkit/

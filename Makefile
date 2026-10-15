@@ -16,13 +16,15 @@ SITE_CONFIGS := examples/basic-site/mkdocs.yml examples/obsidian-vault/mkdocs.ym
 
 .PHONY: install check fix audit-fix test sites serve synth clean
 
-# The CDK app's dependencies, and a virtualenv with the hash-pinned engine, the dev tools and the toolkit.
+# The CDK app's dependencies; a virtualenv with the hash-pinned engine, the dev tools and the toolkit; and the git hook
+# that runs the pre-commit hooks on each commit, with their environments, so a first commit has nothing to download.
 install:
 	@$(PNPM) install --frozen-lockfile
 	@test -x $(BIN)/python || $(PYTHON) -m venv $(VENV)
 	@$(BIN)/pip install --quiet --require-hashes --no-deps -r requirements/build.txt
 	@$(BIN)/pip install --quiet --require-hashes -r requirements/dev.txt
 	@$(BIN)/pip install --quiet --no-deps -e ./toolkit
+	@pre-commit install --install-hooks
 
 # Dependency audit, formatting, lint, the workflows, then the pre-commit hooks (secrets, the information boundary).
 check:
