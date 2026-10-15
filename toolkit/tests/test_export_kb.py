@@ -6,6 +6,7 @@ import pytest
 from conftest import EXAMPLES, OBSIDIAN_CONFIG
 
 from umccr_docs.config import load_project
+from umccr_docs.errors import DocsError
 from umccr_docs.export_kb import absolute_links, doc_id, export_kb, page_path, page_title
 
 TODAY = datetime.date(2026, 10, 9)
@@ -106,6 +107,44 @@ def test_exports_every_page_with_metadata(make_project, tmp_path):
         "updated": "2026-10-09",
     }
     assert metadata_for(out, "index.md")["url"] == "https://docs.umccr.org/test-vault/"
+
+
+def test_links_to_notes_with_spaces_become_absolute_docs_urls(make_project, tmp_path):
+    root = make_project(
+        {
+            "mkdocs.yml": VAULT_CONFIG,
+            "vault/Home.md": "# Home\n\nSee [[Alpha Beta]].\n",
+            "vault/Projects/Alpha Beta.md": "# Alpha Beta\n",
+        }
+    )
+    out = tmp_path / "kb"
+    export_kb(load_project(root / "mkdocs.yml"), "test-vault", out, today=TODAY, log=lambda _: None)
+    assert "[Alpha Beta](https://docs.umccr.org/test-vault/Projects/Alpha%20Beta/)" in (out / "index.md").read_text()
+
+
+def test_exports_only_the_pages_the_site_publishes(make_project, tmp_path):
+    config = VAULT_CONFIG + "exclude_docs: |\n  Private/\ndraft_docs: |\n  *-draft.md\n"
+    root = make_project(
+        {
+            "mkdocs.yml": config,
+            "vault/Home.md": "# Home\n",
+            "vault/Private/salaries.md": "# Salaries\n",
+            "vault/Projects/plan-draft.md": "# Plan\n",
+            "vault/Projects/README.md": "# Projects readme\n",
+            "vault/Projects/index.md": "# Projects\n",
+            "vault/templates/note.md": "# Template\n",
+        }
+    )
+    out = tmp_path / "kb"
+    written = export_kb(load_project(root / "mkdocs.yml"), "test-vault", out, today=TODAY, log=lambda _: None)
+    assert sorted(path.relative_to(out).as_posix() for path in out.rglob("*.md")) == ["Projects/index.md", "index.md"]
+    assert written == 2, "excluded, draft and template pages, and a README beside an index, are not published"
+
+
+def test_rejects_exclusion_patterns_mkdocs_would_reject(make_project, tmp_path):
+    root = make_project({"mkdocs.yml": VAULT_CONFIG + "exclude_docs: [Private/]\n", "vault/Home.md": "# Home\n"})
+    with pytest.raises(DocsError, match="exclude_docs must be a multi-line string"):
+        export_kb(load_project(root / "mkdocs.yml"), "test-vault", tmp_path / "kb", today=TODAY, log=lambda _: None)
 
 
 def test_replaces_a_previous_export(make_project, tmp_path):

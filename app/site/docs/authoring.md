@@ -10,8 +10,8 @@ site gets the same theme, Markdown extensions and scripts; a site configures its
 `extra_css` (stylesheets inside `docs_dir`), and `plugins` limited to `search` and `tags`.
 
 Everything else is the platform's: `theme`, `markdown_extensions`, `extra_javascript`, `hooks`, `site_dir` and the
-rest. `umccr-docs check` names any key it rejects. `site_url` must be `https://docs.umccr.org/<slug>/`, and
-`use_directory_urls` stays on.
+rest, and the `extra` settings that add scripts (`polyfills`, `analytics` and `consent`). `umccr-docs check` names
+any key it rejects. `site_url` must be `https://docs.umccr.org/<slug>/`, and `use_directory_urls` stays on.
 
 Optional settings under `extra`:
 
@@ -41,9 +41,15 @@ Every site shares one browser origin, where the sign-in page keeps your session 
 site cannot bring its own code:
 
 - no `<script>` elements, and no `extra_javascript`;
-- no HTML event handlers (`onclick=`, `onerror=`, and so on);
-- no `<iframe>`, `<object>` or `<embed>`;
-- no `javascript:` links.
+- no HTML event handlers (`onclick=`, `onerror=`, and so on), in HTML or in attribute lists (`{ onclick=... }`);
+- no `<iframe>`, `<object>`, `<embed>` or `<base>`;
+- no `javascript:` links;
+- no files under `assets/javascripts/` or `assets/umccr/` in `docs_dir`: the theme's scripts are served from there.
+
+The same goes for front matter and `mkdocs.yml` values, which the theme shows as they are, and for HTML, SVG and
+XML files in `docs_dir`, which readers can open directly. Pages are checked as they are built, after attribute
+lists, entities and front matter take effect, and `umccr-docs verify-site` checks the built site again before it is
+published.
 
 HTML inside code blocks and inline code is fine: it is shown, not run.
 

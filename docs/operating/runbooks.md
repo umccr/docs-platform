@@ -32,19 +32,68 @@ GitHub sends a ping when the webhook is saved; the dispatcher answers 200. Check
 1. Generate a new value in the secret: `aws secretsmanager put-secret-value --secret-id docs/github-webhook-secret
    --secret-string "$(openssl rand -hex 24)"`.
 2. Paste the same value into the organisation webhook's settings straight away.
-3. The dispatcher caches the secret per execution environment, so deliveries may fail with 401 for a few minutes
-   until new environments start. Redeliver any that failed (below).
+3. The dispatcher reads the secret again when a signature does not match, at most once a minute per execution
+   environment, and at least every five minutes. Deliveries signed between steps 1 and 2 fail with 401, and so may
+   one or two just after; redeliver any that failed (below).
 
 ## Re-run or force a release
 
 - **Redeliver a push**: in the webhook's **Recent Deliveries**, choose the delivery and **Redeliver**. The dispatcher
   starts nothing for a delivery it has already handled; a redelivery after a failed start is handled normally.
 - **Re-run a release**: in `UMCCR-DocsSitesPipeline`'s execution history, open the run and choose **Retry** on the
-  failed stage, or start a new run with the same source object and variables. A newer release that is already live
-  is never overwritten.
+  failed stage. A retry keeps the run's variables, `TOOLKIT_REF` included, and a newer release that is already live
+  is never overwritten; to publish older files or another toolkit, start a release by hand (below).
 - **Publish without a content change**: re-run the last release (above), or push a commit that changes a file
   under the site's docs paths. An empty commit changes no file, so the dispatcher ignores it (`no-docs-change`),
   and redelivering a push that already started a release starts nothing.
+
+## Start a release by hand
+
+For a rollback, or a rebuild with another toolkit. A publish is skipped when a newer release is live, so the run
+needs a new release number, taken from the site's counter so that the dispatcher's next release is newer still.
+
+1. Read the variables of the release to start from (the live one, or the last good one):
+
+   ```sh
+   aws codepipeline get-pipeline-execution --pipeline-name UMCCR-DocsSitesPipeline \
+     --pipeline-execution-id <execution-id> --query 'pipelineExecution.variables'
+   ```
+
+   Its files are `sources/<SLUG>/<COMMIT>.zip` in the source bucket, kept for 30 days.
+
+2. Take the site's next release number:
+
+   ```sh
+   TABLE=$(aws cloudformation describe-stack-resources --stack-name DocsInfrastructurePipeline \
+     --query "StackResources[?starts_with(LogicalResourceId, 'SitePublishingDispatcherDispatchTable')].PhysicalResourceId" \
+     --output text)
+   aws dynamodb update-item --table-name "$TABLE" --key '{"pk": {"S": "release#<slug>"}}' \
+     --update-expression 'ADD #release :one' --expression-attribute-names '{"#release": "release"}' \
+     --expression-attribute-values '{":one": {"N": "1"}}' --query 'Attributes.release.N' --return-values UPDATED_NEW
+   ```
+
+3. Write `start.json` with those variables, the new `RELEASE`, and `TOOLKIT_REF` changed if the rebuild needs
+   another toolkit. JSON, not CLI shorthand, because `STAGES` holds a comma:
+
+   ```json
+   {
+     "name": "UMCCR-DocsSitesPipeline",
+     "variables": [
+       { "name": "SLUG", "value": "<slug>" },
+       { "name": "REPO", "value": "<owner>/<repo>" },
+       { "name": "COMMIT", "value": "<commit>" },
+       { "name": "RELEASE", "value": "<new release number>" },
+       { "name": "CONFIG_PATH", "value": "<config path>" },
+       { "name": "TOOLKIT_REF", "value": "<toolkit ref>" },
+       { "name": "STAGES", "value": "beta,prod" }
+     ],
+     "sourceRevisions": [
+       { "actionName": "Source", "revisionType": "S3_OBJECT_KEY", "revisionValue": "sources/<slug>/<commit>.zip" }
+     ]
+   }
+   ```
+
+4. Start it: `aws codepipeline start-pipeline-execution --cli-input-json file://start.json`.
 
 ## A release failed
 
@@ -115,8 +164,9 @@ The bucket is versioned, so this can be undone (below). Then either:
 ## Roll back a site
 
 - **Usual path**: revert the change in the site repository and push; the next release republishes.
-- **Faster**: start `UMCCR-DocsSitesPipeline` with the last good release's source object, `sources/<slug>/<commit>.zip`
-  (kept 30 days), and its variables, with a new `RELEASE` number higher than the live one.
+- **Faster**: [start a release by hand](#start-a-release-by-hand) from the last good release's source object and
+  variables, with a new `RELEASE` number from the site's counter. Re-running the last good release itself is
+  skipped, because the newer release is live.
 - **From the bucket**: the content bucket is versioned and keeps previous versions for 30 days. Restore an
   object by copying a previous version over the current one:
 

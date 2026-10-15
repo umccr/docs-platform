@@ -2,6 +2,7 @@ import { createHmac } from 'node:crypto';
 import { describe, expect, test } from '@jest/globals';
 import type { LambdaFunctionURLEvent } from 'aws-lambda';
 import {
+  cachedSecret,
   changedFiles,
   createDispatcher,
   DispatcherDeps,
@@ -125,6 +126,56 @@ describe('verifySignature', () => {
   });
 });
 
+describe('cachedSecret', () => {
+  const cache = (values: Array<string | Error>) => {
+    let clock = 0;
+    let reads = 0;
+    const get = cachedSecret(
+      () => {
+        const value = values[Math.min(reads++, values.length - 1)];
+        return value instanceof Error ? Promise.reject(value) : Promise.resolve(value);
+      },
+      { maxAgeMs: 300_000, minRefreshMs: 60_000, now: () => clock }
+    );
+    return {
+      get,
+      advance: (ms: number) => (clock += ms),
+      reads: () => reads,
+    };
+  };
+
+  test('reads once while the value is younger than the maximum age', async () => {
+    const secret = cache(['first', 'second']);
+    expect(await secret.get()).toBe('first');
+    secret.advance(299_999);
+    expect(await secret.get()).toBe('first');
+    expect(secret.reads()).toBe(1);
+  });
+
+  test('reads again once the value reaches the maximum age', async () => {
+    const secret = cache(['first', 'second']);
+    await secret.get();
+    secret.advance(300_000);
+    expect(await secret.get()).toBe('second');
+  });
+
+  test('a fresh request reads again, but at most once per minimum interval', async () => {
+    const secret = cache(['first', 'second', 'third']);
+    await secret.get();
+    expect(await secret.get(true)).toBe('first');
+    secret.advance(60_000);
+    expect(await secret.get(true)).toBe('second');
+    expect(await secret.get(true)).toBe('second');
+    expect(secret.reads()).toBe(2);
+  });
+
+  test('does not keep a failed read', async () => {
+    const secret = cache([new Error('throttled'), 'recovered']);
+    await expect(secret.get()).rejects.toThrow('throttled');
+    expect(await secret.get()).toBe('recovered');
+  });
+});
+
 describe('routing', () => {
   test('matches repository case-insensitively, and the branch exactly', () => {
     expect(
@@ -225,6 +276,37 @@ describe('dispatcher', () => {
     );
     expect(result.statusCode).toBe(401);
     expect(started).toHaveLength(0);
+  });
+
+  test('accepts a delivery signed with a rotated secret once a fresh read returns it', async () => {
+    const reads: boolean[] = [];
+    const { deps: d, started } = deps({
+      getWebhookSecret: (fresh = false) => {
+        reads.push(fresh);
+        return Promise.resolve(fresh ? 'rotated-secret' : SECRET);
+      },
+    });
+    const event = request(push());
+    event.headers['x-hub-signature-256'] = sign(event.body ?? '', 'rotated-secret');
+
+    expect((await createDispatcher(d)(event)).statusCode).toBe(202);
+    expect(reads).toEqual([false, true]);
+    expect(started).toHaveLength(1);
+  });
+
+  test('does not read the secret again for a request without a signature', async () => {
+    const reads: boolean[] = [];
+    const { deps: d } = deps({
+      getWebhookSecret: (fresh = false) => {
+        reads.push(fresh);
+        return Promise.resolve(SECRET);
+      },
+    });
+    const event = request(push());
+    delete event.headers['x-hub-signature-256'];
+
+    expect((await createDispatcher(d)(event)).statusCode).toBe(401);
+    expect(reads).toEqual([false]);
   });
 
   test('does not parse a body that fails the signature check', async () => {

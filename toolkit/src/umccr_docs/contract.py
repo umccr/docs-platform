@@ -4,15 +4,27 @@ The project contract: what a participating repository's `mkdocs.yml` and Markdow
 Every site on docs.umccr.org shares one browser origin, and the sign-in page keeps Amplify's tokens in that origin's
 storage, as the portal apps do. So a site must not be able to run code of its own: the platform owns the theme and
 every script, and Markdown may not carry script, event handlers, frames or `javascript:` URLs.
+
+Pages are checked as the engine renders them, after preprocessing: attribute lists (`{ onerror=... }`), raw HTML,
+entities and front matter values all reach the page that way. The theme prints configuration and front matter values
+without escaping them, so those may not carry markup that runs code either. `verify-site` checks the built pages
+again, for what a value could still do inside an attribute.
 """
 
 import re
+import tempfile
+from collections.abc import Iterator
 from pathlib import Path
 
+from mkdocs.utils.meta import get_data
+
+from umccr_docs.active_content import DOCUMENT_SUFFIXES, unsafe_html
+from umccr_docs.build import markdown_renderer
 from umccr_docs.config import Project
 from umccr_docs.errors import DocsError
 from umccr_docs.files import source_files, symlinks_leaving
 from umccr_docs.markdown import prose_and_code
+from umccr_docs.preprocess import output_paths, preprocess
 from umccr_docs.slug import site_url_for, validate_slug
 
 # Top-level keys a project may set. The platform sets the rest (theme, extensions, scripts, output).
@@ -42,6 +54,12 @@ ALLOWED_KEYS = frozenset(
 
 # Plugins a project may enable, beyond the platform's own. Both engines support them natively.
 ALLOWED_PLUGINS = frozenset({"search", "tags"})
+
+# `extra` keys the theme turns into scripts: polyfill script tags, an analytics snippet and the cookie consent script.
+PLATFORM_EXTRA_KEYS = frozenset({"polyfills", "analytics", "consent"})
+
+# Where the theme's scripts are served from. A file here in docs_dir would replace the platform's.
+PLATFORM_ASSET_DIRS = ("assets/javascripts/", "assets/umccr/")
 
 _UNSAFE_HTML = [
     (re.compile(r"<\s*script\b", re.IGNORECASE), "a <script> element"),
@@ -110,6 +128,15 @@ def check_project(project: Project, slug: str) -> list[str]:
         if not isinstance(stylesheet, str) or re.match(r"^[a-z]+:|^//", stylesheet, re.IGNORECASE):
             problems.append(f"extra_css entry {stylesheet!r} must be a stylesheet inside docs_dir")
 
+    extra = raw.get("extra")
+    for key in sorted(PLATFORM_EXTRA_KEYS & set(extra if isinstance(extra, dict) else ())):
+        problems.append(f"'extra.{key}' is set by the platform and may not appear in {project.config_path.name}")
+
+    # The theme prints these values as they are, inside the page's markup.
+    for where, value in _strings(raw):
+        for description in unsafe_html(value):
+            problems.append(f"{project.config_path.name}: {where}: {description} is not allowed")
+
     docs_dir = project.docs_dir
     if project.repo_root not in docs_dir.parents and docs_dir != project.repo_root:
         problems.append(f"docs_dir {docs_dir} is outside the repository")
@@ -119,17 +146,75 @@ def check_project(project: Project, slug: str) -> list[str]:
         return problems
 
     files = source_files(project.repo_root, docs_dir)
-    for escaping in symlinks_leaving(project.repo_root, docs_dir, files):
-        problems.append(f"{escaping} is a symlink leading outside the repository")
+    escaping = symlinks_leaving(project.repo_root, docs_dir, files)
+    for path in escaping:
+        problems.append(f"{path} is a symlink leading outside the repository")
+    # Nothing below reads through a link that leaves the repository.
+    files = [relative for relative in files if relative not in escaping]
 
+    for relative in files:
+        shown = _display(docs_dir, relative)
+        if relative.as_posix().startswith(PLATFORM_ASSET_DIRS):
+            problems.append(f"{shown}: {' and '.join(PLATFORM_ASSET_DIRS)} hold the platform theme's scripts")
+        if relative.suffix.lower() in DOCUMENT_SUFFIXES:
+            # Copied to the site as it is, and run as a document when opened.
+            text = (docs_dir / relative).read_text(encoding="utf-8", errors="replace")
+            for description in unsafe_html(text):
+                problems.append(f"{shown}: {description} is not allowed")
+
+    rendered = _rendered_pages(project, files) if not escaping else {}
     for relative in files:
         if relative.suffix.lower() != ".md":
             continue
+        shown = _display(docs_dir, relative)
         text = (docs_dir / relative).read_text(encoding="utf-8", errors="replace")
-        for line, description in unsafe_markdown(text):
-            problems.append(f"{_display(docs_dir, relative)}:{line}: {description} is not allowed")
+        found = unsafe_markdown(text)
+        for line, description in found:
+            problems.append(f"{shown}:{line}: {description} is not allowed")
+        # The source scan gives a line number; the rendered page is the authority.
+        reported = {description for _, description in found}
+        for description in rendered.get(relative, []):
+            if description not in reported:
+                problems.append(f"{shown}: the rendered page has {description}, which is not allowed")
 
     return problems
+
+
+def _strings(value: object, where: str = "") -> Iterator[tuple[str, str]]:
+    """Every string in a YAML value, mapping keys included (nav titles are keys), with where it is."""
+    if isinstance(value, str):
+        yield where, value
+    elif isinstance(value, dict):
+        for key, item in value.items():
+            inside = f"{where}.{key}" if where else str(key)
+            if isinstance(key, str):
+                yield inside, key
+            yield from _strings(item, inside)
+    elif isinstance(value, list):
+        for index, item in enumerate(value):
+            yield from _strings(item, f"{where}[{index}]")
+
+
+def _rendered_pages(project: Project, files: list[Path]) -> dict[Path, list[str]]:
+    """What could run code in each Markdown page as the engine renders it, front matter values included."""
+    outputs = output_paths(project, files, [])
+    render = markdown_renderer()
+    found: dict[Path, list[str]] = {}
+    with tempfile.TemporaryDirectory(prefix="umccr-docs-check-") as scratch:
+        docs = Path(scratch) / "docs"
+        # Broken links are the build's to report. Preprocessing is what turns properties, Bases and wikilinks into
+        # page content, so the pages are checked after it.
+        preprocess(project, docs, strict=False)
+        for relative in files:
+            if relative.suffix.lower() != ".md":
+                continue
+            # Split as MkDocs splits it: front matter that is not valid YAML stays part of the page.
+            body, meta = get_data((docs / outputs[relative]).read_text(encoding="utf-8"))
+            descriptions = unsafe_html(render(body))
+            for _, value in _strings(meta):
+                descriptions += unsafe_html(value)
+            found[relative] = list(dict.fromkeys(descriptions))
+    return found
 
 
 def _display(docs_dir: Path, relative: Path) -> str:

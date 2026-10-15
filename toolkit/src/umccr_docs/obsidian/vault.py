@@ -4,6 +4,7 @@ import posixpath
 from dataclasses import dataclass, field
 from pathlib import Path, PurePosixPath
 from typing import Any
+from urllib.parse import quote
 
 import yaml
 
@@ -123,6 +124,9 @@ class Vault:
 
     @staticmethod
     def relative_url(from_note: Note, to_note: Note) -> str:
-        """The link from one built page to another, as MkDocs expects: a relative path to the `.md` file."""
+        """
+        The link from one built page to another, as MkDocs expects: a relative path to the `.md` file, percent-encoded
+        so names with spaces or brackets stay one Markdown link destination (`Alpha%20Beta.md`).
+        """
         start = posixpath.dirname(str(from_note.output)) or "."
-        return posixpath.relpath(str(to_note.output), start)
+        return quote(posixpath.relpath(str(to_note.output), start))

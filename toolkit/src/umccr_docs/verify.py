@@ -3,6 +3,8 @@
 import re
 from pathlib import Path
 
+from umccr_docs.active_content import DOCUMENT_SUFFIXES, unsafe_html
+
 MAX_FILE_BYTES = 25 * 1024 * 1024
 MAX_SITE_BYTES = 500 * 1024 * 1024
 
@@ -50,11 +52,17 @@ def verify_site(site_dir: Path) -> list[str]:
                 f"{relative}: {size // (1024 * 1024)} MB is over the {MAX_FILE_BYTES // (1024 * 1024)} MB limit"
             )
 
-        if path.suffix.lower() in TEXT_SUFFIXES and size <= MAX_FILE_BYTES:
+        suffix = path.suffix.lower()
+        if (suffix in TEXT_SUFFIXES or suffix in DOCUMENT_SUFFIXES) and size <= MAX_FILE_BYTES:
             text = path.read_text(encoding="utf-8", errors="replace")
             for pattern, description in SECRET_PATTERNS:
                 if pattern.search(text):
                     problems.append(f"{relative}: looks like it contains {description}")
+            if suffix in DOCUMENT_SUFFIXES:
+                # The theme prints configuration and front matter values unescaped, so this catches what one could
+                # still do inside an attribute. Pages carry the theme's own scripts; nothing else may.
+                for description in unsafe_html(text, scripts_allowed=suffix in (".html", ".htm")):
+                    problems.append(f"{relative}: {description} is not allowed")
 
     if total > MAX_SITE_BYTES:
         problems.append(f"the site is {total // (1024 * 1024)} MB, over the {MAX_SITE_BYTES // (1024 * 1024)} MB limit")

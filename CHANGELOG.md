@@ -6,6 +6,28 @@ toolkit and theme changes up when their registry entry's `toolkitRef` moves to a
 
 ## Unreleased
 
+- The fetch build stores symlinks as links (`zip -y`) and stops on one that leads out of the checkout or into its
+  `.git`. `zip` used to package the file a link pointed at, so `docs/x -> /etc/hosts` or `-> ../.git/config`
+  reached the site pipeline as an ordinary file, and a link loop multiplied the archive.
+- The fetch build writes its start request with Python in isolated mode (`python3 -I`). It ran in the site's
+  checkout, where a `json.py` would have run with the fetch role, which can start the shared pipeline for any site.
+- Contract: pages are checked as rendered, after preprocessing, so attribute lists (`![x](x.png){ onerror=... }`),
+  entities (`javascript&#58;`), reference links, forms and front matter values that would run code are rejected.
+  The checks also cover `mkdocs.yml` values, which the theme prints unescaped, and the HTML, SVG and XML files a
+  site ships. `<base>` elements, files under `assets/javascripts/` or `assets/umccr/` (which replaced the theme's
+  scripts) and `extra.polyfills`, `extra.analytics` and `extra.consent` are rejected. `verify-site` checks every
+  built page and document for event handlers, `javascript:` URLs and frames. Theme: the classification banner and
+  the footer escape the values they print.
+- `umccr-docs export-kb` exports only the pages the site publishes: none matched by `exclude_docs` or `draft_docs`,
+  and no `README.md` beside an `index.md`. Unpublished pages used to reach OrcaSonar, and its answers.
+- Obsidian links are percent-encoded (`[[Alpha Beta]]` -> `Alpha%20Beta.md`), so exported documents point at the
+  published page, and links leaving `docs_dir` for a file with a space in its name stay one link.
+- The dispatcher reads the webhook secret again at least every five minutes, and at once (at most once a minute)
+  when a signature does not match. It used to keep the first value for the life of an execution environment, so
+  after a rotation warm environments refused valid deliveries for as long as pushes kept them warm.
+- Docs: rolling back a site or the toolkit starts a new release with a higher release number (runbook "Start a
+  release by hand"); re-running the old release is skipped while a newer one is live, and keeps its `TOOLKIT_REF`.
+
 - The fetch build's role may read the GitHub connection (`codeconnections:GetConnection`), which CodeBuild checks
   before a build that clones through it can start. Without it, every dispatch failed with `OAuthProviderException`.
 - `UMCCR-DocsSitesPipeline`'s source action has its own role, which may read every object under `sources/`. CDK's role

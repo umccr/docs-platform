@@ -34,8 +34,12 @@ for approval before prod.
 
 ## Rolling back a release
 
-Point the affected sites' `toolkitRef` back at the previous tag and merge. To rebuild a site straight away, re-run
-its last release from the site pipeline's history (see [Runbooks](runbooks.md#re-run-or-force-a-release)).
+Point the affected sites' `toolkitRef` back at the previous tag and merge. Once the infrastructure pipeline has
+updated the dispatcher, each site builds with that tag on its next push under its docs paths.
+
+To rebuild a site straight away, [start a release by hand](runbooks.md#start-a-release-by-hand) from its live
+release's source object, with `TOOLKIT_REF` set to the previous tag. Re-running an existing release does not do
+this: it keeps the `TOOLKIT_REF` it started with, and is skipped when a newer release is live.
 
 ## Updating pinned dependencies
 

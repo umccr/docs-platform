@@ -81,6 +81,10 @@ class TestResolution:
     def test_links_to_the_home_note_go_to_index(self, vault):
         assert Vault.relative_url(PROJECT_ALPHA, vault.resolve("Home")) == "../index.md"
 
+    def test_links_are_percent_encoded(self):
+        target = note("Projects/Alpha Beta (draft).md")
+        assert Vault.relative_url(HOME, target) == "Projects/Alpha%20Beta%20%28draft%29.md"
+
 
 class TestWikilinks:
     def rewrite(self, vault, text, from_note=PROJECT_ALPHA):

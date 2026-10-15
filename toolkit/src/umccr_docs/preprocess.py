@@ -11,7 +11,7 @@ import posixpath
 import re
 import shutil
 from pathlib import Path, PurePosixPath
-from urllib.parse import unquote
+from urllib.parse import quote, unquote
 
 from umccr_docs.config import Project
 from umccr_docs.errors import DocsError
@@ -94,10 +94,11 @@ class _LinkRewriter:
         if not repo_url:
             problems.append(f"{source}: link {url} leaves docs_dir; set repo_url so it can point at the repository")
             return None
-        return f"{repo_url}/blob/{self.branch}/{target.relative_to(repo_root).as_posix()}"
+        return f"{repo_url}/blob/{self.branch}/{quote(target.relative_to(repo_root).as_posix())}"
 
 
-def _outputs(project: Project, files: list[Path], problems: list[str]) -> dict[Path, Path]:
+def output_paths(project: Project, files: list[Path], problems: list[str]) -> dict[Path, Path]:
+    """Where each source file goes in the preprocessed docs: where it is, except the home note, which is index.md."""
     outputs = {relative: relative for relative in files}
     home = project.platform.home
     if home:
@@ -117,7 +118,7 @@ def preprocess(project: Project, out_dir: Path, *, strict: bool = True) -> list[
     """
     problems: list[str] = []
     files = source_files(project.repo_root, project.docs_dir)
-    outputs = _outputs(project, files, problems)
+    outputs = output_paths(project, files, problems)
     markdown_files = [relative for relative in files if relative.suffix.lower() == ".md"]
 
     obsidian = project.platform.source_format == "obsidian"

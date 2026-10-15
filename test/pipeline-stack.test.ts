@@ -1,3 +1,7 @@
+import { spawnSync } from 'node:child_process';
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { App, Stack } from 'aws-cdk-lib';
 import { Template } from 'aws-cdk-lib/assertions';
 import { describe, expect, jest, test } from '@jest/globals';
@@ -11,7 +15,7 @@ import {
 import { MAX_TRIGGER_FILE_PATHS } from '../infrastructure/toolchain/deployment-pipeline';
 import { DocsHostingStack } from '../infrastructure/stage/hosting-stack';
 import { AppStage, STAGE_ENVIRONMENT, TOOLCHAIN_ENVIRONMENT } from '../infrastructure/stages';
-import { fetchBuildSpec } from '../infrastructure/toolchain/fetch-build';
+import { fetchBuildSpec, REFUSE_ESCAPING_SYMLINKS } from '../infrastructure/toolchain/fetch-build';
 import {
   DOCS_SITES_NOTIFICATION_RULE_NAME,
   DOCS_SITES_PIPELINE_NAME,
@@ -398,5 +402,58 @@ describe('site publishing', () => {
     expect(script).toContain('sources/$SLUG/$COMMIT.zip');
     expect(script).toContain('start-pipeline-execution --cli-input-json');
     expect(script).toContain('S3_OBJECT_KEY');
+  });
+
+  test('stores symlinks as links, and runs Python isolated from the checkout', () => {
+    const script = JSON.stringify(fetchBuildSpec());
+    expect(script).toContain('zip -q -r -X -y ');
+    expect(script).toContain('python3 -I - ');
+    expect(script).not.toMatch(/python3 -(?!I )/);
+  });
+
+  describe('symlink check', () => {
+    /** Runs the check in a checkout with `links` (name -> target), returning its exit status and output. */
+    const check = (links: Record<string, string>): { status: number; output: string } => {
+      const checkout = mkdtempSync(join(tmpdir(), 'fetch-build-'));
+      try {
+        mkdirSync(join(checkout, '.git'));
+        mkdirSync(join(checkout, 'docs'));
+        writeFileSync(join(checkout, '.git', 'config'), '[core]\n');
+        writeFileSync(join(checkout, 'README.md'), '# Readme\n');
+        for (const [name, target] of Object.entries(links)) {
+          symlinkSync(target, join(checkout, name));
+        }
+        const result = spawnSync(
+          'bash',
+          ['-c', ['set -euo pipefail', ...REFUSE_ESCAPING_SYMLINKS].join('\n')],
+          { cwd: checkout, encoding: 'utf8' }
+        );
+        return { status: result.status ?? -1, output: result.stdout + result.stderr };
+      } finally {
+        rmSync(checkout, { recursive: true, force: true });
+      }
+    };
+
+    test('passes links that stay inside the repository', () => {
+      expect(check({ 'docs/index.md': '../README.md', 'docs/up': '..' }).status).toBe(0);
+    });
+
+    test.each([
+      ['an absolute path on the host', '/etc/hosts'],
+      ['a path above the checkout', '../../outside'],
+      ["the clone's git state", '../.git/config'],
+      ['a target that does not exist', '/nonexistent/deeper/path'],
+    ])('refuses a link to %s', (_label, target) => {
+      const { status, output } = check({ 'docs/escape': target });
+      expect(status).toBe(1);
+      expect(output).toContain('./docs/escape is a symlink leading outside the repository');
+    });
+
+    test('refuses a link whose name hides a second line', () => {
+      // Read line by line, the name would look like `./docs/a` and `b`, two harmless paths.
+      const { status, output } = check({ 'docs/a\nb': '/etc/hosts' });
+      expect(status).toBe(1);
+      expect(output).toContain('symlink leading outside the repository');
+    });
   });
 });

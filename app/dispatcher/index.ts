@@ -7,7 +7,7 @@ import {
   UpdateItemCommand,
 } from '@aws-sdk/client-dynamodb';
 import { GetSecretValueCommand, SecretsManagerClient } from '@aws-sdk/client-secrets-manager';
-import { createDispatcher, DispatchRoute, FetchRequest } from './dispatch';
+import { cachedSecret, createDispatcher, DispatchRoute, FetchRequest } from './dispatch';
 
 /**
  * Wiring for the dispatcher Lambda. The routing table and the fetch build's buildspec are compiled into the bundle at
@@ -37,19 +37,19 @@ const dynamodb = new DynamoDBClient({});
 const codebuild = new CodeBuildClient({});
 const secrets = new SecretsManagerClient({});
 
-let webhookSecret: Promise<string> | undefined;
+/** A rotated webhook secret takes effect within this time, or at the first delivery signed with it. */
+const SECRET_MAX_AGE_MS = 5 * 60 * 1000;
 
-const getWebhookSecret = (): Promise<string> => {
-  webhookSecret ??= secrets
-    .send(new GetSecretValueCommand({ SecretId: secretArn }))
-    .then((result) => result.SecretString ?? '')
-    .catch((error: unknown) => {
-      // Do not cache a failure: the next invocation tries again.
-      webhookSecret = undefined;
-      throw error;
-    });
-  return webhookSecret;
-};
+/** A signature mismatch reads the secret again at most this often per execution environment. */
+const SECRET_MIN_REFRESH_MS = 60 * 1000;
+
+const getWebhookSecret = cachedSecret(
+  () =>
+    secrets
+      .send(new GetSecretValueCommand({ SecretId: secretArn }))
+      .then((result) => result.SecretString ?? ''),
+  { maxAgeMs: SECRET_MAX_AGE_MS, minRefreshMs: SECRET_MIN_REFRESH_MS }
+);
 
 const recordDelivery = async (deliveryId: string): Promise<boolean> => {
   try {

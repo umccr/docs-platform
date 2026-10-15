@@ -98,3 +98,16 @@ def test_markdown_sites_only_get_link_rewriting(make_project):
     text = (out / "index.md").read_text()
     assert "[[not converted]]" in text
     assert "(https://github.com/umccr/plain/blob/main/README.md)" in text
+
+
+def test_links_to_the_repository_are_percent_encoded(make_project):
+    root = make_project(
+        {
+            "mkdocs.yml": OBSIDIAN_CONFIG,
+            "Design Notes.md": "# Design\n",
+            "vault/index.md": "# Home\n\n[design](<../Design Notes.md>)\n",
+        }
+    )
+    out = root / "out"
+    assert preprocess(load_project(root / "mkdocs.yml"), out) == []
+    assert "(https://github.com/umccr/test-vault/blob/main/Design%20Notes.md)" in (out / "index.md").read_text()

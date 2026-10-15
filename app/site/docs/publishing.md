@@ -69,8 +69,8 @@ next page load, and nothing needs to clear the cache.
 ## Rolling back
 
 - **Usual path:** revert the change and push; the next release republishes.
-- **Faster:** the platform team can re-run the last good release from the site pipeline's history; its files are
-  kept for 30 days.
+- **Faster:** the platform team can publish the last good release's files again, as a new release: its files are
+  kept for 30 days. Re-running the old release itself would change nothing, because a newer release is live.
 - **Emergency:** the platform team can take a site offline immediately and restore previous file versions (kept 30
   days).
 

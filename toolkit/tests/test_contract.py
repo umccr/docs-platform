@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pytest
+from conftest import OBSIDIAN_CONFIG
 
 from umccr_docs.config import load_project
 from umccr_docs.contract import check_project, unsafe_markdown
@@ -110,3 +111,90 @@ def test_ignores_files_git_ignores(make_project):
         }
     )
     assert check_project(load_project(Path(root) / "mkdocs.yml"), "example") == []
+
+
+@pytest.mark.parametrize(
+    ("markdown", "description"),
+    [
+        # Markdown's attribute lists add attributes no source scan sees as HTML.
+        ('![diagram](diagram.png){ onerror="alert(1)" }', "an HTML event handler attribute"),
+        ('# Heading { onclick="alert(1)" }', "an HTML event handler attribute"),
+        # Entities, reference definitions and forms reach the page as script URLs too.
+        ("[x](javascript&#58;alert(1))", "a javascript: URL"),
+        ('<a href="&#106;avascript:alert(1)">x</a>', "a javascript: URL"),
+        ("[link][ref]\n\n[ref]: javascript:alert(1)", "a javascript: URL"),
+        ('<form action="javascript:alert(1)"><button>x</button></form>', "a javascript: URL"),
+        # Front matter the theme prints, after YAML has decoded its escapes.
+        ('---\ntitle: "\\x3cscript>alert(1)\\x3c/script>"\n---\n# Page', "a <script> element"),
+    ],
+)
+def test_checks_pages_as_rendered(make_project, markdown, description):
+    problems = problems_for(make_project, VALID_CONFIG, {"docs/page.md": markdown + "\n"})
+    assert problems == [f"docs/page.md: the rendered page has {description}, which is not allowed"]
+
+
+def test_checks_obsidian_properties_as_rendered(make_project):
+    config = OBSIDIAN_CONFIG.replace("https://docs.umccr.org/test-vault/", "https://docs.umccr.org/example/")
+    note = '---\nstatus: "<a href=\\"\\x6Aavascript:alert(1)\\">open</a>"\n---\n# Note\n'
+    problems = problems_for(make_project, config, {"vault/index.md": "# Home\n", "vault/Note.md": note})
+    assert problems == ["vault/Note.md: the rendered page has a javascript: URL, which is not allowed"]
+
+
+def test_reports_a_finding_once_with_its_line_when_the_source_shows_it(make_project):
+    problems = problems_for(make_project, VALID_CONFIG, {"docs/page.md": '<img src="x" onerror="steal()">\n'})
+    assert problems == ["docs/page.md:1: an HTML event handler attribute is not allowed"]
+
+
+def test_attribute_lists_and_raw_html_without_code_pass(make_project):
+    page = (
+        '[Guide](guide.md){ .md-button target=_blank }\n\n<div markdown>\n**Bold** ![x](x.png){ width="300" }\n</div>\n'
+    )
+    assert problems_for(make_project, VALID_CONFIG, {"docs/page.md": page, "docs/guide.md": "# Guide\n"}) == []
+
+
+@pytest.mark.parametrize(
+    ("relative", "content", "description"),
+    [
+        ("docs/report.html", "<p>Report</p><script>alert(1)</script>", "a <script> element"),
+        ("docs/img/diagram.svg", '<svg xmlns="http://www.w3.org/2000/svg" onload="x()"/>', "an HTML event handler"),
+        ("docs/data.xml", '<?xml-stylesheet type="text/xsl" href="x.xsl"?><data/>', "an XML stylesheet"),
+    ],
+)
+def test_checks_documents_the_site_ships_as_they_are(make_project, relative, content, description):
+    problems = problems_for(make_project, VALID_CONFIG, {relative: content + "\n"})
+    assert any(problem.startswith(f"{relative}: {description}") for problem in problems), problems
+
+
+def test_a_plain_svg_passes(make_project):
+    svg = '<svg xmlns="http://www.w3.org/2000/svg"><a href="../guide/"><rect width="10" height="10"/></a></svg>\n'
+    assert problems_for(make_project, VALID_CONFIG, {"docs/img/diagram.svg": svg}) == []
+
+
+@pytest.mark.parametrize("relative", ["docs/assets/umccr/umccr.js", "docs/assets/javascripts/bundle.d7400e89.min.js"])
+def test_files_cannot_replace_the_theme_scripts(make_project, relative):
+    problems = problems_for(make_project, VALID_CONFIG, {relative: "alert(1)\n"})
+    assert problems == [f"{relative}: assets/javascripts/ and assets/umccr/ hold the platform theme's scripts"]
+
+
+@pytest.mark.parametrize("key", ["polyfills", "analytics", "consent"])
+def test_extra_keys_that_add_scripts_are_rejected(make_project, key):
+    problems = problems_for(make_project, VALID_CONFIG + f"extra:\n  {key}: [x.js]\n")
+    assert problems == [f"'extra.{key}' is set by the platform and may not appear in mkdocs.yml"]
+
+
+@pytest.mark.parametrize(
+    ("extra", "where"),
+    [
+        ("site_description: '<script>alert(1)</script>'", "site_description"),
+        ("extra:\n  classification: '<img src=x onerror=alert(1)>'", "extra.classification"),
+        ("nav:\n  - '<img src=x onerror=alert(1)>': index.md", "nav[0].<img src=x onerror=alert(1)>"),
+    ],
+)
+def test_configuration_values_cannot_carry_markup_that_runs(make_project, extra, where):
+    problems = problems_for(make_project, VALID_CONFIG + extra + "\n")
+    assert len(problems) == 1 and problems[0].startswith(f"mkdocs.yml: {where}: "), problems
+
+
+def test_a_copyright_link_passes(make_project):
+    config = VALID_CONFIG + "copyright: '&copy; 2026 <a href=\"https://umccr.org\">UMCCR</a>'\n"
+    assert problems_for(make_project, config) == []

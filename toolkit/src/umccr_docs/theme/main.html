@@ -9,6 +9,6 @@
 {#- Optional classification banner, e.g. `extra: { classification: "Internal: UMCCR staff only" }`. -#}
 {% block announce %}
   {%- if config.extra.classification -%}
-    <p class="umccr-classification">{{ config.extra.classification }}</p>
+    <p class="umccr-classification">{{ config.extra.classification | e }}</p>
   {%- endif -%}
 {% endblock %}

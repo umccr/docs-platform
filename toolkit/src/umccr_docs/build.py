@@ -7,11 +7,14 @@ import subprocess
 import sys
 import threading
 import time
+from collections.abc import Callable
 from importlib import resources
 from pathlib import Path
 from typing import Any
 
+import markdown
 import yaml
+from pymdownx.slugs import slugify
 
 from umccr_docs.config import ENGINES, Project
 from umccr_docs.errors import DocsError
@@ -74,6 +77,26 @@ THEME_FEATURES = [
     "search.suggest",
     "toc.follow",
 ]
+
+
+def markdown_renderer() -> Callable[[str], str]:
+    """
+    Renders a page's body to HTML in this process, with the extensions the engine builds with (both engines use
+    Python-Markdown). The contract checks the result, which is what a reader's browser gets.
+    """
+    names: list[str] = []
+    configs: dict[str, dict[str, Any]] = {}
+    for extension in MARKDOWN_EXTENSIONS:
+        if isinstance(extension, str):
+            names.append(extension)
+            continue
+        ((name, config),) = extension.items()
+        names.append(name)
+        configs[name] = {
+            key: slugify(case="lower") if value == _GITHUB_SLUGIFY else value for key, value in config.items()
+        }
+    renderer = markdown.Markdown(extensions=names, extension_configs=configs)
+    return lambda text: renderer.reset().convert(text)
 
 
 def theme_dir() -> Path:

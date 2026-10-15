@@ -50,8 +50,11 @@ export interface FetchRequest {
 
 export interface DispatcherDeps {
   readonly routes: DispatchRoute[];
-  /** The webhook secret, the same value configured on the GitHub organisation webhook. */
-  getWebhookSecret(): Promise<string>;
+  /**
+   * The webhook secret, the same value configured on the GitHub organisation webhook. `fresh` asks for the value as
+   * it is now rather than a cached one, after a signature mismatch; see {@link cachedSecret}.
+   */
+  getWebhookSecret(fresh?: boolean): Promise<string>;
   /** Record a delivery. Resolves false when it was already recorded. */
   recordDelivery(deliveryId: string): Promise<boolean>;
   /** Forget a delivery, so a manual redelivery can retry after a failed start. */
@@ -87,6 +90,40 @@ export const verifySignature = (
   );
   const received = Buffer.from(signature, 'utf8');
   return expected.length === received.length && timingSafeEqual(expected, received);
+};
+
+export interface SecretCacheOptions {
+  /** A cached value is read again once it is this old, so a rotated secret takes effect without a mismatch. */
+  readonly maxAgeMs: number;
+  /** A `fresh` request reads again only when the cached value is at least this old, so forged requests stay cheap. */
+  readonly minRefreshMs: number;
+  readonly now?: () => number;
+}
+
+/**
+ * A secret cached per execution environment. Organisation-wide pushes keep environments warm for hours, so the cache
+ * expires, and a caller that sees a signature mismatch asks for a fresh value: after a rotation that recovers on the
+ * first delivery signed with the new secret. A failed read is not kept, so the next call tries again.
+ */
+export const cachedSecret = (
+  read: () => Promise<string>,
+  { maxAgeMs, minRefreshMs, now = Date.now }: SecretCacheOptions
+): ((fresh?: boolean) => Promise<string>) => {
+  let cached: { value: Promise<string>; readAt: number } | undefined;
+  return (fresh = false) => {
+    const age = cached ? now() - cached.readAt : Infinity;
+    if (cached && age < maxAgeMs && !(fresh && age >= minRefreshMs)) {
+      return cached.value;
+    }
+    const entry = { value: read(), readAt: now() };
+    cached = entry;
+    entry.value.catch(() => {
+      if (cached === entry) {
+        cached = undefined;
+      }
+    });
+    return entry.value;
+  };
 };
 
 /**
@@ -150,9 +187,13 @@ export const createDispatcher =
     }
 
     const body = Buffer.from(event.body ?? '', event.isBase64Encoded ? 'base64' : 'utf8');
-    if (
-      !verifySignature(body, header(event, 'X-Hub-Signature-256'), await deps.getWebhookSecret())
-    ) {
+    const signature = header(event, 'X-Hub-Signature-256');
+    const signed =
+      verifySignature(body, signature, await deps.getWebhookSecret()) ||
+      // The secret may have been rotated since this environment read it: check once more against the current one.
+      (signature !== undefined &&
+        verifySignature(body, signature, await deps.getWebhookSecret(true)));
+    if (!signed) {
       deps.log({ outcome: 'bad-signature' });
       return reply(401, { error: 'bad-signature' });
     }

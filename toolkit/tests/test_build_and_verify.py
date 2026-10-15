@@ -57,6 +57,10 @@ def test_the_platform_config_is_not_overridable():
         # Fake credentials are assembled at run time, so no secret-shaped literal sits in the repository.
         ("leak.html", "key AKIA" + "ABCDEFGHIJKLMNOP here", "an AWS access key ID"),
         ("key.txt", "-----BEGIN RSA " + "PRIVATE KEY-----", "a private key"),
+        # A configuration value that breaks out of the theme's attribute, which no source check sees as markup.
+        ("guide/index.html", '<a aria-label="Docs" onmouseover="alert(1)">', "an HTML event handler attribute"),
+        ("guide/index.html", '<a href="javascript:alert(1)//">Repository</a>', "a javascript: URL"),
+        ("img/diagram.svg", "<svg><script>alert(1)</script></svg>", "a <script> element is not allowed"),
     ],
 )
 def test_verify_rejects_unpublishable_files(tmp_path, relative, content, expected):

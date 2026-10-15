@@ -2,7 +2,12 @@
 
 import os
 import subprocess
-from pathlib import Path
+from pathlib import Path, PurePosixPath
+from typing import Any
+
+from pathspec.gitignore import GitIgnoreSpec
+
+from umccr_docs.errors import DocsError
 
 
 def repo_root_for(path: Path) -> Path:
@@ -71,6 +76,37 @@ def source_files(repo_root: Path, docs_dir: Path) -> list[Path]:
         for path in docs_dir.rglob("*")
         if path.is_file() and not _is_hidden(path.relative_to(docs_dir))
     )
+
+
+# Excluded before exclude_docs's own patterns, as MkDocs does (mkdocs.structure.files.set_exclusions).
+_ENGINE_EXCLUDES = [".*", "/templates/"]
+
+
+def _patterns(raw: dict[str, Any], key: str) -> list[str]:
+    value = raw.get(key)
+    if value is None:
+        return []
+    if not isinstance(value, str):
+        raise DocsError(f"{key} must be a multi-line string of gitignore patterns, as MkDocs expects")
+    return value.splitlines()
+
+
+def published_pages(raw: dict[str, Any], docs_dir: Path) -> list[PurePosixPath]:
+    """
+    The Markdown pages under a built docs directory that the engine publishes, relative to it: not matched by
+    `exclude_docs` or `draft_docs` (drafts appear only in a local preview), and not a README.md beside an index.md.
+    These are MkDocs' rules, so an export holds exactly the pages readers can open.
+    """
+    excluded = GitIgnoreSpec.from_lines([*_ENGINE_EXCLUDES, *_patterns(raw, "exclude_docs")])
+    drafts = GitIgnoreSpec.from_lines(_patterns(raw, "draft_docs"))
+    pages = []
+    for path in sorted(docs_dir.rglob("*.md")):
+        relative = PurePosixPath(path.relative_to(docs_dir).as_posix())
+        if not (excluded.match_file(relative.as_posix()) or drafts.match_file(relative.as_posix())):
+            pages.append(relative)
+    published = set(pages)
+    # MkDocs publishes README.md as its folder's index page, unless the folder has an index.md.
+    return [page for page in pages if not (page.name == "README.md" and page.with_name("index.md") in published)]
 
 
 def symlinks_leaving(root: Path, base: Path, files: list[Path]) -> list[Path]:

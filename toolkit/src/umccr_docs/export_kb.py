@@ -23,6 +23,7 @@ from pathlib import Path, PurePosixPath
 from urllib.parse import quote, unquote
 
 from umccr_docs.config import Project
+from umccr_docs.files import published_pages
 from umccr_docs.markdown import map_prose, split_frontmatter
 from umccr_docs.preprocess import preprocess
 from umccr_docs.slug import site_url_for, validate_slug
@@ -129,9 +130,9 @@ def export_kb(
     with tempfile.TemporaryDirectory(prefix="umccr-docs-kb-") as scratch:
         docs = Path(scratch) / "docs"
         preprocess(project, docs, strict=True)
-        for path in sorted(docs.rglob("*.md")):
-            relative = PurePosixPath(path.relative_to(docs).as_posix())
-            frontmatter, body = split_frontmatter(path.read_text(encoding="utf-8"))
+        # Only what readers can open: a page left out of the site by exclude_docs or draft_docs is not exported.
+        for relative in published_pages(project.raw, docs):
+            frontmatter, body = split_frontmatter((docs / relative).read_text(encoding="utf-8"))
             if not body.strip():
                 continue
             body = absolute_links(body, relative, site_url, directory_urls=directory_urls).strip() + "\n"
