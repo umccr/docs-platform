@@ -288,6 +288,22 @@ describe('site publishing', () => {
     expect(pipeline.Variables!.every((variable) => variable.DefaultValue === undefined)).toBe(true);
   });
 
+  test("builds with the release's repository and commit, which the page footer shows", () => {
+    type Project = { Description?: string; Source: { BuildSpec: string } };
+    const build = Object.values(template.findResources('AWS::CodeBuild::Project'))
+      .map((resource) => (resource as { Properties: Project }).Properties)
+      .find((project) => project.Description?.includes('build one release of one site'))!;
+    const spec = JSON.parse(build.Source.BuildSpec) as {
+      phases: { build: { commands: string[] } };
+    };
+    // The source object holds no .git, so the toolkit cannot ask git for the commit.
+    expect(spec.phases.build.commands).toContainEqual(
+      expect.stringMatching(
+        /^UMCCR_DOCS_SOURCE_REPO="\$REPO" UMCCR_DOCS_COMMIT="\$COMMIT" umccr-docs build /
+      )
+    );
+  });
+
   test('builds, then publishes to beta and straight on to prod, with no approval', () => {
     const pipeline = sitesPipeline();
     expect(pipeline.Stages.map((stage) => stage.Name)).toEqual([

@@ -3,7 +3,8 @@
 import re
 from pathlib import Path
 
-from umccr_docs.active_content import DOCUMENT_SUFFIXES, unsafe_html
+from umccr_docs.active_content import NOT_UTF8, decode_document, unsafe_html
+from umccr_docs.media_types import content_type_for, is_document
 
 MAX_FILE_BYTES = 25 * 1024 * 1024
 MAX_SITE_BYTES = 500 * 1024 * 1024
@@ -53,17 +54,29 @@ def verify_site(site_dir: Path) -> list[str]:
             )
 
         suffix = path.suffix.lower()
-        if (suffix in TEXT_SUFFIXES or suffix in DOCUMENT_SUFFIXES) and size <= MAX_FILE_BYTES:
-            text = path.read_text(encoding="utf-8", errors="replace")
+        document = is_document(content_type_for(relative.as_posix()))
+        if (suffix in TEXT_SUFFIXES or document) and size <= MAX_FILE_BYTES:
+            data = path.read_bytes()
+            text = data.decode("utf-8", errors="replace")
             for pattern, description in SECRET_PATTERNS:
                 if pattern.search(text):
                     problems.append(f"{relative}: looks like it contains {description}")
-            if suffix in DOCUMENT_SUFFIXES:
-                # The theme prints configuration and front matter values unescaped, so this catches what one could
-                # still do inside an attribute. Pages carry the theme's own scripts; nothing else may.
-                for description in unsafe_html(text, scripts_allowed=suffix in (".html", ".htm")):
-                    problems.append(f"{relative}: {description} is not allowed")
+            if document:
+                problems.extend(_document_problems(relative, data))
 
     if total > MAX_SITE_BYTES:
         problems.append(f"the site is {total // (1024 * 1024)} MB, over the {MAX_SITE_BYTES // (1024 * 1024)} MB limit")
     return problems
+
+
+def _document_problems(relative: Path, data: bytes) -> list[str]:
+    """
+    What could run code in a file the site serves as a document. The theme prints configuration and front matter
+    values unescaped, so this catches what one could still do inside an attribute. The theme's pages carry its own
+    scripts; nothing else may.
+    """
+    text = decode_document(data)
+    if text is None:
+        return [f"{relative}: {NOT_UTF8}"]
+    found = unsafe_html(text, scripts_allowed=relative.suffix.lower() == ".html")
+    return [f"{relative}: {description} is not allowed" for description in found]

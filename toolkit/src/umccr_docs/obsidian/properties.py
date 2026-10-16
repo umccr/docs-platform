@@ -2,6 +2,7 @@
 
 import re
 
+from umccr_docs.markdown import mask_code
 from umccr_docs.obsidian.links import format_value
 from umccr_docs.obsidian.vault import Note, Vault
 
@@ -30,7 +31,8 @@ def insert_properties(body: str, note: Note, fields: tuple[str, ...], vault: Vau
     block = properties_block(note, fields, vault, problems)
     if not block:
         return body
-    heading = _FIRST_HEADING.search(body)
+    # A `# comment` in a shell sample is not a heading: look for one outside code, at the same offsets.
+    heading = _FIRST_HEADING.search(mask_code(body))
     if not heading:
         return block + body
     end = heading.end()

@@ -8,6 +8,7 @@ from umccr_docs.active_content import (
     SCRIPT,
     SCRIPT_URL,
     STYLESHEET,
+    decode_document,
     unsafe_html,
 )
 
@@ -68,6 +69,21 @@ def test_ordinary_content_passes(html):
 def test_reports_each_kind_once_in_order():
     html = '<img src=x onerror=a()><a href="javascript:b()">x</a><img src=y onload=c()>'
     assert unsafe_html(html) == [HANDLER, SCRIPT_URL]
+
+
+@pytest.mark.parametrize(
+    ("data", "text"),
+    [
+        (b"<svg/>", "<svg/>"),
+        ("﻿<p>café</p>".encode(), "<p>café</p>"),
+        # A UTF-16 document, with its byte order mark or without, and anything that is not UTF-8, is refused.
+        ("<svg><script>alert(1)</script></svg>".encode("utf-16"), None),
+        ("<svg><script>alert(1)</script></svg>".encode("utf-16-le"), None),
+        ("<p>café</p>".encode("latin-1"), None),
+    ],
+)
+def test_documents_are_read_as_utf8_or_not_at_all(data, text):
+    assert decode_document(data) == text
 
 
 def test_theme_pages_may_carry_scripts_but_nothing_else():

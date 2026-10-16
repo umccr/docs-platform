@@ -47,11 +47,12 @@ site cannot bring its own code:
 - no files under `assets/javascripts/` or `assets/umccr/` in `docs_dir`: the theme's scripts are served from there.
 
 The same goes for front matter and `mkdocs.yml` values, which the theme shows as they are, and for HTML, SVG and
-XML files in `docs_dir`, which readers can open directly. Pages are checked as they are built, after attribute
-lists, entities and front matter take effect, and `umccr-docs verify-site` checks the built site again before it is
-published.
+XML files in `docs_dir`, which readers can open directly. Those files must be saved as UTF-8, the encoding they are
+served and checked in. Pages are checked as they are built, after attribute lists, entities and front matter take
+effect, and `umccr-docs verify-site` checks the built site again before it is published.
 
-HTML inside code blocks and inline code is fine: it is shown, not run.
+HTML in code is fine: it is shown, not run. That includes fenced and indented code blocks, inside lists and
+admonitions too, and inline code.
 
 ## Obsidian vaults
 

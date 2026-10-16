@@ -5,6 +5,7 @@ import pytest
 from umccr_docs.obsidian.bases import UnsupportedBase, evaluate, render_query
 from umccr_docs.obsidian.callouts import convert_callouts
 from umccr_docs.obsidian.links import rewrite_wikilinks
+from umccr_docs.obsidian.properties import insert_properties
 from umccr_docs.obsidian.vault import LinkError, Note, Vault
 
 
@@ -263,3 +264,27 @@ class TestHeadingAnchors:
         from umccr_docs.markdown import heading_anchor
 
         assert heading_anchor(heading) == anchor
+
+
+class TestProperties:
+    FIELDS = ("status", "lead")
+
+    def insert(self, body: str) -> str:
+        note_with_properties = note("Projects/delta.md", status="active", lead="Ada")
+        return insert_properties(body, note_with_properties, self.FIELDS, Vault(NOTES), [])
+
+    def test_go_after_the_first_heading(self):
+        body = "# Delta\n\nIntro.\n"
+        assert self.insert(body).startswith('# Delta\n\n<div class="umccr-properties" markdown>')
+
+    def test_skip_comments_in_code_before_the_first_heading(self):
+        body = "Setup:\n\n```bash\n# install the tools\nmake install\n```\n\n# Delta\n\nIntro.\n"
+        inserted = self.insert(body)
+        assert "```bash\n# install the tools\nmake install\n```" in inserted, "the sample is untouched"
+        assert inserted.index("umccr-properties") > inserted.index("# Delta")
+
+    def test_go_on_top_when_only_code_has_a_heading_line(self):
+        body = "    # an indented comment\n\n~~~\n# a fenced one\n~~~\n"
+        inserted = self.insert(body)
+        assert inserted.startswith('<div class="umccr-properties" markdown>')
+        assert inserted.endswith(body)

@@ -10,8 +10,7 @@ alarm but a script should not be missed.
 import re
 from html.parser import HTMLParser
 
-# Files a browser opens as a document, which can carry script: pages, and SVG or XML opened directly.
-DOCUMENT_SUFFIXES = frozenset({".html", ".htm", ".xhtml", ".svg", ".xml", ".xsl", ".xslt"})
+NOT_UTF8 = "must be UTF-8 text without NUL characters: it is served, and checked, as UTF-8"
 
 SCRIPT = "a <script> element"
 EMBED = "an embedded frame or object"
@@ -93,6 +92,20 @@ def _scan(text: str, *, scripts_allowed: bool) -> list[str]:
         # An XML document's own entities can expand to any markup, script included.
         scanner.found.append(ENTITY)
     return scanner.found
+
+
+def decode_document(data: bytes) -> str | None:
+    """
+    A document's text as a browser reads it, or None when that is not certain. Documents are served as UTF-8, which
+    only a byte order mark can override, so a document must be UTF-8 (with or without its byte order mark). Anything
+    else is refused rather than guessed at: read loosely, UTF-16's `<\\0s\\0c\\0r\\0i\\0p\\0t\\0>` hides a script
+    from the scan that a browser decodes and runs.
+    """
+    try:
+        text = data.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        return None
+    return None if "\x00" in text else text
 
 
 def unsafe_html(text: str, *, scripts_allowed: bool = False) -> list[str]:

@@ -16,18 +16,16 @@ from urllib.parse import quote, unquote
 from umccr_docs.config import Project
 from umccr_docs.errors import DocsError
 from umccr_docs.files import source_files
-from umccr_docs.markdown import map_prose, split_frontmatter
+from umccr_docs.markdown import map_prose, rewrite_links, split_frontmatter
 from umccr_docs.obsidian.bases import render_bases
 from umccr_docs.obsidian.callouts import convert_callouts
 from umccr_docs.obsidian.links import rewrite_wikilinks
 from umccr_docs.obsidian.properties import insert_properties
 from umccr_docs.obsidian.vault import Note, Vault
 
-_MARKDOWN_LINK = re.compile(
-    r"(?P<bang>!?)\[(?P<label>[^\]\n]*)\]\((?P<url><[^>\n]*>|[^)\s]+)(?P<title>\s+\"[^\"\n]*\")?\)"
-)
 _OBSIDIAN_COMMENT = re.compile(r"%%.*?%%", re.DOTALL)
 _SCHEME = re.compile(r"^[a-zA-Z][a-zA-Z0-9+.-]*:")
+_IMAGE_SUFFIXES = frozenset({".apng", ".avif", ".bmp", ".gif", ".ico", ".jpeg", ".jpg", ".png", ".svg", ".webp"})
 
 
 def _default_branch(project: Project) -> str:
@@ -50,28 +48,23 @@ class _LinkRewriter:
         self.branch = _default_branch(project)
 
     def rewrite(self, body: str, source: Path, problems: list[str]) -> str:
-        def replace(match: re.Match[str]) -> str:
-            url = match.group("url").strip("<>")
+        def destination(url: str, kind: str) -> str | None:
             if not url or url.startswith(("#", "/")) or _SCHEME.match(url):
-                return match.group(0)
+                return None
             path_part, hash_mark, anchor = url.partition("#")
             if not path_part:
-                return match.group(0)
+                return None
 
             target = (self.docs_dir / source.parent / unquote(path_part)).resolve()
-            fragment = f"#{anchor}" if hash_mark else ""
             if target == self.docs_dir or self.docs_dir in target.parents:
                 new_url = self._internal(target, source)
-                if new_url is None:
-                    return match.group(0)
             else:
-                new_url = self._external(target, match.group("bang") == "!", source, url, problems)
-                if new_url is None:
-                    return match.group(0)
-            title = match.group("title") or ""
-            return f"{match.group('bang')}[{match.group('label')}]({new_url}{fragment}{title})"
+                # A reference definition can serve an image or a link: its target says which.
+                is_image = kind == "image" or (kind == "reference" and target.suffix.lower() in _IMAGE_SUFFIXES)
+                new_url = self._external(target, is_image, source, url, problems)
+            return None if new_url is None else new_url + (f"#{anchor}" if hash_mark else "")
 
-        return map_prose(body, lambda text: _MARKDOWN_LINK.sub(replace, text))
+        return rewrite_links(body, destination)
 
     def _internal(self, target: Path, source: Path) -> str | None:
         """Only links to a renamed page (the home note) change; the rest of the tree is copied as it is."""

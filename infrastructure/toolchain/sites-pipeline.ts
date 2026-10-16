@@ -221,7 +221,8 @@ export class DocsSitesPipeline extends Construct {
           build: {
             commands: [
               'umccr-docs check --slug "$SLUG" --config "$CONFIG_PATH"',
-              'umccr-docs build --slug "$SLUG" --config "$CONFIG_PATH" --site-dir out/site',
+              // The footer names the release's repository and commit. The source has no .git for the toolkit to ask.
+              'UMCCR_DOCS_SOURCE_REPO="$REPO" UMCCR_DOCS_COMMIT="$COMMIT" umccr-docs build --slug "$SLUG" --config "$CONFIG_PATH" --site-dir out/site',
               'umccr-docs verify-site out/site',
               'umccr-docs export-kb --slug "$SLUG" --config "$CONFIG_PATH" --commit "$COMMIT" --out out/kb',
             ],

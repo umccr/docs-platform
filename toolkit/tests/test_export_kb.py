@@ -166,3 +166,17 @@ def test_exports_the_basic_example(tmp_path):
         meta = metadata_for(out, document.relative_to(out).as_posix())
         assert meta["doc_id"].startswith("basic-site:")
         assert meta["url"].startswith("https://docs.umccr.org/basic-site/")
+
+
+def test_reference_definitions_become_absolute_docs_urls():
+    site = "https://docs.umccr.org/vault/"
+    body = (
+        "Read the [guide][guide] and see the [footnote][^1].\n\n"
+        '[guide]: ../Guides/writing.md#links "Writing"\n'
+        "[^1]: Guides/writing.md stays a footnote.\n\n"
+        "```md\n[sample]: sample.md\n```\n"
+    )
+    rewritten = absolute_links(body, PurePosixPath("Areas/Overview.md"), site)
+    assert '[guide]: https://docs.umccr.org/vault/Guides/writing/#links "Writing"\n' in rewritten
+    assert "[^1]: Guides/writing.md stays a footnote." in rewritten
+    assert "```md\n[sample]: sample.md\n```" in rewritten, "code samples are never rewritten"

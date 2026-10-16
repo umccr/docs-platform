@@ -73,4 +73,4 @@ def _convert(text: str) -> str:
 
 
 def convert_callouts(body: str) -> str:
-    return "".join(segment.text if segment.fenced else _convert(segment.text) for segment in segments(body))
+    return "".join(segment.text if segment.code else _convert(segment.text) for segment in segments(body))

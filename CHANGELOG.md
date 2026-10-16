@@ -6,6 +6,22 @@ toolkit and theme changes up when their registry entry's `toolkitRef` moves to a
 
 ## Unreleased
 
+- The publisher serves files with Python's own media type table, not the publishing host's `mime.types`, so a file
+  gets the same type from a laptop and from CodeBuild; `.xhtml`, `.xht` and `.shtml` are downloads. Documents (HTML,
+  SVG and every XML type) are served as UTF-8, and the contract and `verify-site` check whichever files the
+  publisher serves as documents, `.htm` and `.rdf` included, rather than a list of extensions. A document that is
+  not UTF-8, such as a UTF-16 SVG, or that holds NUL characters, is rejected: read as UTF-8 it hid its tags from the
+  checks while a browser decoded and ran them.
+- Site builds show the release's repository and commit in the page footer: the site pipeline passes them to
+  `umccr-docs build` (`UMCCR_DOCS_SOURCE_REPO`, `UMCCR_DOCS_COMMIT`), since the source object has no `.git`.
+- Code-aware Markdown follows Python-Markdown: indented code blocks are code, and so are fences nested in lists and
+  admonitions, while indented blocks after a list item, admonition, tab, footnote or definition stay content.
+  Indented code samples are no longer rejected by the contract or rewritten (wikilinks, links, callouts), and a
+  source finding the rendered page does not confirm is dropped. Obsidian properties go after the first heading
+  outside code, not into a shell sample's `# comment`.
+- Reference definitions (`[guide]: guide.md`) are rewritten like inline links: absolute docs URLs in exported
+  documents, the home note as `index.md`, and links leaving `docs_dir` to the repository on GitHub. A reference to
+  an image outside `docs_dir` is a problem, as an inline one is.
 - Theme: the chat panel renders answers as Markdown: paragraphs, lists, emphasis, code, tables, quotes and links. It
   builds every element itself from a parsed tree, so nothing in an answer is ever read as HTML, and links keep to
   http(s), mailto and paths on the docs site. Citation markers such as `[2]` link to the cited page, and sources are

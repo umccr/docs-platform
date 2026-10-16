@@ -138,6 +138,29 @@ def test_content_types():
     assert content_type_for("unknown.bin") == "application/octet-stream"
 
 
+@pytest.mark.parametrize(
+    ("path", "content_type"),
+    [
+        ("index.html", "text/html; charset=utf-8"),
+        ("legacy.htm", "text/html; charset=utf-8"),
+        ("img/diagram.svg", "image/svg+xml; charset=utf-8"),
+        ("sitemap.xml", "application/xml; charset=utf-8"),
+        ("data.rdf", "application/xml; charset=utf-8"),
+        ("img/photo.png", "image/png"),
+        ("report.pdf", "application/pdf"),
+        # Not served as documents, wherever the publish runs: only Python's own table is consulted, not the host's
+        # mime.types (where .xhtml, .xht and .shtml can be XHTML or HTML).
+        ("page.xhtml", "application/octet-stream"),
+        ("page.xht", "application/octet-stream"),
+        ("page.shtml", "application/octet-stream"),
+        # Compressed: without a Content-Encoding no browser opens it as SVG.
+        ("img/diagram.svgz", "application/octet-stream"),
+    ],
+)
+def test_content_types_are_the_same_on_every_host_and_documents_are_utf8(path, content_type):
+    assert content_type_for(path) == content_type
+
+
 # --- releases, documents and the publisher session ---------------------------------------------------------------
 
 

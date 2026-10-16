@@ -15,13 +15,13 @@ files excluded by a filter, which would leave pages removed from the source onli
 
 import datetime
 import json
-import mimetypes
 import os
 import re
 from pathlib import Path
 from typing import Any
 
 from umccr_docs.errors import DocsError
+from umccr_docs.media_types import content_type_for
 from umccr_docs.slug import validate_slug
 
 MARKER_NAME = "_publish.json"
@@ -33,35 +33,12 @@ REVALIDATE = "no-cache"
 # for a year. Everything else is revalidated on every request, which is why a publish needs no cache invalidation.
 _FINGERPRINTED = re.compile(r"\.[0-9a-f]{8,}\.min\.(?:js|css)$")
 
-_CONTENT_TYPES = {
-    ".html": "text/html; charset=utf-8",
-    ".css": "text/css; charset=utf-8",
-    ".js": "text/javascript; charset=utf-8",
-    ".json": "application/json",
-    ".xml": "application/xml",
-    ".svg": "image/svg+xml",
-    ".txt": "text/plain; charset=utf-8",
-    ".woff2": "font/woff2",
-    ".woff": "font/woff",
-    ".gz": "application/gzip",
-    ".ico": "image/x-icon",
-    ".webmanifest": "application/manifest+json",
-}
-
 # Refuse to delete more than this share of what is published, unless told to.
 MASS_DELETE_RATIO = 0.5
 
 
 def cache_control_for(relative: str) -> str:
     return IMMUTABLE if _FINGERPRINTED.search(relative) else REVALIDATE
-
-
-def content_type_for(relative: str) -> str:
-    suffix = Path(relative).suffix.lower()
-    if suffix in _CONTENT_TYPES:
-        return _CONTENT_TYPES[suffix]
-    guessed, _ = mimetypes.guess_type(relative)
-    return guessed or "application/octet-stream"
 
 
 def _local_files(site_dir: Path) -> dict[str, Path]:

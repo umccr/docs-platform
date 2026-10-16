@@ -221,10 +221,11 @@ def render_bases(
     problems: list[str],
     source_text: str,
 ) -> str:
-    """Replace each ```` ```base ```` block in `body` with its rendered table."""
+    """Replace each top-level ```` ```base ```` block in `body` with its rendered table."""
     parts = []
     for segment in segments(body):
-        if not (segment.fenced and segment.info == "base"):
+        # A block nested in a list or a callout stays a code sample: a table there would end its container.
+        if not (segment.fenced and segment.info == "base" and segment.level == 0):
             parts.append(segment.text)
             continue
         parts.append(_render_block(segment, note, vault, sort_orders, problems, source_text))

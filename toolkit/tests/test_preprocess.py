@@ -111,3 +111,28 @@ def test_links_to_the_repository_are_percent_encoded(make_project):
     out = root / "out"
     assert preprocess(load_project(root / "mkdocs.yml"), out) == []
     assert "(https://github.com/umccr/test-vault/blob/main/Design%20Notes.md)" in (out / "index.md").read_text()
+
+
+def test_reference_definitions_are_rewritten_like_inline_links(make_project):
+    root = make_project(
+        {
+            "mkdocs.yml": OBSIDIAN_CONFIG.replace(
+                "    source_format: obsidian\n", "    source_format: obsidian\n    home: Home.md\n"
+            ),
+            "Design Notes.md": "# Design\n",
+            "vault/Home.md": "# Home\n",
+            "vault/Guide.md": (
+                "# Guide\n\n[Home][home] and [design][design].\n\n[home]: Home.md\n[design]: <../Design Notes.md>\n"
+            ),
+        }
+    )
+    out = root / "out"
+    assert preprocess(load_project(root / "mkdocs.yml"), out) == []
+    text = (out / "Guide.md").read_text()
+    assert "[home]: index.md\n" in text, "the home note is published as index.md"
+    assert "[design]: https://github.com/umccr/test-vault/blob/main/Design%20Notes.md\n" in text
+
+
+def test_a_reference_to_an_image_outside_docs_dir_is_a_problem(make_project):
+    problems = vault_problems(make_project, {"index.md": "# Home\n\n![diagram][d]\n\n[d]: ../diagram.png\n"})
+    assert problems == ["index.md: image ../diagram.png is outside docs_dir; move it inside so it is published"]

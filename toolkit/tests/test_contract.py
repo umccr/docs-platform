@@ -198,3 +198,39 @@ def test_configuration_values_cannot_carry_markup_that_runs(make_project, extra,
 def test_a_copyright_link_passes(make_project):
     config = VALID_CONFIG + "copyright: '&copy; 2026 <a href=\"https://umccr.org\">UMCCR</a>'\n"
     assert problems_for(make_project, config) == []
+
+
+@pytest.mark.parametrize(
+    "page",
+    [
+        # Code samples the engine renders as code, which the source scan must not take for markup.
+        "    <script>example</script>\n",
+        "An example:\n\n    <script>example</script>\n",
+        '!!! example\n\n    ```html\n    <img src="x" onerror="handle()">\n    ```\n',
+        "1. Add the tag:\n\n    ```html\n    <script src=app.js></script>\n    ```\n",
+        "- A list item\n\n        <iframe src=x></iframe>\n",
+    ],
+)
+def test_code_samples_in_any_container_pass(make_project, page):
+    assert problems_for(make_project, VALID_CONFIG, {"docs/page.md": "# Page\n\n" + page}) == []
+
+
+def test_markup_inside_a_container_is_still_reported_with_its_line(make_project):
+    page = "# Page\n\n- A list item\n\n    <script>alert(1)</script>\n"
+    problems = problems_for(make_project, VALID_CONFIG, {"docs/page.md": page})
+    assert problems == ["docs/page.md:5: a <script> element is not allowed"]
+
+
+def test_documents_must_be_utf8(make_project):
+    root = make_project({"mkdocs.yml": VALID_CONFIG, "docs/index.md": "# Home\n"})
+    (root / "docs" / "diagram.svg").write_bytes("<svg><script>alert(1)</script></svg>".encode("utf-16"))
+    problems = check_project(load_project(root / "mkdocs.yml"), "example")
+    assert problems == [
+        "docs/diagram.svg: must be UTF-8 text without NUL characters: it is served, and checked, as UTF-8"
+    ]
+
+
+@pytest.mark.parametrize("relative", ["docs/data.rdf", "docs/feed.xsl", "docs/legacy.htm"])
+def test_files_served_as_documents_are_checked_whatever_their_extension(make_project, relative):
+    problems = problems_for(make_project, VALID_CONFIG, {relative: "<p>x</p><script>alert(1)</script>\n"})
+    assert problems == [f"{relative}: a <script> element is not allowed"]

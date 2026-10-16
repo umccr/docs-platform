@@ -24,15 +24,12 @@ from urllib.parse import quote, unquote
 
 from umccr_docs.config import Project
 from umccr_docs.files import published_pages
-from umccr_docs.markdown import map_prose, split_frontmatter
+from umccr_docs.markdown import rewrite_links, split_frontmatter
 from umccr_docs.preprocess import preprocess
 from umccr_docs.slug import site_url_for, validate_slug
 
 METADATA_SUFFIX = ".metadata.json"
 
-_MARKDOWN_LINK = re.compile(
-    r"(?P<bang>!?)\[(?P<label>[^\]\n]*)\]\((?P<url><[^>\n]*>|[^)\s]+)(?P<title>\s+\"[^\"\n]*\")?\)"
-)
 _SCHEME = re.compile(r"^[a-zA-Z][a-zA-Z0-9+.-]*:")
 _HEADING = re.compile(r"^#[ \t]+(?P<title>.+?)[ \t#]*$", re.MULTILINE)
 _TITLE = re.compile(r"^title:[ \t]*(?P<title>.+?)[ \t]*$", re.MULTILINE)
@@ -82,26 +79,27 @@ def page_title(frontmatter: str, body: str, relative: PurePosixPath) -> str:
 
 
 def absolute_links(body: str, relative: PurePosixPath, site_url: str, *, directory_urls: bool = True) -> str:
-    """Rewrite relative links between pages, and to images, as absolute URLs on the docs site."""
+    """
+    Rewrite relative links between pages, and to images, as absolute URLs on the docs site: inline links and
+    reference definitions alike, so a passage quoted on its own keeps links that work.
+    """
 
-    def replace(match: re.Match[str]) -> str:
-        url = match.group("url").strip("<>")
-        if not url or url.startswith("#") or _SCHEME.match(url):
-            return match.group(0)
+    def destination(url: str, _kind: str) -> str | None:
+        if not url or url.startswith(("#", "/")) or _SCHEME.match(url):
+            return None
         path_part, hash_mark, anchor = url.partition("#")
-        if url.startswith("/") or not path_part:
-            return match.group(0)
+        if not path_part:
+            return None
         target = PurePosixPath(posixpath.normpath(posixpath.join(relative.parent.as_posix(), unquote(path_part))))
         if target.as_posix().startswith(".."):
-            return match.group(0)
+            return None
         if target.suffix.lower() == ".md":
             new_url = page_url(site_url, target, directory_urls=directory_urls)
         else:
             new_url = site_url + quote(target.as_posix())
-        fragment = f"#{anchor}" if hash_mark else ""
-        return f"{match.group('bang')}[{match.group('label')}]({new_url}{fragment}{match.group('title') or ''})"
+        return new_url + (f"#{anchor}" if hash_mark else "")
 
-    return map_prose(body, lambda text: _MARKDOWN_LINK.sub(replace, text))
+    return rewrite_links(body, destination)
 
 
 def export_kb(

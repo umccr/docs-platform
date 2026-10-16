@@ -18,12 +18,13 @@ from pathlib import Path
 
 from mkdocs.utils.meta import get_data
 
-from umccr_docs.active_content import DOCUMENT_SUFFIXES, unsafe_html
+from umccr_docs.active_content import EMBED, HANDLER, NOT_UTF8, SCRIPT, SCRIPT_URL, decode_document, unsafe_html
 from umccr_docs.build import markdown_renderer
 from umccr_docs.config import Project
 from umccr_docs.errors import DocsError
 from umccr_docs.files import source_files, symlinks_leaving
-from umccr_docs.markdown import prose_and_code
+from umccr_docs.markdown import mask_code
+from umccr_docs.media_types import content_type_for, is_document
 from umccr_docs.preprocess import output_paths, preprocess
 from umccr_docs.slug import site_url_for, validate_slug
 
@@ -61,14 +62,12 @@ PLATFORM_EXTRA_KEYS = frozenset({"polyfills", "analytics", "consent"})
 # Where the theme's scripts are served from. A file here in docs_dir would replace the platform's.
 PLATFORM_ASSET_DIRS = ("assets/javascripts/", "assets/umccr/")
 
+# Where in the source a finding of the rendered check is, so it can be reported with its line.
 _UNSAFE_HTML = [
-    (re.compile(r"<\s*script\b", re.IGNORECASE), "a <script> element"),
-    (re.compile(r"<\s*(iframe|object|embed)\b", re.IGNORECASE), "an embedded frame or object"),
-    (re.compile(r"<[a-z][^>]*\son[a-z]+\s*=", re.IGNORECASE), "an HTML event handler attribute"),
-    (
-        re.compile(r"\]\(\s*<?\s*javascript:|href\s*=\s*[\"']?\s*javascript:", re.IGNORECASE),
-        "a javascript: URL",
-    ),
+    (re.compile(r"<\s*script\b", re.IGNORECASE), SCRIPT),
+    (re.compile(r"<\s*(iframe|object|embed)\b", re.IGNORECASE), EMBED),
+    (re.compile(r"<[a-z][^>]*\son[a-z]+\s*=", re.IGNORECASE), HANDLER),
+    (re.compile(r"\]\(\s*<?\s*javascript:|href\s*=\s*[\"']?\s*javascript:", re.IGNORECASE), SCRIPT_URL),
 ]
 
 
@@ -90,8 +89,7 @@ def _plugin_names(plugins: object) -> list[str]:
 
 def unsafe_markdown(text: str) -> list[tuple[int, str]]:
     """(line, description) for each unsafe construct outside code. Code samples may show HTML."""
-    # Blank out code, keeping newlines so line numbers stay right.
-    scanned = "".join(re.sub(r"[^\n]", " ", part) if is_code else part for part, is_code in prose_and_code(text))
+    scanned = mask_code(text)
     findings = [
         (scanned.count("\n", 0, match.start()) + 1, description)
         for pattern, description in _UNSAFE_HTML
@@ -156,24 +154,31 @@ def check_project(project: Project, slug: str) -> list[str]:
         shown = _display(docs_dir, relative)
         if relative.as_posix().startswith(PLATFORM_ASSET_DIRS):
             problems.append(f"{shown}: {' and '.join(PLATFORM_ASSET_DIRS)} hold the platform theme's scripts")
-        if relative.suffix.lower() in DOCUMENT_SUFFIXES:
+        if is_document(content_type_for(relative.as_posix())):
             # Copied to the site as it is, and run as a document when opened.
-            text = (docs_dir / relative).read_text(encoding="utf-8", errors="replace")
+            text = decode_document((docs_dir / relative).read_bytes())
+            if text is None:
+                problems.append(f"{shown}: {NOT_UTF8}")
+                continue
             for description in unsafe_html(text):
                 problems.append(f"{shown}: {description} is not allowed")
 
-    rendered = _rendered_pages(project, files) if not escaping else {}
+    rendered = None if escaping else _rendered_pages(project, files)
     for relative in files:
         if relative.suffix.lower() != ".md":
             continue
         shown = _display(docs_dir, relative)
         text = (docs_dir / relative).read_text(encoding="utf-8", errors="replace")
-        found = unsafe_markdown(text)
+        # The rendered page decides; the source scan only says where. A finding the page does not have was in code
+        # the scan took for prose, and is dropped rather than rejecting a valid sample.
+        page = None if rendered is None else rendered.get(relative, [])
+        found = [
+            (line, description) for line, description in unsafe_markdown(text) if page is None or description in page
+        ]
         for line, description in found:
             problems.append(f"{shown}:{line}: {description} is not allowed")
-        # The source scan gives a line number; the rendered page is the authority.
         reported = {description for _, description in found}
-        for description in rendered.get(relative, []):
+        for description in page or []:
             if description not in reported:
                 problems.append(f"{shown}: the rendered page has {description}, which is not allowed")
 
