@@ -6,6 +6,14 @@ toolkit and theme changes up when their registry entry's `toolkitRef` moves to a
 
 ## Unreleased
 
+- Theme: the chat panel renders answers as Markdown: paragraphs, lists, emphasis, code, tables, quotes and links. It
+  builds every element itself from a parsed tree, so nothing in an answer is ever read as HTML, and links keep to
+  http(s), mailto and paths on the docs site. Citation markers such as `[2]` link to the cited page, and sources are
+  numbered to match them, from OrcaSonar's `ref`; snippets arrive from OrcaSonar as plain text.
+- Theme: the chat panel shows an answer at a steady pace as it arrives, with "Searching the documentation…" until the
+  first words. OrcaSonar's guardrail releases an answer about 1,000 characters at a time, so it used to appear all at
+  once. The panel follows the answer down only while the reader is at the end of the conversation, shows sources and
+  feedback once the answer is complete, and respects reduced motion.
 - The fetch build stores symlinks as links (`zip -y`) and stops on one that leads out of the checkout or into its
   `.git`. `zip` used to package the file a link pointed at, so `docs/x -> /etc/hosts` or `-> ../.git/config`
   reached the site pipeline as an ordinary file, and a link loop multiplied the archive.

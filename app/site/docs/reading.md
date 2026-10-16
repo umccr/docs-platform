@@ -23,7 +23,8 @@ The **Ask the docs** button, bottom right on every page, opens a chat panel prov
 documentation search and answer service.
 
 - **Ask** answers a question from UMCCR documentation and lists the pages it used; check the sources, because
-  answers can be wrong. Follow-up questions keep the conversation's context.
+  answers can be wrong. A number in brackets, such as [2], is the source with that number and links to its page.
+  Follow-up questions keep the conversation's context.
 - **Search** lists the best-matching passages, with links, without writing an answer.
 - **This site only** limits both to the site you are reading; clear it to search every site.
 

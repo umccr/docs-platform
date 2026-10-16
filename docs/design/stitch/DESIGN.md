@@ -185,4 +185,5 @@ pills for chips and segmented controls.
 - Do keep sources visible and close to the answer: they are how readers check it.
 - Don't use gradients, glows or glassmorphism, except on the sign-in page, which matches the portal's sign-in.
 - Don't make the assistant a character: no robot, sparkle icons, purple "AI" gradients or chat avatars.
-- Don't render answers as rich text: answers and snippets are plain text.
+- Don't style answers beyond Markdown's basics (paragraphs, lists, code, small tables, links); titles and snippets
+  are plain text.

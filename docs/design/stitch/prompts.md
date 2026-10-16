@@ -257,8 +257,8 @@ Export the screens' HTML and the project's DESIGN.md. Building them means changi
 
 - **Fonts are self-hosted.** The content pages' CSP allows no third-party requests, so Inter and the code font ship
   in the theme's assets rather than from Google Fonts.
-- **Answers are plain text.** OrcaSonar returns the answer, then its citations as a list; render both as text.
-  Inline citation markers inside the answer would need an API change.
+- **Answers are Markdown.** The theme builds them into elements itself, never as HTML; titles and snippets are plain
+  text. Each citation carries the `ref` that the answer's `[n]` markers use, so markers link to their sources.
 - **Two searches.** The header search is each site's own MkDocs index; Ask and Search in the panel are OrcaSonar,
   across sites unless "This site only" is on. Stage 6 is where they meet.
 - **The panel loads sign-in code only when opened**, so the launcher and the welcome state must render before a
