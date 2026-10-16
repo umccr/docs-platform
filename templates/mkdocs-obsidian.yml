@@ -1,0 +1,19 @@
+# Copy to mkdocs.yml at your vault's repository root. See https://docs.umccr.org/platform/authoring/#obsidian-vaults.
+site_name: <Site name>
+site_description: <One line about the site>
+site_url: https://docs.umccr.org/<slug>/
+repo_url: https://github.com/<owner>/<repo>
+repo_name: <owner>/<repo>
+edit_uri: edit/main/<vault folder>/
+docs_dir: <vault folder>
+
+extra:
+  platform:
+    source_format: obsidian
+    home: Home.md
+    properties: [status, priority, lead, updated]
+    obsidian:
+      # Which note a name means when several folders have one.
+      prefer_folders: []
+      # Order for text properties in Bases views, lowest first.
+      sort_orders: {}

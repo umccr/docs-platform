@@ -1,0 +1,448 @@
+/*
+ * UMCCR docs theme. Colours follow the portal apps' sign-in page; fonts are the system stack, so pages make no
+ * third-party requests (the site's CSP allows none).
+ */
+
+:root,
+[data-md-color-scheme='default'] {
+  --md-primary-fg-color: #1e40af;
+  --md-primary-fg-color--light: #2563eb;
+  --md-primary-fg-color--dark: #1e3a8a;
+  --md-primary-bg-color: #ffffff;
+  --md-accent-fg-color: #2563eb;
+  --md-text-font-family:
+    system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --md-code-font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+[data-md-color-scheme='slate'] {
+  --md-primary-fg-color: #0f172a;
+  --md-primary-fg-color--light: #1e293b;
+  --md-primary-fg-color--dark: #020617;
+  --md-accent-fg-color: #60a5fa;
+  --md-default-bg-color: #0b1120;
+}
+
+/* Classification banner (extra.classification). */
+.umccr-classification {
+  margin: 0;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* Frontmatter properties at the top of vault pages. */
+.umccr-properties table {
+  font-size: 0.75rem;
+}
+
+.umccr-properties table th {
+  display: none;
+}
+
+.umccr-properties table td:first-child {
+  color: var(--md-default-fg-color--light);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* The note under tables rendered from Obsidian Bases. */
+.umccr-base-note {
+  margin-top: -0.5em;
+  color: var(--md-default-fg-color--lighter);
+  font-size: 0.65rem;
+}
+
+/* Footer provenance. */
+.umccr-provenance {
+  font-size: 0.6rem;
+  opacity: 0.8;
+}
+
+.umccr-provenance code {
+  font-size: inherit;
+}
+
+/* Account menu, added to the header by umccr.js. */
+.umccr-account {
+  position: relative;
+  margin-left: 0.4rem;
+}
+
+.umccr-account__button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--md-primary-bg-color);
+  font: inherit;
+  font-size: 0.6rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.umccr-account__button:focus-visible {
+  outline: 2px solid var(--md-accent-fg-color);
+  outline-offset: 2px;
+}
+
+.umccr-account__menu {
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  right: 0;
+  z-index: 10;
+  min-width: 12rem;
+  padding: 0.5rem 0;
+  border-radius: 0.2rem;
+  background: var(--md-default-bg-color);
+  box-shadow: var(--md-shadow-z2);
+  color: var(--md-default-fg-color);
+  font-size: 0.7rem;
+}
+
+.umccr-account__menu[hidden] {
+  display: none;
+}
+
+.umccr-account__identity {
+  padding: 0.2rem 0.8rem 0.5rem;
+  border-bottom: 1px solid var(--md-default-fg-color--lightest);
+}
+
+.umccr-account__identity span {
+  display: block;
+  color: var(--md-default-fg-color--light);
+}
+
+.umccr-account__menu a {
+  display: block;
+  padding: 0.35rem 0.8rem;
+  color: inherit;
+}
+
+.umccr-account__menu a:hover {
+  background: var(--md-default-fg-color--lightest);
+}
+
+/* Catalogue on the platform home page (#umccr-catalogue). */
+.umccr-catalogue {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+  gap: 0.8rem;
+  margin: 1rem 0;
+}
+
+.umccr-catalogue__site {
+  display: block;
+  padding: 0.8rem 1rem;
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: 0.3rem;
+  color: inherit;
+}
+
+.md-typeset .umccr-catalogue__site:hover {
+  border-color: var(--md-accent-fg-color);
+  color: inherit;
+}
+
+.umccr-catalogue__site strong {
+  display: block;
+  color: var(--md-typeset-a-color);
+}
+
+.umccr-catalogue__site span {
+  display: block;
+  margin-top: 0.3rem;
+  color: var(--md-default-fg-color--light);
+  font-size: 0.7rem;
+}
+
+/*
+ * Chat panel: a launcher in the corner and a panel above it. Answers come from OrcaSonar as Markdown, which umccr.js
+ * builds into the elements styled under .umccr-chat__answer.
+ */
+.umccr-chat__launcher {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 20;
+  padding: 0.5rem 0.9rem;
+  border: 0;
+  border-radius: 1rem;
+  background: var(--md-primary-fg-color);
+  color: var(--md-primary-bg-color);
+  box-shadow: var(--md-shadow-z2);
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.umccr-chat {
+  position: fixed;
+  right: 1rem;
+  bottom: 3.4rem;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  width: min(26rem, calc(100vw - 2rem));
+  max-height: min(36rem, calc(100vh - 5rem));
+  border-radius: 0.3rem;
+  background: var(--md-default-bg-color);
+  box-shadow: var(--md-shadow-z3);
+  color: var(--md-default-fg-color);
+  font-size: 0.7rem;
+}
+
+.umccr-chat[hidden] {
+  display: none;
+}
+
+.umccr-chat__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 0.8rem;
+  border-bottom: 1px solid var(--md-default-fg-color--lightest);
+}
+
+.umccr-chat__close,
+.umccr-chat__rate {
+  border: 1px solid var(--md-default-fg-color--lighter);
+  border-radius: 0.2rem;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.umccr-chat__notice {
+  margin: 0;
+  padding: 0.4rem 0.8rem;
+  color: var(--md-default-fg-color--light);
+  font-size: 0.6rem;
+}
+
+.umccr-chat__log {
+  flex: 1;
+  min-height: 4rem;
+  overflow-y: auto;
+  padding: 0 0.8rem;
+}
+
+.umccr-chat__query {
+  margin: 0.6rem 0 0.3rem;
+  font-weight: 600;
+}
+
+.umccr-chat__answer {
+  overflow-wrap: break-word;
+}
+
+.umccr-chat__answer > :first-child {
+  margin-top: 0;
+}
+
+.umccr-chat__answer > :last-child {
+  margin-bottom: 0;
+}
+
+.umccr-chat__answer p,
+.umccr-chat__answer ul,
+.umccr-chat__answer ol,
+.umccr-chat__answer blockquote,
+.umccr-chat__answer pre,
+.umccr-chat__answer hr,
+.umccr-chat__table {
+  margin: 0 0 0.5rem;
+}
+
+.umccr-chat__answer ul,
+.umccr-chat__answer ol {
+  padding-left: 1.2rem;
+}
+
+.umccr-chat__answer li > ul,
+.umccr-chat__answer li > ol,
+.umccr-chat__answer li > p {
+  margin: 0.2rem 0 0;
+}
+
+.umccr-chat__answer h3,
+.umccr-chat__answer h4,
+.umccr-chat__answer h5,
+.umccr-chat__answer h6 {
+  margin: 0.6rem 0 0.3rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.umccr-chat__answer a {
+  color: var(--md-typeset-a-color);
+}
+
+.umccr-chat__answer code {
+  padding: 0 0.2em;
+  border-radius: 0.15rem;
+  background: var(--md-code-bg-color);
+  color: var(--md-code-fg-color);
+  font-family: var(--md-code-font-family);
+  font-size: 0.85em;
+  overflow-wrap: anywhere;
+}
+
+.umccr-chat__answer pre {
+  overflow-x: auto;
+  padding: 0.4rem 0.5rem;
+  border-radius: 0.2rem;
+  background: var(--md-code-bg-color);
+}
+
+.umccr-chat__answer pre code {
+  padding: 0;
+  background: none;
+  white-space: pre;
+  overflow-wrap: normal;
+}
+
+.umccr-chat__answer blockquote {
+  padding-left: 0.6rem;
+  border-left: 0.2rem solid var(--md-default-fg-color--lightest);
+  color: var(--md-default-fg-color--light);
+}
+
+.umccr-chat__answer hr {
+  border: 0;
+  border-top: 1px solid var(--md-default-fg-color--lightest);
+}
+
+/* Tables scroll sideways rather than widen the panel. */
+.umccr-chat__table {
+  overflow-x: auto;
+}
+
+.umccr-chat__answer table {
+  border-collapse: collapse;
+}
+
+.umccr-chat__answer th,
+.umccr-chat__answer td {
+  padding: 0.2rem 0.4rem;
+  border: 1px solid var(--md-default-fg-color--lightest);
+  text-align: left;
+  vertical-align: top;
+}
+
+.umccr-chat__answer th {
+  font-weight: 600;
+}
+
+/* Citation markers, [2], which link to the cited page. */
+.umccr-chat__cite {
+  margin-left: 0.1em;
+  font-size: 0.75em;
+  line-height: 0;
+}
+
+.umccr-chat__cite a {
+  text-decoration: none;
+}
+
+/* "Searching the documentation…" until the first words of an answer, or search results, arrive. */
+.umccr-chat__pending {
+  margin: 0;
+  color: var(--md-default-fg-color--light);
+  animation: umccr-chat-pending 1.4s ease-in-out infinite;
+}
+
+@keyframes umccr-chat-pending {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .umccr-chat__pending {
+    animation: none;
+  }
+}
+
+.umccr-chat__sources-title {
+  margin: 0.5rem 0 0.2rem;
+  font-weight: 600;
+}
+
+.umccr-chat__sources {
+  margin: 0 0 0.4rem 1rem;
+  padding: 0;
+}
+
+.umccr-chat__snippet {
+  display: block;
+  color: var(--md-default-fg-color--light);
+}
+
+.umccr-chat__error {
+  color: var(--md-typeset-del-color, #b91c1c);
+}
+
+.umccr-chat__feedback {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  margin-bottom: 0.4rem;
+}
+
+.umccr-chat__form {
+  display: grid;
+  gap: 0.4rem;
+  padding: 0.6rem 0.8rem;
+  border-top: 1px solid var(--md-default-fg-color--lightest);
+}
+
+.umccr-chat__modes {
+  display: flex;
+  gap: 0.8rem;
+}
+
+.umccr-chat__scope {
+  margin-left: auto;
+}
+
+.umccr-chat__question {
+  width: 100%;
+  resize: vertical;
+  padding: 0.4rem;
+  border: 1px solid var(--md-default-fg-color--lighter);
+  border-radius: 0.2rem;
+  background: var(--md-default-bg-color);
+  color: inherit;
+  font: inherit;
+}
+
+.umccr-chat__send {
+  justify-self: end;
+  padding: 0.3rem 0.9rem;
+  border: 0;
+  border-radius: 0.2rem;
+  background: var(--md-primary-fg-color);
+  color: var(--md-primary-bg-color);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.umccr-chat__send:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+@media print {
+  .umccr-chat,
+  .umccr-chat__launcher {
+    display: none;
+  }
+}
