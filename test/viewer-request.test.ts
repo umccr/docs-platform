@@ -259,9 +259,9 @@ describe('with a valid session cookie', () => {
 
 describe('only registered sites are routed', () => {
   test('a site not published to the stage is a 404 even for a signed-in reader', () => {
-    const gammaLike = loadViewerRequestHandler({ sites: ['platform'] });
+    const platformOnly = loadViewerRequestHandler({ sites: ['platform'] });
     expectRewrite(
-      run(gammaLike, viewerRequest('/management-knowledgebase/', { cookie: sessionCookie() })),
+      run(platformOnly, viewerRequest('/management-knowledgebase/', { cookie: sessionCookie() })),
       NOT_FOUND_KEY
     );
   });

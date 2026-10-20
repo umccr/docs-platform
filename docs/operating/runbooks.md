@@ -1,8 +1,8 @@
 # Docs runbooks
 
 Operational procedures for `docs.<stage>.umccr.org`. The session key and the site registry are code in this
-repository, so changing either is a pull request that `DocsInfrastructurePipeline` deploys: beta and gamma, then prod
-after approval. Content changes are S3 operations with admin credentials for the stage account; releases are runs of
+repository, so changing either is a pull request that `DocsInfrastructurePipeline` deploys: beta, then prod after
+approval. Content changes are S3 operations with admin credentials for the stage account; releases are runs of
 `UMCCR-DocsSitesPipeline` in the toolchain account.
 
 ## First deploy of a stage

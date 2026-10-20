@@ -44,7 +44,7 @@ export interface DocsSite {
    */
   readonly toolkitRef: string;
 
-  /** Stages the site is published to, in order. Sites publish to dev and prod; stg carries no site content. */
+  /** Stages the site is published to, in order: beta (dev) and prod. */
   readonly stages: AppStage[];
 
   /** Catalogue title. */
@@ -54,7 +54,7 @@ export interface DocsSite {
   readonly description: string;
 }
 
-/** Stages the site pipeline publishes to. Stg receives infrastructure from the infrastructure pipeline, not sites. */
+/** Stages the site pipeline publishes to, in order. A stage added to `AppStage` gets no site content until it is here. */
 export const SITE_PUBLISH_STAGES: readonly AppStage[] = [AppStage.BETA, AppStage.PROD];
 
 /** Keeps URLs and S3 keys short, and the edge function's route table well within CloudFront's 10 KB limit. */

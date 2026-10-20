@@ -142,7 +142,7 @@ describe('DocsInfrastructurePipeline', () => {
     ]);
   });
 
-  test('deploys beta, gamma and prod from this repository', () => {
+  test('deploys beta and prod from this repository', () => {
     const pipelines = Object.values(
       Template.fromStack(stack).findResources('AWS::CodePipeline::Pipeline')
     ).map((resource) => (resource as { Properties: PipelineProperties }).Properties);
@@ -159,7 +159,6 @@ describe('DocsInfrastructurePipeline', () => {
       'Build',
       'UpdatePipeline',
       'Beta',
-      'Gamma',
       'Prod',
     ]);
 
@@ -373,7 +372,8 @@ describe('site publishing', () => {
     ]) {
       expect(policy).toContain(`:iam::${environment.account}:role/docs/docs-publisher`);
     }
-    expect(policy).not.toContain(`:iam::${STAGE_ENVIRONMENT[AppStage.GAMMA].account}:`);
+    // Those two roles and no other: sites publish to dev and prod only.
+    expect(policy.match(/role\/docs\/docs-publisher/g)).toHaveLength(2);
     // Reading the pipeline's own artifacts is all it may do in S3 here; writes happen as docs-publisher.
     expect(policy).not.toMatch(/"s3:(Put|Delete)|"cloudfront:/);
   });

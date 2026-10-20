@@ -9,7 +9,7 @@ const app = new cdk.App();
 // ---------------------------------------------------------------------------
 // docs.umccr.org: authenticated documentation at docs.<stage>.umccr.org
 //
-// One toolchain stack. Its self-mutating pipeline deploys DocsHostingStack to beta, gamma and prod; hosting is
+// One toolchain stack. Its self-mutating pipeline deploys DocsHostingStack to beta and prod; hosting is
 // registry-driven by infrastructure/sites.ts.
 // ---------------------------------------------------------------------------
 

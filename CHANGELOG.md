@@ -4,6 +4,15 @@ All notable changes to the docs platform: the infrastructure, the `umccr-docs` t
 toolkit and theme changes up when their registry entry's `toolkitRef` moves to a release; see
 [docs/operating/releasing.md](docs/operating/releasing.md).
 
+## Unreleased
+
+- Pipeline 1 deploys beta, then prod; the gamma stage is gone, as the stg account runs no docs stage. Prod now
+  opens with the `PromoteToProd` approval, so a timed-out approval fails prod rather than beta.
+- The publish steps can export documents to OrcaSonar: `docs-publisher` may list, read, write and delete under
+  `docs/*` in OrcaSonar's ingest bucket, matched by its generated name, and use its key through S3. OrcaSonar's
+  bucket and key policies name the role only by condition on the account principal, which defers to the role's own
+  policy, so every publish to a stage with OrcaSonar failed at `ListObjectsV2` with `AccessDenied`.
+
 ## v0.1.0
 
 The first release, for the first users: tag the commit that merges it to `main`. The registry pins every site but

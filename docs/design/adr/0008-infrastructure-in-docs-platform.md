@@ -30,6 +30,8 @@ publishing, its own pipelines; it shares nothing with the portal but the CDK con
   OrcaBus `DeploymentStackPipeline` construct fixes OrcaBus stage IDs, names and tags, so pipeline 1 is built by this
   repository's own construct, `infrastructure/toolchain/deployment-pipeline.ts`, adapted from it (MIT): stages
   `Beta`, `Gamma` and `Prod`, its own artifact bucket and key, and UMCCR names throughout.
+  **Update, 2026-10-21:** the `Gamma` stage is gone. The stg account runs no docs stage, so pipeline 1 deploys `Beta`,
+  then `Prod`, which opens with the `PromoteToProd` approval.
 - The infrastructure pipeline is started only by changes under `bin/`, `infrastructure/` and `app/`; docs, toolkit
   and example changes reach readers through the site pipeline instead.
 - CI runs the TypeScript tests, lint and synth alongside the toolkit tests.

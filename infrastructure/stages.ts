@@ -2,20 +2,18 @@ import type { Environment } from 'aws-cdk-lib';
 // The package's environments only: its pipeline construct is replaced by ./toolchain/deployment-pipeline.ts.
 import {
   BETA_ENVIRONMENT,
-  GAMMA_ENVIRONMENT,
   PROD_ENVIRONMENT,
   TOOLCHAIN_ENVIRONMENT,
 } from '@orcabus/platform-cdk-constructs/deployment-stack-pipeline/config';
 
 /**
- * Deployment stages of docs.umccr.org: beta in the dev account, gamma in stg, prod in prod.
+ * Deployment stages of docs.umccr.org: beta in the dev account and prod in prod. The stg account runs no docs stage.
  *
  * The values are lower case because they appear in deployed resource properties, such as the distribution's comment;
  * changing them would update every stage's distribution.
  */
 export enum AppStage {
   BETA = 'beta',
-  GAMMA = 'gamma',
   PROD = 'prod',
 }
 
@@ -27,7 +25,6 @@ export enum AppStage {
  */
 export const STAGE_ENVIRONMENT: Record<AppStage, Environment> = {
   [AppStage.BETA]: BETA_ENVIRONMENT,
-  [AppStage.GAMMA]: GAMMA_ENVIRONMENT,
   [AppStage.PROD]: PROD_ENVIRONMENT,
 };
 

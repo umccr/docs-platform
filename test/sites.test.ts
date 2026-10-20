@@ -31,7 +31,6 @@ describe('registry', () => {
 
   test.each([
     [AppStage.BETA, ['platform', 'management-knowledgebase']],
-    [AppStage.GAMMA, []],
     [AppStage.PROD, ['platform', 'management-knowledgebase']],
   ])('publishes the expected sites to %s', (appStage, slugs) => {
     expect(getDocsSites(appStage).map((entry) => entry.slug)).toEqual(slugs);
@@ -149,8 +148,9 @@ describe('validation', () => {
     expect(() => validateDocsSites([site({ stages: [] })])).toThrow(/any stage/);
   });
 
-  test('rejects publishing a site to stg', () => {
-    expect(() => validateDocsSites([site({ stages: [AppStage.GAMMA] })])).toThrow(/gamma/);
+  test('rejects a stage the site pipeline does not publish to', () => {
+    const unknown = 'qa' as AppStage;
+    expect(() => validateDocsSites([site({ stages: [unknown] })])).toThrow(/cannot publish to qa/);
   });
 });
 

@@ -12,11 +12,12 @@ here on GitHub; the published `/platform/` site, for readers and site owners, is
 
 ## Hostnames
 
-| Stage | Hostnames                               | Cognito pool       | Sites                  |
-| ----- | --------------------------------------- | ------------------ | ---------------------- |
-| beta  | `docs.dev.umccr.org`                    | `data-portal-dev`  | every registered site  |
-| gamma | `docs.stg.umccr.org`                    | `data-portal-stg`  | none: platform testing |
-| prod  | `docs.umccr.org`, `docs.prod.umccr.org` | `data-portal-prod` | every registered site  |
+| Stage | Hostnames                               | Cognito pool       | Sites                 |
+| ----- | --------------------------------------- | ------------------ | --------------------- |
+| beta  | `docs.dev.umccr.org`                    | `data-portal-dev`  | every registered site |
+| prod  | `docs.umccr.org`, `docs.prod.umccr.org` | `data-portal-prod` | every registered site |
+
+There is no docs stage in the stg account.
 
 `DOCS_DOMAIN_NAMES` in [`infrastructure/config.ts`](../../infrastructure/config.ts) is the source of truth. The
 Cognito callback URLs in `umccr/infrastructure` `cognito_aai/app_docs.tf` and the certificate in
@@ -59,8 +60,10 @@ push ─▶ organisation webhook ─▶ dispatcher (Lambda) ─▶ fetch build (
   prod, and failed runs post to the alerts Slack channel.
 - **`docs-publisher`**: one role per stage account (path `/docs/`). It trusts only `docs-sites-publish` in the
   toolchain account, may list, read, put and delete under `sites/*`, and may read the SSM parameters
-  `/docs/content-bucket-name` and `/orcasonar/ingest-bucket-name`. OrcaSonar's bucket and key policies let it write
-  `docs/*` there.
+  `/docs/content-bucket-name` and `/orcasonar/ingest-bucket-name`. For the documents it exports, it may do the same
+  under `docs/*` in OrcaSonar's ingest bucket, matched by the bucket's generated name
+  (`umccr-orcasonarstatefulstack-ingestbucket…`), and use OrcaSonar's key through S3 for that bucket only.
+  OrcaSonar's bucket and key policies name the role only by condition on the account, which defers to these grants.
 - **Newer release wins**: each publish compares its release number with the live `sites/<slug>/_publish.json` and
   skips if a newer release is already live.
 
@@ -141,8 +144,8 @@ invalidation is needed and the publisher has no CloudFront permissions.
 ## Deploying
 
 The toolchain stack `DocsInfrastructurePipeline` (`bin/deploy.ts`) holds pipeline 1, `UMCCR-DocsInfrastructure`,
-and dispatched publishing. Pipeline 1 is self-mutating: it deploys `UMCCR-DocsHostingStack` to beta, gamma and,
-after approval, prod, and its self-update deploys the rest of the toolchain stack. It is built by
+and dispatched publishing. Pipeline 1 is self-mutating: it deploys `UMCCR-DocsHostingStack` to beta and, after
+approval, prod, and its self-update deploys the rest of the toolchain stack. It is built by
 [`deployment-pipeline.ts`](../../infrastructure/toolchain/deployment-pipeline.ts), the same construct OrcaSonar
 uses. It is started by changes under
 `bin/`, `infrastructure/` and `app/`, never by the platform site (`app/site/`), docs, toolkit or example changes.

@@ -38,8 +38,8 @@ export const DOCS_HOSTING_STACK_NAME = 'UMCCR-DocsHostingStack';
 /**
  * The docs toolchain stack.
  *
- * Pipeline 1, `UMCCR-DocsInfrastructure`, is self-mutating: it deploys {@link DocsHostingStack} to beta, gamma and,
- * after a manual approval, prod, and its self-update deploys this stack, including dispatched publishing
+ * Pipeline 1, `UMCCR-DocsInfrastructure`, is self-mutating: it deploys {@link DocsHostingStack} to beta and, after a
+ * manual approval, prod, and its self-update deploys this stack, including dispatched publishing
  * ({@link DocsSitePublishing}): the dispatcher, the fetch build and pipeline 2, `UMCCR-DocsSitesPipeline`, which publishes
  * site contents. Site contents never go through this pipeline.
  */
@@ -67,12 +67,10 @@ export class DocsInfrastructureDeploymentStack extends Stack {
       stackName: DOCS_HOSTING_STACK_NAME,
       stackProps: {
         beta: getDocsHostingStackConfig(AppStage.BETA),
-        gamma: getDocsHostingStackConfig(AppStage.GAMMA),
         prod: getDocsHostingStackConfig(AppStage.PROD),
       },
       environments: {
         beta: STAGE_ENVIRONMENT[AppStage.BETA],
-        gamma: STAGE_ENVIRONMENT[AppStage.GAMMA],
         prod: STAGE_ENVIRONMENT[AppStage.PROD],
       },
       tags: { 'umccr-org:Product': 'Docs' },

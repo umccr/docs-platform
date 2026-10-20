@@ -11,7 +11,7 @@ every write-up.
 ## Writing one
 
 Name the file `YYYY-MM-DD-short-description.md`, with the date the problem was found, for example
-`2026-10-12-gamma-deploy-before-stg-terraform.md`, and use this outline:
+`2026-10-14-dispatcher-function-url.md`, and use this outline:
 
 ```markdown
 # <What went wrong, in one line>
