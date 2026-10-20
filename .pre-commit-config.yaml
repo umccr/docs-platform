@@ -1,0 +1,60 @@
+# Local hooks mirroring CI (.github/workflows/ci.yml). `make install` installs them as the git pre-commit hook, and
+# `make check` runs them on every tracked file. Both need pre-commit itself: https://pre-commit.com/#install
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-added-large-files
+      - id: check-yaml
+        args: ['--unsafe'] # mkdocs.yml may hold tags the contract then rejects with a clearer message
+      # Design pages exported from the design documents stay byte for byte as exported.
+      - id: end-of-file-fixer
+        exclude: ^docs/design/(?!adr/)
+      - id: trailing-whitespace
+        exclude: ^docs/design/(?!adr/)
+      - id: detect-private-key
+      - id: detect-aws-credentials
+        args: ['--allow-missing-credentials']
+
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
+    hooks:
+      - id: detect-secrets
+        args: ['--baseline', '.secrets.baseline']
+        exclude: ^(requirements/.*\.txt|pnpm-lock\.yaml)$
+
+  - repo: local
+    hooks:
+      - id: information-boundary
+        name: information boundary
+        entry: scripts/check-boundary.sh
+        language: system
+        pass_filenames: false
+      # The virtualenv's ruff, pinned in requirements/dev.txt, as `make check` and CI use. A commit from an editor
+      # often runs without .venv/bin on its PATH.
+      - id: ruff
+        name: ruff
+        entry: .venv/bin/ruff check toolkit
+        language: system
+        pass_filenames: false
+        files: ^toolkit/
+      - id: ruff-format
+        name: ruff format
+        entry: .venv/bin/ruff format --check toolkit
+        language: system
+        pass_filenames: false
+        files: ^toolkit/
+      - id: eslint
+        name: eslint (CDK app)
+        entry: pnpm lint
+        language: system
+        pass_filenames: false
+        files: ^(bin|infrastructure|app|test)/|^(eslint\.config\.mjs|tsconfig\.json)$
+        exclude: ^app/site/
+      - id: prettier
+        name: prettier (CDK app)
+        entry: pnpm format:check
+        language: system
+        pass_filenames: false
+        files: ^(bin|infrastructure|app|test)/
+        exclude: ^app/site/

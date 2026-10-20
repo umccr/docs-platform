@@ -1,0 +1,17 @@
+# Copy to mkdocs.yml at your repository root. See https://docs.umccr.org/platform/authoring/.
+site_name: <Site name>
+site_description: <One line about the site>
+site_url: https://docs.umccr.org/<slug>/
+repo_url: https://github.com/<owner>/<repo>
+repo_name: <owner>/<repo>
+edit_uri: edit/main/docs/
+docs_dir: docs
+
+# Optional: list pages in order. Without nav, pages are ordered by folder and file name.
+# nav:
+#   - Home: index.md
+#   - Guide: guide.md
+
+# Optional: a banner on every page.
+# extra:
+#   classification: 'Internal: UMCCR staff only'

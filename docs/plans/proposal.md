@@ -1,5 +1,8 @@
 # Proposal: UMCCR Docs Platform
 
+> **Historical.** This is the original proposal. The design that was built differs in places: see
+> [implementation-plan.md](implementation-plan.md) and the [design records](../design/adr/README.md).
+
 ## Summary
 
 Create a shared, authenticated documentation platform at `docs.umccr.org`. Documentation remains in its owning GitHub repository. Each participating repository builds its Markdown with MkDocs Material in GitHub Actions and publishes only generated static files to an assigned prefix in a private Amazon S3 bucket. Amazon CloudFront serves all projects from one domain, Amazon Cognito authenticates readers, and GitHub OIDC provides short-lived deployment access to AWS.
@@ -91,6 +94,12 @@ The platform should define handling for:
 - cache-control policy for HTML versus versioned assets.
 
 ## Repository ownership model
+
+> **Update (2026-09-29):** superseded in part by
+> [ADR-0001](../design/adr/0001-repository-split.md). The domain, certificate, CloudFront, S3, Cognito and edge
+> components now live in `umccr/infrastructure` (Terraform) and `umccr/frontend-infrastructure-pipelines` (CDK),
+> next to UMCCR's existing Cognito and frontend hosting. This repository keeps the workflow, toolkit, theme and
+> conventions below.
 
 ### `umccr/docs-platform` owns
 

@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Sign in · UMCCR Docs</title>
+    <link rel="icon" href="/favicon.ico" />
+    <link rel="stylesheet" href="/_auth/styles.css" />
+    <!-- Runtime config (Cognito pool, app client, hosted UI domain), written at deploy time. -->
+    <script src="/_auth/env.js"></script>
+    <script src="/_auth/app.js" defer></script>
+  </head>
+  <body>
+    <main class="page">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <svg
+            viewBox="0 0 24 24"
+            width="28"
+            height="28"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
+          </svg>
+        </div>
+        <h1>UMCCR Docs</h1>
+        <p class="brand-subtitle">Documentation</p>
+      </div>
+
+      <section class="card" aria-live="polite">
+        <p class="status" id="status">Checking sign-in…</p>
+
+        <div id="signin" hidden>
+          <div class="intro">
+            <h2>Welcome back</h2>
+            <p>Sign in with your institutional UMCCR account to read UMCCR documentation.</p>
+          </div>
+
+          <p class="alert" id="message" role="alert" hidden></p>
+
+          <button type="button" id="signin-button">Sign in with UMCCR account</button>
+
+          <div class="divider"><span>Secure UMCCR SSO</span></div>
+
+          <p class="notice">
+            Access is restricted to authorised UMCCR personnel. By signing in you agree to the
+            organisation's data governance policies.
+          </p>
+        </div>
+      </section>
+
+      <footer>
+        &copy; <span id="year"></span>
+        <a href="https://umccr.org" target="_blank" rel="noreferrer">UMCCR</a>
+        · University of Melbourne Centre for Cancer Research
+      </footer>
+    </main>
+  </body>
+</html>
