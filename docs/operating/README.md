@@ -53,10 +53,10 @@ push ─▶ organisation webhook ─▶ dispatcher (Lambda) ─▶ fetch build (
   starts the site pipeline with that object and the release's variables.
 - **UMCCR-DocsSitesPipeline**: CodePipeline V2 in queued mode: one release at a time, in the order they start, since a
   publish is not atomic and two releases of one site must not overlap. Build runs the toolkit at the site's
-  `toolkitRef` (a release tag or commit, never a branch) with no write access. Each publish step runs as `docs-sites-publish`, whose
-  only permission is to assume the stage's `docs-publisher` role; the toolkit narrows that role to the release's
-  site with a session policy. No approval: a failure in beta stops the release before prod, and failed runs post
-  to the alerts Slack channel.
+  `toolkitRef` (a release tag or commit, never a branch) with no write access. Each publish step runs as
+  `docs-sites-publish`, whose only permission is to assume the stage's `docs-publisher` role; the toolkit narrows
+  that role to the release's site with a session policy. No approval: a failure in beta stops the release before
+  prod, and failed runs post to the alerts Slack channel.
 - **`docs-publisher`**: one role per stage account (path `/docs/`). It trusts only `docs-sites-publish` in the
   toolchain account, may list, read, put and delete under `sites/*`, and may read the SSM parameters
   `/docs/content-bucket-name` and `/orcasonar/ingest-bucket-name`. OrcaSonar's bucket and key policies let it write

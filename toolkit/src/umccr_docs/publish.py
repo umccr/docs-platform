@@ -5,8 +5,9 @@ Publish a built site to `s3://<bucket>/sites/<slug>/`, and its exported document
 The site pipeline's publish steps assume `docs-publisher` narrowed to one site (see `umccr_docs.aws`), so this code
 cannot reach another site even if it tried; the guards here make mistakes loud before IAM has to stop them.
 
-Releases of one site can run in parallel and finish in any order. Each publish carries the site's release number and
-compares it with the live marker first: an older release is skipped rather than published over a newer one.
+Each publish carries the site's release number and compares it with the live marker first: an older release, such as
+a retried run after a newer one went live, is skipped rather than published over it. The check is not a lock, so two
+publishes of one site must never overlap; the site pipeline runs one release at a time for that reason.
 
 Order matters: every file is uploaded before anything is deleted, so a reader never finds a page missing mid-publish,
 and the provenance marker `_publish.json` is written last. There is no `aws s3 sync --delete`: the CLI never deletes

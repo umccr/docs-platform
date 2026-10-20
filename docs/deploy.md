@@ -1,42 +1,39 @@
 # Deploying docs.umccr.org
 
-Every step to deploy docs.umccr.org from this repository: the Terraform it depends on, the hosting stack in each
-stage account, the toolchain stack with both pipelines, the organisation webhook, and the first site releases.
-OrcaSonar, the chat service, has its own guide in
-[umccr/orcasonar](https://github.com/umccr/orcasonar/blob/main/docs/deploy.md); [step 7](#step-7-orcasonar) covers
-where the two meet.
+Every step to deploy docs.umccr.org from this repository: the Terraform it depends on, the hosting stack in each stage account, the toolchain stack with both pipelines, the organisation webhook, and the first site releases.
+OrcaSonar, the chat service, has its own guide in [umccr/orcasonar](https://github.com/umccr/orcasonar/blob/main/docs/deploy.md); [step 7](#step-7-orcasonar) covers where the two meet.
 
-> **This repository is public.** The commands below print account IDs, ARNs, bucket names and secret values. Keep
-> them in your terminal or a private note: never paste them into this repository, a pull request or an issue.
+> **This repository is public.** The commands below print account IDs, ARNs, bucket names and secret values. Keep them in your terminal or a private note: never paste them into this repository, a pull request or an issue.
 
 ## What gets deployed
 
-| Piece | Source | Account | Deployed by |
-| --- | --- | --- | --- |
-| Cognito app client `docs-app-<stage>`, SSM `/cognito/docs-app/app-client-id` | `umccr/infrastructure` `terraform/stacks/cognito_aai/app_docs.tf` | each stage | Terraform, by hand |
-| Certificate for the stage's docs hosts (us-east-1), SSM `/docs/certificate_arn` | `umccr/infrastructure` `terraform/stacks/umccr_docs_domain/` | each stage | Terraform, by hand |
-| `DocsInfrastructurePipeline`: pipeline 1, the dispatcher, the fetch build, `UMCCR-DocsSitesPipeline` | `bin/deploy.ts`, `infrastructure/toolchain/`, `app/dispatcher/` | toolchain | `cdk deploy` once, by hand; after that, pipeline 1 updates it |
-| `DocsHostingStack`: buckets, CloudFront, the edge function, the session key and Lambda, the `docs/docs-publisher` role, SSM `/docs/content-bucket-name`, the DNS record | `infrastructure/stage/`, `app/` | dev (beta), stg (gamma), prod | pipeline 1; beta can also be deployed by hand |
-| The organisation webhook | the umccr organisation's settings on GitHub | | an organisation owner, once |
-| Site content: `/platform/` (from `app/site/`) and every registered site | each site's repository | dev and prod | `UMCCR-DocsSitesPipeline`, on push |
+| Piece                                                                                                                                                                   | Source                                                            | Account                       | Deployed by                                                   |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- | ----------------------------- | ------------------------------------------------------------- |
+| Cognito app client `docs-app-<stage>`, SSM `/cognito/docs-app/app-client-id`                                                                                            | `umccr/infrastructure` `terraform/stacks/cognito_aai/app_docs.tf` | each stage                    | Terraform, by hand                                            |
+| Certificate for the stage's docs hosts (us-east-1), SSM `/docs/certificate_arn`                                                                                         | `umccr/infrastructure` `terraform/stacks/umccr_docs_domain/`      | each stage                    | Terraform, by hand                                            |
+| `DocsInfrastructurePipeline`: pipeline 1, the dispatcher, the fetch build, `UMCCR-DocsSitesPipeline`                                                                    | `bin/deploy.ts`, `infrastructure/toolchain/`, `app/dispatcher/`   | toolchain                     | `cdk deploy` once, by hand; after that, pipeline 1 updates it |
+| `DocsHostingStack`: buckets, CloudFront, the edge function, the session key and Lambda, the `docs/docs-publisher` role, SSM `/docs/content-bucket-name`, the DNS record | `infrastructure/stage/`, `app/`                                   | dev (beta), stg (gamma), prod | pipeline 1; beta can also be deployed by hand                 |
+| The organisation webhook                                                                                                                                                | the umccr organisation's settings on GitHub                       |                               | an organisation owner, once                                   |
+| Site content: `/platform/` (from `app/site/`) and every registered site                                                                                                 | each site's repository                                            | dev and prod                  | `UMCCR-DocsSitesPipeline`, on push                            |
 
-The hosting stack is CloudFormation stack `UMCCR-DocsHostingStack` in each stage account, tagged
-`umccr-org:Product: Docs`. `cdk diff` and `cdk deploy` select it by its construct path,
-`DocsInfrastructurePipeline/DeploymentPipeline/<Stage>/DocsHostingStack` with `<Stage>` one of `Beta`, `Gamma`
-and `Prod`, which also name pipeline 1's stages. Pipeline 1 is this repository's own construct,
-`infrastructure/toolchain/deployment-pipeline.ts`, adapted from the OrcaBus one so that nothing is named for OrcaBus.
-Sites publish to dev and prod only; stg runs the platform without site content, to try infrastructure changes
-before prod.
+The hosting stack is CloudFormation stack `UMCCR-DocsHostingStack` in each stage account, tagged `umccr-org:Product: Docs`. `cdk diff` and `cdk deploy` select it by its construct path, `DocsInfrastructurePipeline/DeploymentPipeline/<Stage>/DocsHostingStack` with `<Stage>` one of `Beta`, `Gamma` and `Prod`, which also name pipeline 1's stages. Pipeline 1 is this repository's own construct, `infrastructure/toolchain/deployment-pipeline.ts`, adapted from the OrcaBus one so that nothing is named for OrcaBus.
+Sites publish to dev and prod only; stg runs the platform without site content, to try infrastructure changes before prod.
 
 ## State on 2026-10-15
 
 Read-only checks of the toolchain and dev accounts found:
 
-| | Toolchain account | dev account |
-| --- | --- | --- |
-| Prerequisites | all present: `codestar_github_arn` (connection `AVAILABLE`), `/chatbot_arn/slack/alerts-build`, CDK bootstrap version 32 | all present: every parameter the hosting stack reads; CDK bootstrap version 32, trusting the toolchain account for deploys and lookups |
+|                | Toolchain account                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | dev account                                                                                                                                                                                    |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Prerequisites  | all present: `codestar_github_arn` (connection `AVAILABLE`), `/chatbot_arn/slack/alerts-build`, CDK bootstrap version 32                                                                                                                                                                                                                                                                                                                                                                      | all present: every parameter the hosting stack reads; CDK bootstrap version 32, trusting the toolchain account for deploys and lookups                                                         |
 | docs.umccr.org | `DocsInfrastructurePipeline` deployed by hand from the branch (step 4), last on 2026-10-15, matching this branch: pipeline 1 `UMCCR-DocsInfrastructure`, the dispatcher, the fetch build and `UMCCR-DocsSitesPipeline`. The organisation webhook (step 5) delivers, and its signatures check: four knowledgebase pushes were dispatched and fetched on 2026-10-15. Pipeline 1 fails at Build, and every release at Build, because `main` on GitHub does not hold this code or the toolkit yet | `UMCCR-DocsHostingStack` (step 3), matching this branch. `/platform/` and `/management-knowledgebase/` are published by hand. OrcaSonar is deployed by hand and answers (its own deploy guide) |
-| Still to do | merge this repository; after that, pipeline 1 updates this stack and the stages itself, and releases build | nothing until stg and prod (step 8) |
+| Still to do    | merge this repository; after that, pipeline 1 updates this stack and the stages itself, and releases build                                                                                                                                                                                                                                                                                                                                                                                    | nothing until stg and prod (step 8)                                                                                                                                                            |
+
+**Since then**, as of 2026-10-20: the branch holds changes the deployed stacks don't. In the toolchain stack they
+are the site pipeline's execution mode (queued), the build, publish and fetch buildspecs, and the dispatcher; a
+read-only `cdk diff` shows them all as in-place updates, nothing replaced. In dev, only the sign-in page changed.
+Pipeline 1 deploys both after the merge. The latest knowledgebase release, on 2026-10-19, stopped at Build because
+`main` has no toolkit yet. A ruleset protects `main`.
 
 stg and prod were not checked. The [implementation plan](plans/implementation-plan.md#6-rollout) tracks what is
 left.
@@ -45,11 +42,11 @@ left.
 
 **Access:**
 
-| For | You need |
-| --- | --- |
-| Terraform, the hosting stack, stage checks | admin on the stage account through AWS SSO |
-| The toolchain stack, the pipelines, the webhook secret | admin on the toolchain (bastion) account |
-| The webhook, the AWS Connector for GitHub app | an owner of the umccr GitHub organisation |
+| For                                                    | You need                                   |
+| ------------------------------------------------------ | ------------------------------------------ |
+| Terraform, the hosting stack, stage checks             | admin on the stage account through AWS SSO |
+| The toolchain stack, the pipelines, the webhook secret | admin on the toolchain (bastion) account   |
+| The webhook, the AWS Connector for GitHub app          | an owner of the umccr GitHub organisation  |
 
 The examples use the SSO profiles `bastion-admin` for the toolchain account and `dev` for the dev account; use
 yours if they are named differently, and the stg and prod profiles for those stages. The shared profiles are
@@ -66,14 +63,14 @@ Everything runs in ap-southeast-2, except the docs certificate, which CloudFront
 
 **Tools:**
 
-| Tool | Version | Used in |
-| --- | --- | --- |
-| AWS CLI | v2 | every step |
-| Terraform | 1.5.7 or later | step 1 |
-| Node.js with Corepack | 22 or later (`.nvmrc`); Corepack provides pnpm 10.34.5. If another pnpm is first on your `PATH`, run `corepack pnpm@10.34.5 …` instead: a newer pnpm rewrites `packageManager` in `package.json` and adds itself to `pnpm-lock.yaml` | steps 3 and 4 |
-| Python | 3.12 | step 3, where `make install` creates `.venv`; publishing by hand |
-| [pre-commit](https://pre-commit.com) | any recent | step 3, where `make install` installs its git hook |
-| `git`, `curl`, `dig`, `jq` | any recent | every step |
+| Tool                                 | Version                                                                                                                                                                                                                              | Used in                                                          |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------- |
+| AWS CLI                              | v2                                                                                                                                                                                                                                   | every step                                                       |
+| Terraform                            | 1.5.7 or later                                                                                                                                                                                                                       | step 1                                                           |
+| Node.js with Corepack                | 22 or later (`.nvmrc`); Corepack provides pnpm 10.34.5. If another pnpm is first on your `PATH`, run `corepack pnpm@10.34.5 …` instead: a newer pnpm rewrites `packageManager` in `package.json` and adds itself to `pnpm-lock.yaml` | steps 3 and 4                                                    |
+| Python                               | 3.12                                                                                                                                                                                                                                 | step 3, where `make install` creates `.venv`; publishing by hand |
+| [pre-commit](https://pre-commit.com) | any recent                                                                                                                                                                                                                           | step 3, where `make install` installs its git hook               |
+| `git`, `curl`, `dig`, `jq`           | any recent                                                                                                                                                                                                                           | every step                                                       |
 
 **Checkouts:** `umccr/infrastructure`, `umccr/docs-platform` and `umccr/management-knowledgebase`, side by side.
 
@@ -90,25 +87,19 @@ Everything runs in ap-southeast-2, except the docs certificate, which CloudFront
 8. stg and prod: Terraform, then PromoteToProd, the umccr.org records and the canonical host
 ```
 
-Each step needs the ones before it. Steps 1 and 2 repeat for each stage account. Allow an hour for a first stage,
-most of it waiting for the certificate and CloudFront.
+Each step needs the ones before it. Steps 1 and 2 repeat for each stage account. Allow an hour for a first stage, most of it waiting for the certificate and CloudFront.
 
 ---
 
 ## Step 1: Terraform prerequisites
 
-In `umccr/infrastructure`, once per stage workspace (`dev`, `stg`, `prod`). The hosting stack reads both SSM
-parameters when it deploys, and CloudFront needs the certificate already issued. Apply from the branch, then merge
-the pull request once the stage is verified, so `master` matches what is applied.
+In `umccr/infrastructure`, once per stage workspace (`dev`, `stg`, `prod`). The hosting stack reads both SSM parameters when it deploys, and CloudFront needs the certificate already issued. Apply from the branch, then merge the pull request once the stage is verified, so `master` matches what is applied.
 
-The hosting stack copies these values, with the Cognito pool's, into the distribution and `/_auth/env.js` when it
-deploys. If a later Terraform change alters them, deploy the hosting stack again: start pipeline 1 (step 8 shows
-how).
+The hosting stack copies these values, with the Cognito pool's, into the distribution and `/_auth/env.js` when it deploys. If a later Terraform change alters them, deploy the hosting stack again: start pipeline 1 (step 8 shows how).
 
 ### Cognito app client (`cognito_aai`)
 
-Adds the public `docs-app-<stage>` client to the existing `data-portal-<stage>` pool, and the SSM parameter
-`/cognito/docs-app/app-client-id`.
+Adds the public `docs-app-<stage>` client to the existing `data-portal-<stage>` pool, and the SSM parameter `/cognito/docs-app/app-client-id`.
 
 ```sh
 cd infrastructure/terraform/stacks/cognito_aai
@@ -205,12 +196,12 @@ dig +short docs.dev.umccr.org   # docs.stg.umccr.org in stg, docs.prod.umccr.org
 
 The certificate's status (step 1) is the remaining check.
 
-| If | Then |
-| --- | --- |
-| a parameter is missing | redo step 1, or check you are in the right account |
-| the connection is not `AVAILABLE` | an organisation owner completes it under Developer Tools → Settings → Connections in the toolchain account's console |
-| `trusted` does not include the toolchain account | bootstrap the account as `umccr/infrastructure` `scripts/aws_bootstrap` describes |
-| a name is taken, or the host resolves | stop, and find out what owns it before going further |
+| If                                               | Then                                                                                                                 |
+| ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
+| a parameter is missing                           | redo step 1, or check you are in the right account                                                                   |
+| the connection is not `AVAILABLE`                | an organisation owner completes it under Developer Tools → Settings → Connections in the toolchain account's console |
+| `trusted` does not include the toolchain account | bootstrap the account as `umccr/infrastructure` `scripts/aws_bootstrap` describes                                    |
+| a name is taken, or the host resolves            | stop, and find out what owns it before going further                                                                 |
 
 ## Step 3: Deploy the hosting stack in dev
 
@@ -309,8 +300,8 @@ Before deploying:
   from the merge on, a merge to `main` publishes `/platform/` to prod with no approval, and deploys infrastructure
   to beta and gamma.
 - **Merge** the pull requests: `umccr/infrastructure`, then this repository, then `umccr/management-knowledgebase`.
-- **Tag** the commit that merges this repository `v1.0.0` straight away ([releasing](operating/releasing.md),
-  step 3). Every site but `/platform/` builds with that tag, so their releases stop at Build ("has no ref v1.0.0")
+- **Tag** the commit that merges this repository `v0.1.0` straight away ([releasing](operating/releasing.md),
+  step 3). Every site but `/platform/` builds with that tag, so their releases stop at Build ("has no ref v0.1.0")
   until it exists; re-run them afterwards ([runbooks](operating/runbooks.md#re-run-or-force-a-release)).
 - **stg**: apply step 1 to the `stg` workspace and run step 2 there. Otherwise the gamma stage fails; that stops
   the run before prod and does no other harm, and a run after the fix deploys gamma.
@@ -331,15 +322,15 @@ pnpm cdk deploy DocsInfrastructurePipeline                   # review the IAM ch
 
 The stack creates:
 
-| Resource | What it is |
-| --- | --- |
-| CodePipeline `UMCCR-DocsInfrastructure` | pipeline 1, which deploys the hosting stack and updates this stack |
-| An S3 bucket and a KMS key | pipeline 1's artifacts, which the stage accounts' CDK deploy roles read; the key rotates yearly |
-| A Lambda function behind a function URL | the dispatcher, which the organisation webhook calls |
-| Secret `docs/github-webhook-secret` | the webhook's secret; CloudFormation generates the value |
-| A DynamoDB table | the deliveries the dispatcher has handled, and each site's release counter |
-| A CodeBuild project and an S3 bucket | the fetch build, and the sources it writes (`sources/<slug>/<commit>.zip`, kept 30 days) |
-| CodePipeline `UMCCR-DocsSitesPipeline`, two CodeBuild projects and IAM role `docs-sites-publish` | pipeline 2: build each release, then publish it to dev and prod |
+| Resource                                                                                         | What it is                                                                                      |
+| ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
+| CodePipeline `UMCCR-DocsInfrastructure`                                                          | pipeline 1, which deploys the hosting stack and updates this stack                              |
+| An S3 bucket and a KMS key                                                                       | pipeline 1's artifacts, which the stage accounts' CDK deploy roles read; the key rotates yearly |
+| A Lambda function behind a function URL                                                          | the dispatcher, which the organisation webhook calls                                            |
+| Secret `docs/github-webhook-secret`                                                              | the webhook's secret; CloudFormation generates the value                                        |
+| A DynamoDB table                                                                                 | the deliveries the dispatcher has handled, and each site's release counter                      |
+| A CodeBuild project and an S3 bucket                                                             | the fetch build, and the sources it writes (`sources/<slug>/<commit>.zip`, kept 30 days)        |
+| CodePipeline `UMCCR-DocsSitesPipeline`, two CodeBuild projects and IAM role `docs-sites-publish` | pipeline 2: build each release, then publish it to dev and prod                                 |
 
 Pipeline 1 starts as soon as it exists:
 
@@ -387,14 +378,14 @@ An organisation owner, once:
 
 2. In the umccr organisation's **Settings → Webhooks → Add webhook**, sets:
 
-   | Field | Value |
-   | --- | --- |
-   | Payload URL | the webhook URL |
-   | Content type | `application/json` |
-   | Secret | the secret's value |
-   | SSL verification | enabled |
-   | Which events | **Just the push event** |
-   | Active | checked |
+   | Field            | Value                   |
+   | ---------------- | ----------------------- |
+   | Payload URL      | the webhook URL         |
+   | Content type     | `application/json`      |
+   | Secret           | the secret's value      |
+   | SSL verification | enabled                 |
+   | Which events     | **Just the push event** |
+   | Active           | checked                 |
 
 3. Checks **Recent Deliveries**: GitHub sends a ping when the webhook is saved, and the dispatcher answers 200.
 
@@ -416,14 +407,14 @@ under **Settings → GitHub Apps → AWS Connector for GitHub → Configure**:
 A release starts when a push to a registered site's branch changes one of its `docsPaths`
 (`infrastructure/sites.ts`):
 
-| Site | Repository and branch | Paths that publish it | Builds with |
-| --- | --- | --- | --- |
-| `/platform/` | `umccr/docs-platform` `main` | `app/site/**`, `toolkit/**`, `requirements/build.txt` | the toolkit at the pushed commit |
-| `/management-knowledgebase/` | `umccr/management-knowledgebase` `main` | `PlatformServices/**`, `mkdocs.yml` | `DOCS_TOOLKIT_REF`, `v1.0.0` |
+| Site                         | Repository and branch                   | Paths that publish it                                 | Builds with                      |
+| ---------------------------- | --------------------------------------- | ----------------------------------------------------- | -------------------------------- |
+| `/platform/`                 | `umccr/docs-platform` `main`            | `app/site/**`, `toolkit/**`, `requirements/build.txt` | the toolkit at the pushed commit |
+| `/management-knowledgebase/` | `umccr/management-knowledgebase` `main` | `PlatformServices/**`, `mkdocs.yml`                   | `DOCS_TOOLKIT_REF`, `v0.1.0`     |
 
 The webhook exists before this repository is merged, so the merge itself starts the first `/platform/` release: it
 is a push under `app/site/` and `toolkit/`. The knowledgebase's first release starts with its next push under its
-paths once `v1.0.0` is tagged (step 4). Its earlier releases failed at Build because `main` here did not hold the
+paths once `v0.1.0` is tagged (step 4). Its earlier releases failed at Build because `main` here did not hold the
 toolkit yet; re-running one of them ([runbooks](operating/runbooks.md#re-run-or-force-a-release)) works too, but
 builds with `main`, the toolkit ref it started with.
 
@@ -450,9 +441,7 @@ sites for beta only (`stages: [AppStage.BETA]` in `infrastructure/sites.ts`, and
 
 ## Step 7: OrcaSonar
 
-OrcaSonar deploys from its own repository; see its
-[deploy guide](https://github.com/umccr/orcasonar/blob/main/docs/deploy.md). Nothing on this side needs a deploy
-for it:
+OrcaSonar deploys from its own repository; see its [deploy guide](https://github.com/umccr/orcasonar/blob/main/docs/deploy.md). Nothing on this side needs a deploy for it:
 
 - **Documents**: once OrcaSonar's stateful stack is in a stage, `/orcasonar/ingest-bucket-name` exists there, and
   each site's next release also uploads its pages, as Markdown with metadata, under `docs/<slug>/` in OrcaSonar's
@@ -463,40 +452,31 @@ for it:
 - **Theme**: the chat panel ships with the toolkit, so `/platform/` has it at once, and other sites when their
   `toolkitRef` includes it.
 
-To check, open any page on `https://docs.dev.umccr.org/` signed in, open the chat panel, and ask something the site
-answers. The answer streams in, with its sources linking to docs pages.
+To check, open any page on `https://docs.dev.umccr.org/` signed in, open the chat panel, and ask something the site answers. The answer streams in, with its sources linking to docs pages.
 
 ## Step 8: stg and prod
 
-1. **Terraform and checks**: steps 1 and 2 for `stg` and `prod`. In prod, add the `umccr.org` records the
-   `umccr_docs_domain` output lists, and wait for the certificate to be issued.
-   A stage's first deploy also creates its session key: CloudFormation generates the secret and builds it into the
-   edge function, so there is nothing to run for it.
+1. **Terraform and checks**: steps 1 and 2 for `stg` and `prod`. In prod, add the `umccr.org` records the `umccr_docs_domain` output lists, and wait for the certificate to be issued. A stage's first deploy also creates its session key: CloudFormation generates the secret and builds it into the edge function, so there is nothing to run for it.
 2. **Gamma**: if gamma failed before stg was ready, start pipeline 1 again, with toolchain credentials:
 
    ```sh
    aws codepipeline start-pipeline-execution --name UMCCR-DocsInfrastructure
    ```
 
-3. **Prod**: approve **PromoteToProd** in `UMCCR-DocsInfrastructure`, in the toolchain account's CodePipeline
-   console, within 60 minutes of the run reaching it (otherwise start the pipeline again, as in item 2). The prod
-   stage deploys `UMCCR-DocsHostingStack` there. If the sites were registered for beta only (step 6), add
-   `AppStage.PROD` back now; then release each site once (step 6), so prod gets its content.
-4. **Canonical host**: once `docs.umccr.org` resolves to the prod distribution, set
-   `DOCS_CANONICAL_HOST[AppStage.PROD]` to `'docs.umccr.org'` in `infrastructure/config.ts`, merge, and approve
-   PromoteToProd. Other prod hosts then redirect to it, so readers hold one session cookie.
+3. **Prod**: approve **PromoteToProd** in `UMCCR-DocsInfrastructure`, in the toolchain account's CodePipeline console, within 60 minutes of the run reaching it (otherwise start the pipeline again, as in item 2). The prod stage deploys `UMCCR-DocsHostingStack` there. If the sites were registered for beta only (step 6), add `AppStage.PROD` back now; then release each site once (step 6), so prod gets its content.
+4. **Canonical host**: once `docs.umccr.org` resolves to the prod distribution, set `DOCS_CANONICAL_HOST[AppStage.PROD]` to `'docs.umccr.org'` in `infrastructure/config.ts`, merge, and approve PromoteToProd. Other prod hosts then redirect to it, so readers hold one session cookie.
 
 ## Later deploys
 
-| A change to | Deploys through |
-| --- | --- |
-| `bin/`, `infrastructure/`, `app/` except `app/site/` | merge to `main`, then pipeline 1: the self-update (toolchain changes), beta, gamma, PromoteToProd, prod |
-| the site registry, `infrastructure/sites.ts` | the same; see [onboarding a site](operating/onboarding-a-site.md) |
-| `app/site/`, `toolkit/`, `requirements/build.txt` | merge to `main`, then `UMCCR-DocsSitesPipeline`: `/platform/` in dev, then prod |
-| a site's docs, in its own repository | push, then `UMCCR-DocsSitesPipeline` |
-| the toolkit and theme, for the other sites | a release tag, then their `toolkitRef`; see [releasing the platform](operating/releasing.md) |
-| the session key | see the [runbooks](operating/runbooks.md#rotate-the-session-key) |
-| `docs/`, `examples/`, `templates/`, and Markdown outside `app/site/` | nothing deploys; CI runs |
+| A change to                                                          | Deploys through                                                                                         |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `bin/`, `infrastructure/`, `app/` except `app/site/`                 | merge to `main`, then pipeline 1: the self-update (toolchain changes), beta, gamma, PromoteToProd, prod |
+| the site registry, `infrastructure/sites.ts`                         | the same; see [onboarding a site](operating/onboarding-a-site.md)                                       |
+| `app/site/`, `toolkit/`, `requirements/build.txt`                    | merge to `main`, then `UMCCR-DocsSitesPipeline`: `/platform/` in dev, then prod                         |
+| a site's docs, in its own repository                                 | push, then `UMCCR-DocsSitesPipeline`                                                                    |
+| the toolkit and theme, for the other sites                           | a release tag, then their `toolkitRef`; see [releasing the platform](operating/releasing.md)            |
+| the session key                                                      | see the [runbooks](operating/runbooks.md#rotate-the-session-key)                                        |
+| `docs/`, `examples/`, `templates/`, and Markdown outside `app/site/` | nothing deploys; CI runs                                                                                |
 
 ## Verification checklist
 
@@ -533,35 +513,35 @@ LOG_GROUP=$(aws cloudformation describe-stack-resources --stack-name DocsInfrast
 aws logs tail "$LOG_GROUP" --since 1h
 ```
 
-| Symptom | Likely cause | Fix |
-| --- | --- | --- |
-| A deploy fails: `Parameter ... not found` | step 1 not applied in that account, or the wrong account | step 1; `aws sts get-caller-identity` |
-| A deploy fails: CloudFront rejects the certificate | the certificate is not `ISSUED` yet | wait, then deploy again |
-| A deploy fails: `CNAMEAlreadyExists` | the host is attached to another distribution | find and detach it |
-| A stage's stack is in `ROLLBACK_COMPLETE` | its first deploy failed and rolled back; CloudFormation cannot update it | delete the stack, fix the cause, and run the stage again |
-| `DocsInfrastructurePipeline` is in `ROLLBACK_COMPLETE` | its first `cdk deploy` failed | fix the cause and run `pnpm cdk deploy DocsInfrastructurePipeline` again: the CDK CLI deletes a stack that failed creation and creates it anew. Nothing is left behind: every kept resource uses `RetainExceptOnCreate` |
-| Creating pipeline 1 fails: `filePaths.excludes` (or `includes`) `must have length less than or equal to 8` | a trigger filter list has more than 8 patterns, CodePipeline's limit | keep `DOCS_INFRASTRUCTURE_FILE_PATHS` and `DOCS_INFRASTRUCTURE_EXCLUDED_FILE_PATHS` to 8 each; `cdk synth` refuses longer lists |
-| Pipeline 1's first run fails at its source | the AWS Connector app cannot read `umccr/docs-platform` | step 5 |
-| Pipeline 1 fails at unit tests or synth | `main` does not hold this code yet, or a test fails | merge first; run `pnpm test` locally |
-| Gamma fails on a missing parameter | stg's Terraform is not applied | step 8 |
-| Webhook deliveries get 401 | the webhook's secret differs from `docs/github-webhook-secret` (log: `bad-signature`) | paste the value again (step 5) |
-| A push starts no release | the dispatcher ignored it | its log says why: `not-registered`, `no-docs-change` or `duplicate` |
-| The dispatcher logs `start-failed`: `OAuthProviderException: User is not authorized to access connection` | the fetch build's role lacks `codeconnections:GetConnection` on the connection; CloudTrail shows its `GetConnection` `AccessDenied` | deploy a version with the grant, then redeliver the push from the webhook's **Recent Deliveries** |
-| The dispatcher logs `start-failed` with a `forgetError` | DynamoDB failed twice: the release did not start, and the delivery's record stayed, so a redelivery is refused as a `duplicate` | [start the release by hand](operating/runbooks.md#start-a-release-by-hand) |
-| The fetch build cannot clone | the connector app's repository access, or the connection's status | step 5; step 2 |
-| `UMCCR-DocsSitesPipeline` fails at Source: `The object with key 'sources/<slug>/<commit>.zip' returned a Forbidden error` | the source action's role may read only its configured placeholder key, `sources/unset.zip`: CDK grants an S3 source action nothing more, and every run overrides the key | deploy a version whose `SourceActionRole` may read `sources/*`, then re-run the release ([runbooks](operating/runbooks.md#re-run-or-force-a-release)) |
-| A release fails at Build: `docs-platform at <ref> has no toolkit` (before 2026-10-15: pip could not open `requirements/build.txt`) | the site's `toolkitRef` names a docs-platform ref without the toolkit, such as `main` before this repository is merged | merge this repository first, or pin the site's `toolkitRef` to a ref that has the toolkit; to try a branch once, start the run with `TOOLKIT_REF` set to it |
-| A release fails at Build: `docs-platform has no ref <ref>` | the site's `toolkitRef` names a tag or commit docs-platform does not have, such as `v1.0.0` before the merge is tagged | push the tag ([releasing](operating/releasing.md)), then re-run the release ([runbooks](operating/runbooks.md#re-run-or-force-a-release)) |
-| Publish fails: `AccessDenied` on `AssumeRole` | the stage has no `docs/docs-publisher` role: its hosting stack is missing or older than this design | deploy the stage's hosting stack (step 3 or 8) |
-| Publish fails: `/docs/content-bucket-name is missing here` | the same | the same |
-| Publish warns that `/orcasonar/ingest-bucket-name` does not exist | OrcaSonar is not deployed in that stage | nothing: the pages publish, and documents follow once OrcaSonar is there |
-| Cognito shows `redirect_mismatch` | the host's `/_auth/` URL is missing from `app_docs.tf` for the workspace | step 1, and use the registered host |
-| "Sign-in is temporarily unavailable" | right after a session key change; otherwise the session Lambda cannot read its key | wait a few minutes; then see the [runbooks](operating/runbooks.md#sign-in-fails-for-everyone) |
-| "Sign-in did not complete" after Google | the ID token was rejected (log: `invalid-token`) | check that `/_auth/env.js` holds the stage's docs client ID |
-| The chat panel cannot answer | OrcaSonar is not deployed in the stage, or today's allowance is used | OrcaSonar's runbook |
-| The chat panel says an answer stalled, or a search took too long | OrcaSonar sent nothing for 90 seconds (an answer) or did not answer in 45 (a search) | OrcaSonar's runbook: its chat function's logs, and Bedrock throttling |
-| `umccr-docs publish` refuses a mass delete | the build lost more than half its pages | check the build; if intended, publish by hand with `--allow-mass-delete` |
-| A build fails: `[[name]] does not match any note` | a note links to one that is not in the build, often a note nobody has committed yet | commit the linked note, or change the link; a working-tree build that passes may be relying on an uncommitted note |
+| Symptom                                                                                                                            | Likely cause                                                                                                                                                             | Fix                                                                                                                                                                                                                     |
+| ---------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A deploy fails: `Parameter ... not found`                                                                                          | step 1 not applied in that account, or the wrong account                                                                                                                 | step 1; `aws sts get-caller-identity`                                                                                                                                                                                   |
+| A deploy fails: CloudFront rejects the certificate                                                                                 | the certificate is not `ISSUED` yet                                                                                                                                      | wait, then deploy again                                                                                                                                                                                                 |
+| A deploy fails: `CNAMEAlreadyExists`                                                                                               | the host is attached to another distribution                                                                                                                             | find and detach it                                                                                                                                                                                                      |
+| A stage's stack is in `ROLLBACK_COMPLETE`                                                                                          | its first deploy failed and rolled back; CloudFormation cannot update it                                                                                                 | delete the stack, fix the cause, and run the stage again                                                                                                                                                                |
+| `DocsInfrastructurePipeline` is in `ROLLBACK_COMPLETE`                                                                             | its first `cdk deploy` failed                                                                                                                                            | fix the cause and run `pnpm cdk deploy DocsInfrastructurePipeline` again: the CDK CLI deletes a stack that failed creation and creates it anew. Nothing is left behind: every kept resource uses `RetainExceptOnCreate` |
+| Creating pipeline 1 fails: `filePaths.excludes` (or `includes`) `must have length less than or equal to 8`                         | a trigger filter list has more than 8 patterns, CodePipeline's limit                                                                                                     | keep `DOCS_INFRASTRUCTURE_FILE_PATHS` and `DOCS_INFRASTRUCTURE_EXCLUDED_FILE_PATHS` to 8 each; `cdk synth` refuses longer lists                                                                                         |
+| Pipeline 1's first run fails at its source                                                                                         | the AWS Connector app cannot read `umccr/docs-platform`                                                                                                                  | step 5                                                                                                                                                                                                                  |
+| Pipeline 1 fails at unit tests or synth                                                                                            | `main` does not hold this code yet, or a test fails                                                                                                                      | merge first; run `pnpm test` locally                                                                                                                                                                                    |
+| Gamma fails on a missing parameter                                                                                                 | stg's Terraform is not applied                                                                                                                                           | step 8                                                                                                                                                                                                                  |
+| Webhook deliveries get 401                                                                                                         | the webhook's secret differs from `docs/github-webhook-secret` (log: `bad-signature`)                                                                                    | paste the value again (step 5)                                                                                                                                                                                          |
+| A push starts no release                                                                                                           | the dispatcher ignored it                                                                                                                                                | its log says why: `not-registered`, `no-docs-change` or `duplicate`                                                                                                                                                     |
+| The dispatcher logs `start-failed`: `OAuthProviderException: User is not authorized to access connection`                          | the fetch build's role lacks `codeconnections:GetConnection` on the connection; CloudTrail shows its `GetConnection` `AccessDenied`                                      | deploy a version with the grant, then redeliver the push from the webhook's **Recent Deliveries**                                                                                                                       |
+| The dispatcher logs `start-failed` with a `forgetError`                                                                            | DynamoDB failed twice: the release did not start, and the delivery's record stayed, so a redelivery is refused as a `duplicate`                                          | [start the release by hand](operating/runbooks.md#start-a-release-by-hand)                                                                                                                                              |
+| The fetch build cannot clone                                                                                                       | the connector app's repository access, or the connection's status                                                                                                        | step 5; step 2                                                                                                                                                                                                          |
+| `UMCCR-DocsSitesPipeline` fails at Source: `The object with key 'sources/<slug>/<commit>.zip' returned a Forbidden error`          | the source action's role may read only its configured placeholder key, `sources/unset.zip`: CDK grants an S3 source action nothing more, and every run overrides the key | deploy a version whose `SourceActionRole` may read `sources/*`, then re-run the release ([runbooks](operating/runbooks.md#re-run-or-force-a-release))                                                                   |
+| A release fails at Build: `docs-platform at <ref> has no toolkit` (before 2026-10-15: pip could not open `requirements/build.txt`) | the site's `toolkitRef` names a docs-platform ref without the toolkit, such as `main` before this repository is merged                                                   | merge this repository first, or pin the site's `toolkitRef` to a ref that has the toolkit; to try a branch once, start the run with `TOOLKIT_REF` set to it                                                             |
+| A release fails at Build: `docs-platform has no ref <ref>`                                                                         | the site's `toolkitRef` names a tag or commit docs-platform does not have, such as `v0.1.0` before the merge is tagged                                                   | push the tag ([releasing](operating/releasing.md)), then re-run the release ([runbooks](operating/runbooks.md#re-run-or-force-a-release))                                                                               |
+| Publish fails: `AccessDenied` on `AssumeRole`                                                                                      | the stage has no `docs/docs-publisher` role: its hosting stack is missing or older than this design                                                                      | deploy the stage's hosting stack (step 3 or 8)                                                                                                                                                                          |
+| Publish fails: `/docs/content-bucket-name is missing here`                                                                         | the same                                                                                                                                                                 | the same                                                                                                                                                                                                                |
+| Publish warns that `/orcasonar/ingest-bucket-name` does not exist                                                                  | OrcaSonar is not deployed in that stage                                                                                                                                  | nothing: the pages publish, and documents follow once OrcaSonar is there                                                                                                                                                |
+| Cognito shows `redirect_mismatch`                                                                                                  | the host's `/_auth/` URL is missing from `app_docs.tf` for the workspace                                                                                                 | step 1, and use the registered host                                                                                                                                                                                     |
+| "Sign-in is temporarily unavailable"                                                                                               | right after a session key change; otherwise the session Lambda cannot read its key                                                                                       | wait a few minutes; then see the [runbooks](operating/runbooks.md#sign-in-fails-for-everyone)                                                                                                                           |
+| "Sign-in did not complete" after Google                                                                                            | the ID token was rejected (log: `invalid-token`)                                                                                                                         | check that `/_auth/env.js` holds the stage's docs client ID                                                                                                                                                             |
+| The chat panel cannot answer                                                                                                       | OrcaSonar is not deployed in the stage, or today's allowance is used                                                                                                     | OrcaSonar's runbook                                                                                                                                                                                                     |
+| The chat panel says an answer stalled, or a search took too long                                                                   | OrcaSonar sent nothing for 90 seconds (an answer) or did not answer in 45 (a search)                                                                                     | OrcaSonar's runbook: its chat function's logs, and Bedrock throttling                                                                                                                                                   |
+| `umccr-docs publish` refuses a mass delete                                                                                         | the build lost more than half its pages                                                                                                                                  | check the build; if intended, publish by hand with `--allow-mass-delete`                                                                                                                                                |
+| A build fails: `[[name]] does not match any note`                                                                                  | a note links to one that is not in the build, often a note nobody has committed yet                                                                                      | commit the linked note, or change the link; a working-tree build that passes may be relying on an uncommitted note                                                                                                      |
 
 ## Teardown
 
@@ -645,4 +625,5 @@ umccr-docs publish /tmp/kb-site --slug management-knowledgebase --bucket "$DOCS_
 ```
 
 A hand publish has no release number, so it replaces whatever is live; the pipeline's next release replaces it in
-turn.
+turn. Never publish a site by hand while the pipeline is publishing it: the two would overlap and could leave a mix
+of both releases.

@@ -4,15 +4,17 @@ All notable changes to the docs platform: the infrastructure, the `umccr-docs` t
 toolkit and theme changes up when their registry entry's `toolkitRef` moves to a release; see
 [docs/operating/releasing.md](docs/operating/releasing.md).
 
-## v1.0.0
+## v0.1.0
 
-The first release: tag the commit that merges it to `main`. The registry pins every site but `/platform/` to it.
+The first release, for the first users: tag the commit that merges it to `main`. The registry pins every site but
+`/platform/` to it. Versions stay `0.y.z` while the authoring contract and the engine can still change; see
+[releasing](docs/operating/releasing.md#versioning).
 
 - `UMCCR-DocsSitesPipeline` runs one release at a time, in the order they start (queued, no longer parallel). A
   publish uploads, then deletes, then writes the release marker, so two releases of one site publishing together
   could leave a mix of both, with the older one's marker live. Releases of different sites wait for each other too;
   a run takes a few minutes.
-- Sites other than `/platform/` build with the toolkit at `v1.0.0` (`DOCS_TOOLKIT_REF`), no longer at `main`, and the
+- Sites other than `/platform/` build with the toolkit at `v0.1.0` (`DOCS_TOOLKIT_REF`), no longer at `main`, and the
   registry takes only a release tag or a full commit SHA as a `toolkitRef`: a merge to this repository no longer
   changes how other sites build. A release whose ref does not exist, such as a tag not yet pushed, stops at Build and
   says so.

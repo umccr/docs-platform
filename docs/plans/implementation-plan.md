@@ -120,12 +120,13 @@ Details: [docs/operating/](../operating/README.md) for the platform team, the
 
 ### Before deploying anything
 
-- [ ] Protect `main` and `v*` tags with rulesets that require the CI checks
+- [x] Protect `main` with a ruleset (2026-10-20): changes only through pull requests, no force push or deletion.
+- [ ] Add the `ci` checks to the `main` ruleset, and protect `v*` tags
       ([repository settings](../operating/releasing.md#repository-settings)).
 - [ ] Review and merge `umccr/infrastructure`, then this repository, then `management-knowledgebase`.
-- [ ] Tag the merge of this repository `v1.0.0`: `DOCS_TOOLKIT_REF` already names it.
+- [ ] Tag the merge of this repository `v0.1.0`: `DOCS_TOOLKIT_REF` already names it.
 - [ ] Find how `portal.umccr.org` is wired in the `umccr.org` zone and mirror it for `docs.umccr.org`.
-- [ ] Turn on secret scanning, push protection and Dependabot here, and name the owners in `CODEOWNERS`.
+- [ ] Turn on secret scanning, push protection and Dependabot here.
 
 ### Dev
 
@@ -160,6 +161,12 @@ Step-by-step commands, checks and troubleshooting: [docs/deploy.md](../deploy.md
 - [ ] Decide whether to replace the dispatcher's function URL with dispatch from GitHub Actions before prod
       ([ADR-0009](../design/adr/0009-dispatch-from-github-actions.md), proposed and deferred 2026-10-15; the
       [plan](publishing-from-github.md) and the [issue](../issues/2026-10-14-dispatcher-function-url.md)).
+
+### After launch
+
+- [ ] Name the owners' team in `.github/CODEOWNERS` and require their review on `main` (deferred 2026-10-20).
+- [ ] Release `v1.0.0` once ADR-0003 is settled, the first users' feedback is in, and a team outside platform
+      depends on the contract with a site of its own ([versioning](../operating/releasing.md#versioning)).
 
 ### Order of dependencies
 
