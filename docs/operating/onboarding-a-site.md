@@ -25,7 +25,7 @@ export const EXAMPLE_SITE: DocsSite = {
   project or repository name. `sites` is reserved.
 - **Docs paths**: globs relative to the repository root. Keep them tight in code repositories, so code-only pushes
   don't rebuild the site.
-- **Stages**: sites publish to beta and prod. Gamma carries no site content.
+- **Stages**: sites publish to beta (dev) and prod, the platform's two stages.
 - **Registry visibility**: this repository is public, so the repository name becomes public too.
 
 Merging starts `DocsInfrastructurePipeline`. Its self-update gives the dispatcher the new routing entry, and each

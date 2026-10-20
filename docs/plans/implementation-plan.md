@@ -39,7 +39,7 @@ OrcaSonar, a separate service, which indexes the documents each publish exports.
 | D4 | The session key is a Secrets Manager secret whose value CloudFormation generates; the function receives it at deploy time. CloudFront KeyValueStore is not permitted in UMCCR's AWS accounts. | [ADR-0002](../design/adr/0002-sign-in-and-sessions.md) |
 | D5 | Publishing is dispatched: one organisation webhook, one dispatcher, one shared site pipeline. Two docs pipelines in total, however many sites join. | [ADR-0006](../design/adr/0006-dispatched-publishing.md) |
 | D6 | No approval before prod for site releases: documentation changes no data and no running system. A failure in dev stops the release. | [ADR-0006](../design/adr/0006-dispatched-publishing.md) |
-| D7 | Sites publish to dev and prod; stg carries no site content. | |
+| D7 | docs.umccr.org runs in dev and prod only; the stg account has no docs stage (since 2026-10-21). | [ADR-0008](../design/adr/0008-infrastructure-in-docs-platform.md) |
 | D8 | One `docs-publisher` role per stage, narrowed per run to one site by a session policy. | [ADR-0006](../design/adr/0006-dispatched-publishing.md) |
 | D9 | Chat is OrcaSonar's: docs hosts the panel, calls OrcaSonar's API with the reader's Cognito ID token, and exports documents to its ingest bucket. | [ADR-0007](../design/adr/0007-chat-through-orcasonar.md) |
 | D10 | The pilot publishes the vault's `PlatformServices/` folder in full, with wikilinks resolved and Bases views rendered as tables. When a note name exists in several folders, links resolve by `prefer_folders`. | |
@@ -80,7 +80,7 @@ Details: [docs/operating/](../operating/README.md) for the platform team, the
 
 | Pipeline | Source | Starts on | Deploys or publishes |
 | --- | --- | --- | --- |
-| `UMCCR-DocsInfrastructure` (toolchain stack `DocsInfrastructurePipeline`) | this repository | a push to `main` under `bin/`, `infrastructure/`, `app/` (not `app/site/`) | `DocsHostingStack` to beta, gamma and, after approval, prod; its self-update deploys the dispatcher, the fetch build and `UMCCR-DocsSitesPipeline` |
+| `UMCCR-DocsInfrastructure` (toolchain stack `DocsInfrastructurePipeline`) | this repository | a push to `main` under `bin/`, `infrastructure/`, `app/` (not `app/site/`) | `DocsHostingStack` to beta and, after approval, prod; its self-update deploys the dispatcher, the fetch build and `UMCCR-DocsSitesPipeline` |
 | `UMCCR-DocsSitesPipeline` | any registered repository, through the dispatcher | a push under a site's docs paths | the site to dev, then prod; documents to OrcaSonar |
 
 ## 5. Work by repository
@@ -123,8 +123,8 @@ Details: [docs/operating/](../operating/README.md) for the platform team, the
 - [x] Protect `main` with a ruleset (2026-10-20): changes only through pull requests, no force push or deletion.
 - [ ] Add the `ci` checks to the `main` ruleset, and protect `v*` tags
       ([repository settings](../operating/releasing.md#repository-settings)).
-- [ ] Review and merge `umccr/infrastructure`, then this repository, then `management-knowledgebase`.
-- [ ] Tag the merge of this repository `v0.1.0`: `DOCS_TOOLKIT_REF` already names it.
+- [x] Merge this repository and tag the merge `v0.1.0` (2026-10-21).
+- [ ] Merge `umccr/infrastructure`, already applied to dev and prod, and `management-knowledgebase`.
 - [ ] Find how `portal.umccr.org` is wired in the `umccr.org` zone and mirror it for `docs.umccr.org`.
 - [ ] Turn on secret scanning, push protection and Dependabot here.
 
@@ -141,7 +141,8 @@ Step-by-step commands, checks and troubleshooting: [docs/deploy.md](../deploy.md
       (2026-10-13). Fixed while testing, 2026-10-14 and 15: the fetch build may read the GitHub connection, the site
       pipeline's source action may read every release's object, and the site pipeline is `UMCCR-DocsSitesPipeline`.
 - [ ] Push to `/platform/` and to the knowledgebase; both publish to dev through the pipeline. Dispatch and fetch
-      work (2026-10-15); releases fail at Build until this repository's merge puts the toolkit on `main`. The
+      work (2026-10-15). The first `/platform/` release after the merge (2026-10-21) failed at Publish beta:
+      `docs-publisher` had no grant for OrcaSonar's ingest bucket, which the hosting stack now gives it. The
       knowledgebase's two broken links are fixed on its branch: a clean export of it passed `check`, `build` and
       `verify-site` on 2026-10-20.
 - [x] Once OrcaSonar's stacks are in dev: documents appear under `docs/<slug>/` (`/platform/`'s, published by
@@ -150,10 +151,13 @@ Step-by-step commands, checks and troubleshooting: [docs/deploy.md](../deploy.md
 
 ### Production
 
-- [ ] Apply `cognito_aai` and `umccr_docs_domain` to `stg` and `prod`, add the `umccr.org` records the prod output
-      lists, and wait for the certificate.
+- [ ] Merge the gamma stage's removal (2026-10-21): stg runs no docs or OrcaSonar stage, and pipeline 1 stopped at
+      gamma until then.
+- [x] Apply `cognito_aai` and `umccr_docs_domain` to `prod` (by 2026-10-21).
+- [ ] Add the `umccr.org` records the prod output lists, and request the certificate again: it timed out
+      (`VALIDATION_TIMED_OUT` on 2026-10-21, as `docs.umccr.org` never validated), so it can never be issued.
 - [ ] Approve the infrastructure pipeline's prod stage.
-- [ ] OrcaSonar in stg and prod, from its repository: in each account, Anthropic's model agreements (manual), the
+- [ ] OrcaSonar in prod, from its repository: in each account, Anthropic's model agreements (manual), the
       data-retention decision, and the docs Cognito client; then its pipelines' PromoteToProd.
 - [ ] Check that a personal Google account cannot sign in to prod (the deploy guide's verification checklist).
 - [ ] Set the prod canonical host to `docs.umccr.org` in `infrastructure/config.ts`.

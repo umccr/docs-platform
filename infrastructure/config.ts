@@ -20,7 +20,6 @@ import { DocsSite, getDocsSites } from './sites';
  */
 export const DOCS_DOMAIN_NAMES: Record<AppStage, string[]> = {
   [AppStage.BETA]: ['docs.dev.umccr.org'],
-  [AppStage.GAMMA]: ['docs.stg.umccr.org'],
   [AppStage.PROD]: ['docs.umccr.org', 'docs.prod.umccr.org'],
 };
 
@@ -58,12 +57,18 @@ export const DOCS_CONTENT_BUCKET_PARAMETER = '/docs/content-bucket-name';
 export const ORCASONAR_INGEST_BUCKET_PARAMETER = '/orcasonar/ingest-bucket-name';
 
 /**
+ * How the name CloudFormation gives OrcaSonar's ingest bucket starts: its stateful stack's name
+ * (`UMCCR-OrcaSonarStatefulStack`) and the bucket's construct ID (`IngestBucket`), in lower case. The publisher
+ * role's document grants match it, so renaming either in umccr/orcasonar needs a change here too.
+ */
+export const ORCASONAR_INGEST_BUCKET_NAME_PREFIX = 'umccr-orcasonarstatefulstack-ingestbucket';
+
+/**
  * OrcaSonar's API, per stage. The chat panel calls it with the reader's Cognito ID token; the content pages'
  * Content Security Policy allows it. Fixed here rather than read from SSM, so docs deploys never depend on OrcaSonar.
  */
 export const SONAR_API_URLS: Record<AppStage, string> = {
   [AppStage.BETA]: 'https://sonar.dev.umccr.org/api/v1',
-  [AppStage.GAMMA]: 'https://sonar.stg.umccr.org/api/v1',
   [AppStage.PROD]: 'https://sonar.prod.umccr.org/api/v1',
 };
 
@@ -81,7 +86,6 @@ export const DOCS_SESSION_LIFETIME_SECONDS = 8 * 60 * 60;
  */
 const DOCS_SESSION_KEY_GENERATION: Record<AppStage, number> = {
   [AppStage.BETA]: 1,
-  [AppStage.GAMMA]: 1,
   [AppStage.PROD]: 1,
 };
 

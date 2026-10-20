@@ -7,8 +7,8 @@ time or together. The platform's own site, `/platform/`, builds with the toolkit
 toolkit change shows there first.
 
 Infrastructure changes are separate: a merge to `main` under `bin/`, `infrastructure/` or `app/` (except
-`app/site/`, the platform site) starts the infrastructure pipeline, which deploys to beta and gamma and then waits
-for approval before prod.
+`app/site/`, the platform site) starts the infrastructure pipeline, which deploys to beta and then waits for approval
+before prod.
 
 ## Versioning
 

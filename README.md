@@ -4,10 +4,9 @@ Everything behind [docs.umccr.org](https://docs.umccr.org), authenticated docume
 infrastructure and its pipelines, sign-in, the `umccr-docs` build toolkit, the shared theme with its chat panel,
 the conventions participating repositories follow, and the platform's own `/platform/` site.
 
-> **Status:** 2026-10-15. Hosting, sign-in, the dispatcher and the chat panel run in dev, and both sites are published
-> there by hand. Releases through the site pipeline start once this repository is merged to `main`; stg and prod
-> follow. See the [implementation plan](docs/plans/implementation-plan.md), and [docs/deploy.md](docs/deploy.md) to
-> deploy.
+> **Status:** 2026-10-21. Merged to `main` and tagged `v0.1.0`. Hosting, sign-in, the dispatcher and the chat panel
+> run in dev, which pipeline 1 deploys; prod follows once its certificate is issued. See the
+> [implementation plan](docs/plans/implementation-plan.md), and [docs/deploy.md](docs/deploy.md) to deploy.
 
 ## How it fits together
 
@@ -33,7 +32,7 @@ design records, plans, runbooks and deploy guide are in [docs/](docs/), read her
 
 | Pipeline | Starts on | Does |
 | --- | --- | --- |
-| `UMCCR-DocsInfrastructure` | a push to `main` under `bin/`, `infrastructure/` or `app/`, except `app/site/` | deploys `UMCCR-DocsHostingStack` to beta, gamma and, after approval, prod; its self-update deploys the dispatcher and the site pipeline |
+| `UMCCR-DocsInfrastructure` | a push to `main` under `bin/`, `infrastructure/` or `app/`, except `app/site/` | deploys `UMCCR-DocsHostingStack` to beta and, after approval, prod; its self-update deploys the dispatcher and the site pipeline |
 | `UMCCR-DocsSitesPipeline` | the dispatcher, once per release of a site; for `/platform/`, a push under `app/site/`, `toolkit/` or `requirements/build.txt` | builds the site, then publishes it to dev and prod with no approval, one release at a time |
 
 ## Layout

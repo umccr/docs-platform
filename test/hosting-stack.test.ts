@@ -7,6 +7,7 @@ import {
   DOCS_DOMAIN_NAMES,
   DocsHostingStackConfig,
   getDocsHostingStackConfig,
+  ORCASONAR_INGEST_BUCKET_NAME_PREFIX,
   ORCASONAR_INGEST_BUCKET_PARAMETER,
   SONAR_API_URLS,
 } from '../infrastructure/config';
@@ -21,7 +22,8 @@ import {
 const ACCEPTED_DOCS_HOSTING_RULES = [
   'AwsSolutions-S1', // CloudFront standard logs record content access; the log bucket needs no log of its own
   'AwsSolutions-IAM4', // AWSLambdaBasicExecutionRole for the session Lambda and CDK's BucketDeployment
-  'AwsSolutions-IAM5', // the publisher's sites/* (each run narrows it to one site) and BucketDeployment's copy
+  // The publisher's sites/* and OrcaSonar's docs/* (each run narrows both to one site), and BucketDeployment's copy.
+  'AwsSolutions-IAM5',
   'AwsSolutions-L1', // CDK-managed BucketDeployment runtime
   'AwsSolutions-CFR1', // no geo restriction: readers work from anywhere, and every page requires a session
   'AwsSolutions-CFR2', // no WAF in the first release; every request is checked for a session at the edge
@@ -338,8 +340,10 @@ describe.each(Object.values(AppStage))('%s', (appStage) => {
     expect(resources(template, 'AWS::IAM::OIDCProvider')).toHaveLength(0);
 
     const statements = policyStatementsFor(template, logicalId);
-    const actions = statements.flatMap((statement) => [statement.Action].flat()).sort();
-    expect(actions).toEqual([
+    const actions = [...new Set(statements.flatMap((statement) => [statement.Action].flat()))];
+    expect(actions.sort()).toEqual([
+      'kms:Decrypt',
+      'kms:GenerateDataKey',
       's3:DeleteObject',
       's3:GetObject',
       's3:ListBucket',
@@ -347,12 +351,27 @@ describe.each(Object.values(AppStage))('%s', (appStage) => {
       'ssm:GetParameter',
     ]);
 
-    const list = statements.find((statement) => statement.Action === 's3:ListBucket')!;
-    expect(list.Condition).toEqual({ StringLike: { 's3:prefix': ['sites/*'] } });
-    const write = statements.find((statement) =>
-      [statement.Action].flat().includes('s3:PutObject')
-    )!;
-    expect(JSON.stringify(write.Resource)).toContain('/sites/*');
+    // sites/* in the content bucket, and docs/* in OrcaSonar's ingest bucket, matched by its generated name.
+    const ingestBuckets = `${ORCASONAR_INGEST_BUCKET_NAME_PREFIX}*`;
+    const lists = statements.filter((statement) => statement.Action === 's3:ListBucket');
+    expect(lists.map((statement) => statement.Condition)).toEqual(
+      expect.arrayContaining([
+        { StringLike: { 's3:prefix': ['sites/*'] } },
+        { StringLike: { 's3:prefix': ['docs/*'] } },
+      ])
+    );
+    expect(JSON.stringify(lists)).toContain(`:s3:::${ingestBuckets}"`);
+    const writes = JSON.stringify(
+      statements.filter((statement) => [statement.Action].flat().includes('s3:PutObject'))
+    );
+    expect(writes).toContain('/sites/*');
+    expect(writes).toContain(`:s3:::${ingestBuckets}/docs/*`);
+    // OrcaSonar's key only through S3, and only for that bucket.
+    const kms = statements.find((statement) => [statement.Action].flat().includes('kms:Decrypt'))!;
+    expect(kms.Condition!.StringEquals).toEqual({
+      'kms:ViaService': 's3.ap-southeast-2.amazonaws.com',
+    });
+    expect(JSON.stringify(kms.Condition!.StringLike)).toContain(`:s3:::${ingestBuckets}`);
 
     const parameters = JSON.stringify(
       statements.find((statement) => statement.Action === 'ssm:GetParameter')!.Resource

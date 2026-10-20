@@ -48,6 +48,7 @@ import {
   DOCS_PUBLISHER_ROLE_PATH,
   DOCS_SITES_PUBLISH_ROLE_NAME,
   DocsHostingStackConfig,
+  ORCASONAR_INGEST_BUCKET_NAME_PREFIX,
   ORCASONAR_INGEST_BUCKET_PARAMETER,
 } from '../config';
 import { DocsSite } from '../sites';
@@ -480,9 +481,7 @@ export class DocsHostingStack extends Stack {
   /**
    * The one role every site publish assumes. Only the site pipeline's publish steps in the toolchain account can
    * assume it, and each run narrows it with a session policy to its own `sites/<slug>/` here and `docs/<slug>/` in
-   * OrcaSonar's ingest bucket. OrcaSonar's bucket and key policies grant the second by naming this role, so this
-   * stack needs no knowledge of OrcaSonar beyond the SSM parameter that names its bucket. No CloudFront rights:
-   * pages are served `no-cache`, so a publish needs no invalidation.
+   * OrcaSonar's ingest bucket. No CloudFront rights: pages are served `no-cache`, so a publish needs no invalidation.
    */
   private publisherRole(contentBucket: Bucket): Role {
     const role = new Role(this, 'DocsPublisherRole', {
@@ -520,6 +519,35 @@ export class DocsHostingStack extends Stack {
         resources: [DOCS_CONTENT_BUCKET_PARAMETER, ORCASONAR_INGEST_BUCKET_PARAMETER].map(
           (name) => `arn:${Aws.PARTITION}:ssm:${this.region}:${this.account}:parameter${name}`
         ),
+      })
+    );
+
+    // Documents go to docs/* in OrcaSonar's ingest bucket. Its bucket and key policies name this role only by
+    // condition on the account principal, which leaves the decision to IAM, so the grant must be here. The bucket is
+    // matched by its generated name, so this stack deploys whether or not OrcaSonar is in the account.
+    const ingestBuckets = `arn:${Aws.PARTITION}:s3:::${ORCASONAR_INGEST_BUCKET_NAME_PREFIX}*`;
+    role.addToPolicy(
+      new PolicyStatement({
+        actions: ['s3:ListBucket'],
+        resources: [ingestBuckets],
+        conditions: { StringLike: { 's3:prefix': ['docs/*'] } },
+      })
+    );
+    role.addToPolicy(
+      new PolicyStatement({
+        actions: ['s3:GetObject', 's3:PutObject', 's3:DeleteObject'],
+        resources: [`${ingestBuckets}/docs/*`],
+      })
+    );
+    // The bucket encrypts with OrcaSonar's key: S3 calls KMS for the role, for that bucket only.
+    role.addToPolicy(
+      new PolicyStatement({
+        actions: ['kms:GenerateDataKey', 'kms:Decrypt'],
+        resources: [`arn:${Aws.PARTITION}:kms:${this.region}:${this.account}:key/*`],
+        conditions: {
+          StringEquals: { 'kms:ViaService': `s3.${this.region}.amazonaws.com` },
+          StringLike: { 'kms:EncryptionContext:aws:s3:arn': [ingestBuckets] },
+        },
       })
     );
 
