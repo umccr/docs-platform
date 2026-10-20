@@ -41,6 +41,7 @@ says when to try again; Search usually keeps working.
 | "Page not found" | The page may have moved. Start from the [catalogue](index.md). |
 | The chat panel says your sign-in has expired | Follow **Sign in again**; you return to the same page. |
 | The chat panel says chat is unavailable | Try again in a few minutes; report it if it persists. |
+| The chat panel says an answer stalled, or a search took too long | Ask again; report it if it keeps happening. |
 
 ## Privacy
 

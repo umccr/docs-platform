@@ -38,8 +38,9 @@ export interface DocsSite {
   readonly docsPaths: string[];
 
   /**
-   * Git ref of `umccr/docs-platform` whose toolkit and theme build the site: a release tag such as `v1.2.0`, a commit
-   * SHA, or a branch. `self` builds with the toolkit at the pushed commit, for this repository's own site only.
+   * Git ref of `umccr/docs-platform` whose toolkit and theme build the site: a release tag such as `v1.2.0`, or a full
+   * commit SHA. Never a branch, whose next merge would change how the site builds without a registry change. `self`
+   * builds with the toolkit at the pushed commit, for this repository's own site only.
    */
   readonly toolkitRef: string;
 
@@ -63,10 +64,10 @@ export const MAX_SLUG_LENGTH = 49;
 export const SELF_TOOLKIT_REF = 'self';
 
 /**
- * The toolkit every other site builds with. Pin it to a docs-platform release tag (for example `v1.0.0`) once the
- * first release exists; until then sites follow `main`.
+ * The toolkit every other site builds with: a docs-platform release tag. Push the tag before, or straight after, the
+ * merge that moves this to it: until the tag exists, those sites' releases stop at Build (docs/operating/releasing.md).
  */
-export const DOCS_TOOLKIT_REF = 'main';
+export const DOCS_TOOLKIT_REF = 'v1.0.0';
 
 const PLATFORM_REPO = 'umccr/docs-platform';
 
@@ -74,8 +75,11 @@ const SLUG_PATTERN = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;
 
 const REPO_PATTERN = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/;
 
-/** Branch names and refs: no spaces, no `..`, no leading or trailing slash. */
+/** Branch names: no spaces, no `..`, no leading or trailing slash. */
 const REF_PATTERN = /^(?!\/)(?!.*\.\.)(?!.*\/$)[A-Za-z0-9._/-]+$/;
+
+/** Toolkit refs that only move with the registry: a release tag (`v1.2.0`, `v2.0.0-rc.1`) or a full commit SHA. */
+const TOOLKIT_REF_PATTERN = /^(?:v\d+\.\d+\.\d+(?:-[0-9A-Za-z.]+)?|[0-9a-f]{40})$/;
 
 /** Relative paths and globs: no leading slash, no `..` segment. */
 const PATH_PATTERN = /^(?!\/)(?!.*(?:^|\/)\.\.(?:\/|$))[^\s]+$/;
@@ -124,8 +128,9 @@ export const MANAGEMENT_KNOWLEDGEBASE_SITE: DocsSite = {
 export const DOCS_SITES: DocsSite[] = [PLATFORM_SITE, MANAGEMENT_KNOWLEDGEBASE_SITE];
 
 /**
- * Throw if the registry is unusable: an invalid, reserved or duplicate slug, a malformed repository, branch, path or
- * toolkit ref, two sites on one repository and branch, or a site with no stage to publish to.
+ * Throw if the registry is unusable: an invalid, reserved or duplicate slug, a malformed repository, branch or path, a
+ * toolkit ref that is not a release tag or commit, two sites on one repository and branch, or a site with no stage to
+ * publish to.
  */
 export const validateDocsSites = (sites: DocsSite[]): void => {
   const seen = new Set<string>();
@@ -177,8 +182,11 @@ export const validateDocsSites = (sites: DocsSite[]): void => {
           `Docs site '${site.slug}' cannot use toolkit ref '${SELF_TOOLKIT_REF}': only ${PLATFORM_REPO} can`
         );
       }
-    } else if (!REF_PATTERN.test(site.toolkitRef)) {
-      throw new Error(`Docs site '${site.slug}' has an invalid toolkit ref '${site.toolkitRef}'`);
+    } else if (!TOOLKIT_REF_PATTERN.test(site.toolkitRef)) {
+      throw new Error(
+        `Docs site '${site.slug}' has toolkit ref '${site.toolkitRef}'; use a release tag such as v1.2.0 ` +
+          'or a full commit SHA, never a branch'
+      );
     }
 
     if (site.stages.length === 0) {

@@ -63,7 +63,8 @@ const TOOLKIT_REPOSITORY = 'https://github.com/umccr/docs-platform.git';
  */
 const INSTALL_TOOLKIT = [
   `git clone --quiet ${TOOLKIT_REPOSITORY} "$TOOLKIT_DIR"`,
-  'git -C "$TOOLKIT_DIR" checkout --quiet "$TOOLKIT_REF"',
+  // A ref that does not exist, such as a release tag the registry names before the tag is pushed.
+  'git -C "$TOOLKIT_DIR" checkout --quiet "$TOOLKIT_REF" || { echo "docs-platform has no ref $TOOLKIT_REF: push the tag, or point the site toolkitRef at a ref that exists"; exit 1; }',
   // A ref without the toolkit, such as main before this repository was first merged, otherwise fails in pip with a
   // missing file. Say what to do instead.
   'test -f "$TOOLKIT_DIR/requirements/build.txt" || { echo "docs-platform at $TOOLKIT_REF has no toolkit: merge it to main, or point the site toolkitRef at a ref that has one"; exit 1; }',
@@ -89,9 +90,10 @@ export interface DocsSitesPipelineProps {
  *
  *   Source (S3, object key set per run) → Build (read-only) → Publish beta → Publish prod
  *
- * Runs are started only by the fetch build, never by a trigger, and run in parallel, so releases of different sites
- * do not queue behind each other. There is no approval: documentation changes no data and no running system, and a
- * failure in beta stops the release before prod.
+ * Runs are started only by the fetch build, never by a trigger, and run one at a time, in the order they start. A
+ * publish uploads, then deletes, then writes the release marker, so two releases of one site publishing at once could
+ * leave a mix of both. Releases of different sites queue too, which costs minutes. There is no approval:
+ * documentation changes no data and no running system, and a failure in beta stops the release before prod.
  *
  * Build has no write access to anything but the pipeline's artifacts, so repository content never runs with
  * publishing rights. The publish steps run as `docs-sites-publish`, whose only permission is to assume each stage's
@@ -113,7 +115,8 @@ export class DocsSitesPipeline extends Construct {
     this.pipeline = new Pipeline(this, 'Pipeline', {
       pipelineName: DOCS_SITES_PIPELINE_NAME,
       pipelineType: PipelineType.V2,
-      executionMode: ExecutionMode.PARALLEL,
+      // One release at a time: see above.
+      executionMode: ExecutionMode.QUEUED,
       // Every action runs in this account; the publish steps reach the stage accounts by assuming a role.
       crossAccountKeys: false,
       restartExecutionOnUpdate: false,

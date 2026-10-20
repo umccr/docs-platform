@@ -40,6 +40,9 @@ export const safeReturnPath = (raw: string | null | undefined): string => {
 export const oauthDomainFor = (domain: string, region: string): string =>
   domain.includes('.') ? domain : `${domain}.auth.${region}.amazoncognito.com`;
 
+/** Shown when sign-in fails for a reason the page does not explain. */
+export const SIGN_IN_FAILED_MESSAGE = 'Sign-in did not complete. Please try again.';
+
 /** Error codes returned by the session Lambda; see `lambda/session/session.ts`. */
 export const sessionErrorMessage = (code: string | undefined): string => {
   switch (code) {
@@ -49,9 +52,18 @@ export const sessionErrorMessage = (code: string | undefined): string => {
     case 'unavailable':
       return 'Sign-in is temporarily unavailable. Please try again in a few minutes.';
     default:
-      return 'Sign-in did not complete. Please try again.';
+      return SIGN_IN_FAILED_MESSAGE;
   }
 };
+
+/**
+ * The message for an error the hosted UI returns in `?error=`. Only the code chooses it: `error_description` is free
+ * text that anyone can put in a link to this page, so the page never shows it.
+ */
+export const oauthErrorMessage = (code: string | null): string =>
+  code === 'access_denied'
+    ? 'Sign-in was cancelled or refused. Sign in with your UMCCR account to continue.'
+    : SIGN_IN_FAILED_MESSAGE;
 
 /**
  * Session cookies issued this recently count towards a sign-in loop. Normally a reader gets one cookie per session

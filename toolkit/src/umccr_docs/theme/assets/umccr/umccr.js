@@ -162,6 +162,11 @@
   var DOCS_ORIGIN = 'https://docs.umccr.org';
   var authLoading = null;
 
+  // An answer that sends nothing for this long has stalled, and a search that takes this long will not answer: the
+  // panel stops waiting, so the reader can ask again. OrcaSonar sends text every few seconds while it answers.
+  var ANSWER_STALL_MS = 90000;
+  var SEARCH_TIMEOUT_MS = 45000;
+
   function loadScript(src) {
     return new Promise(function (resolve, reject) {
       var script = document.createElement('script');
@@ -246,10 +251,47 @@
       });
   }
 
-  /** POST to OrcaSonar with the reader's token, refreshing it once on a 401. */
-  function sonarPost(auth, path, payload, accept) {
+  /** Aborts `controller` once `ms` pass without a call to kick(); stop() ends the watch. */
+  function watchdog(controller, ms) {
+    var timer = null;
+    function kick() {
+      clearTimeout(timer);
+      timer = setTimeout(function () {
+        controller.abort();
+      }, ms);
+    }
+    kick();
+    return {
+      kick: kick,
+      stop: function () {
+        clearTimeout(timer);
+      },
+    };
+  }
+
+  /** `promise`, or a rejection as soon as `signal` aborts: Amplify's token refresh cannot be cancelled itself. */
+  function untilAborted(promise, signal) {
+    return new Promise(function (resolve, reject) {
+      function abort() {
+        reject(new Error('Stopped waiting'));
+      }
+      if (signal.aborted) {
+        abort();
+        return;
+      }
+      signal.addEventListener('abort', abort);
+      promise.then(resolve, reject);
+    });
+  }
+
+  /**
+   * POST to OrcaSonar with the reader's token, refreshing it once on a 401. An abort of `signal`, when given, ends the
+   * wait for the token, the response or its body.
+   */
+  function sonarPost(auth, path, payload, accept, signal) {
     function attempt(forceRefresh) {
-      return auth.getIdToken({ forceRefresh: forceRefresh }).then(function (token) {
+      var pending = auth.getIdToken({ forceRefresh: forceRefresh });
+      return (signal ? untilAborted(pending, signal) : pending).then(function (token) {
         if (!token) {
           return { signedOut: true };
         }
@@ -263,6 +305,7 @@
             Accept: accept,
           },
           body: JSON.stringify(payload),
+          signal: signal,
         }).then(function (response) {
           if (response.status === 401 && !forceRefresh) {
             return attempt(true);
@@ -274,11 +317,15 @@
     return attempt(false);
   }
 
-  /** Parse a server-sent event stream, calling onEvent(name, data) for each event. */
-  function readEvents(response, onEvent) {
+  /**
+   * Parse a server-sent event stream, calling onEvent(name, data) for each event and onChunk() whenever bytes arrive.
+   * Reading stops at the end of the stream, or at the first event for which onEvent returns true.
+   */
+  function readEvents(response, onEvent, onChunk) {
     var reader = response.body.getReader();
     var decoder = new TextDecoder();
     var buffer = '';
+    var finished = false;
 
     function dispatch(block) {
       var name = 'message';
@@ -297,7 +344,7 @@
         } catch (error) {
           parsed = data.join('\n');
         }
-        onEvent(name, parsed);
+        finished = onEvent(name, parsed) === true;
       }
     }
 
@@ -309,14 +356,18 @@
           }
           return;
         }
+        if (onChunk) {
+          onChunk();
+        }
         buffer += decoder.decode(chunk.value, { stream: true }).replace(/\r\n/g, '\n');
         var boundary = buffer.indexOf('\n\n');
-        while (boundary !== -1) {
+        while (boundary !== -1 && !finished) {
           dispatch(buffer.slice(0, boundary));
           buffer = buffer.slice(boundary + 2);
           boundary = buffer.indexOf('\n\n');
         }
-        return pump();
+        // A finished answer lets the connection go rather than wait for the server to close it.
+        return finished ? reader.cancel().catch(function () {}) : pump();
       });
     }
     return pump();
@@ -934,70 +985,85 @@
     var view = answerView(container, state.log);
     // What follows the answer once it is all on screen: its sources and feedback, or an error.
     var ending = null;
+    var sources = [];
     var payload = { query: query, sites: state.sites() };
     if (state.conversationId) {
       payload.conversationId = state.conversationId;
     }
-    var answered = sonarPost(state.auth, '/chat', payload, 'text/event-stream').then(function (result) {
-      if (result.signedOut) {
-        ending = function () {
-          container.appendChild(signInAgainMessage());
-        };
-        return;
-      }
-      if (!result.response.ok) {
-        return failure(result.response).then(function (message) {
+    // Every chunk that arrives restarts the watch, so only an answer that has stalled is cut off.
+    var controller = new AbortController();
+    var stall = watchdog(controller, ANSWER_STALL_MS);
+
+    /** An ending that keeps what arrived, with its sources, and says why the answer stopped. */
+    function stopped(message) {
+      return function () {
+        renderSources(container, sources, true);
+        container.appendChild(element('p', 'umccr-chat__error', message));
+      };
+    }
+
+    var answered = sonarPost(state.auth, '/chat', payload, 'text/event-stream', controller.signal)
+      .then(function (result) {
+        if (result.signedOut) {
           ending = function () {
-            container.appendChild(message);
+            container.appendChild(signInAgainMessage());
           };
-        });
-      }
-      var exchangeId = null;
-      var sources = [];
-      // An error or done event ends the answer: anything after it is ignored.
-      return readEvents(result.response, function (name, data) {
-        if (ending) {
           return;
         }
-        if (name === 'meta') {
-          exchangeId = data.exchangeId;
-          state.conversationId = data.conversationId || state.conversationId;
-        } else if (name === 'delta') {
-          view.add((data && data.text) || '');
-        } else if (name === 'citations') {
-          sources = Array.isArray(data) ? data : [];
-          view.cite(sources);
-        } else if (name === 'error') {
-          ending = function () {
-            renderSources(container, sources, true);
-            container.appendChild(
-              element('p', 'umccr-chat__error', (data && data.message) || 'The answer stopped early.')
-            );
-          };
-        } else if (name === 'done') {
-          ending = function () {
-            renderSources(container, sources, true);
-            if (exchangeId) {
-              renderFeedback(container, state.auth, exchangeId);
+        if (!result.response.ok) {
+          return failure(result.response).then(function (message) {
+            ending = function () {
+              container.appendChild(message);
+            };
+          });
+        }
+        var exchangeId = null;
+        // An error or done event ends the answer, and reading stops there.
+        return readEvents(
+          result.response,
+          function (name, data) {
+            if (name === 'meta') {
+              exchangeId = data.exchangeId;
+              state.conversationId = data.conversationId || state.conversationId;
+            } else if (name === 'delta') {
+              view.add((data && data.text) || '');
+            } else if (name === 'citations') {
+              sources = Array.isArray(data) ? data : [];
+              view.cite(sources);
+            } else if (name === 'error') {
+              ending = stopped((data && data.message) || 'The answer stopped early.');
+            } else if (name === 'done') {
+              ending = function () {
+                renderSources(container, sources, true);
+                if (exchangeId) {
+                  renderFeedback(container, state.auth, exchangeId);
+                }
+              };
             }
-          };
+            return ending !== null;
+          },
+          stall.kick
+        ).then(function () {
+          if (!ending) {
+            // The stream closed with neither done nor error, as when the connection drops: keep what arrived, and say so.
+            ending = stopped('The answer stopped early.');
+          }
+        });
+      })
+      .catch(function (error) {
+        if (!controller.signal.aborted) {
+          throw error;
         }
-      }).then(function () {
-        if (!ending) {
-          // The stream closed with neither done nor error, as when the connection drops: keep what arrived, and say so.
-          ending = function () {
-            renderSources(container, sources, true);
-            container.appendChild(element('p', 'umccr-chat__error', 'The answer stopped early.'));
-          };
-        }
+        ending = stopped('The answer stalled, so the panel stopped waiting. Try asking again.');
       });
-    });
     // However the request ends, the answer finishes showing first.
     return answered.then(
       function () {
+        stall.stop();
         return view.finish(ending);
       },
       function (error) {
+        stall.stop();
         return view.finish(null).then(function () {
           throw error;
         });
@@ -1008,6 +1074,8 @@
   function search(state, query, container) {
     var status = element('p', 'umccr-chat__pending', 'Searching the documentation…');
     container.appendChild(status);
+    var controller = new AbortController();
+    var timeout = watchdog(controller, SEARCH_TIMEOUT_MS);
     function show(change) {
       following(state.log, function () {
         if (status.parentNode) {
@@ -1016,7 +1084,8 @@
         change();
       });
     }
-    return sonarPost(state.auth, '/search', { query: query, sites: state.sites(), topK: 8 }, 'application/json')
+    var payload = { query: query, sites: state.sites(), topK: 8 };
+    return sonarPost(state.auth, '/search', payload, 'application/json', controller.signal)
       .then(function (result) {
         if (result.signedOut) {
           show(function () {
@@ -1042,7 +1111,17 @@
         });
       })
       .catch(function (error) {
+        if (controller.signal.aborted) {
+          show(function () {
+            container.appendChild(element('p', 'umccr-chat__error', 'Search took too long. Try again.'));
+          });
+          return;
+        }
         show(function () {});
+        throw error;
+      })
+      .then(timeout.stop, function (error) {
+        timeout.stop();
         throw error;
       });
   }
@@ -1190,10 +1269,17 @@
     renderChat();
   }
 
-  // Outside a browser there is no page: the platform's tests load this file in Node to check the Markdown renderer.
+  // Outside a browser there is no page: the platform's tests load this file in Node to check the Markdown renderer,
+  // the stream reader and the stall watchdog.
   if (typeof window === 'undefined') {
     if (typeof module === 'object' && module.exports) {
-      module.exports = { markdownTree: markdownTree, closeOpenMarks: closeOpenMarks, safeHref: safeHref };
+      module.exports = {
+        markdownTree: markdownTree,
+        closeOpenMarks: closeOpenMarks,
+        safeHref: safeHref,
+        readEvents: readEvents,
+        watchdog: watchdog,
+      };
     }
     return;
   }

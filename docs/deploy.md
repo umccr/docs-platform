@@ -305,7 +305,13 @@ step is needed again only for a new toolchain account or after a teardown.
 
 Before deploying:
 
+- **Protect** `main` and the release tags first ([repository settings](operating/releasing.md#repository-settings)):
+  from the merge on, a merge to `main` publishes `/platform/` to prod with no approval, and deploys infrastructure
+  to beta and gamma.
 - **Merge** the pull requests: `umccr/infrastructure`, then this repository, then `umccr/management-knowledgebase`.
+- **Tag** the commit that merges this repository `v1.0.0` straight away ([releasing](operating/releasing.md),
+  step 3). Every site but `/platform/` builds with that tag, so their releases stop at Build ("has no ref v1.0.0")
+  until it exists; re-run them afterwards ([runbooks](operating/runbooks.md#re-run-or-force-a-release)).
 - **stg**: apply step 1 to the `stg` workspace and run step 2 there. Otherwise the gamma stage fails; that stops
   the run before prod and does no other harm, and a run after the fix deploys gamma.
 - **GitHub access**: the AWS Connector for GitHub app must be able to read `umccr/docs-platform` (step 5), or the
@@ -413,16 +419,17 @@ A release starts when a push to a registered site's branch changes one of its `d
 | Site | Repository and branch | Paths that publish it | Builds with |
 | --- | --- | --- | --- |
 | `/platform/` | `umccr/docs-platform` `main` | `app/site/**`, `toolkit/**`, `requirements/build.txt` | the toolkit at the pushed commit |
-| `/management-knowledgebase/` | `umccr/management-knowledgebase` `main` | `PlatformServices/**`, `mkdocs.yml` | `DOCS_TOOLKIT_REF`: `main` until the first release tag |
+| `/management-knowledgebase/` | `umccr/management-knowledgebase` `main` | `PlatformServices/**`, `mkdocs.yml` | `DOCS_TOOLKIT_REF`, `v1.0.0` |
 
 The webhook exists before this repository is merged, so the merge itself starts the first `/platform/` release: it
-is a push under `app/site/` and `toolkit/`. The knowledgebase's first release starts with its next push under those
-paths, or by re-running the latest release it was dispatched
-([runbooks](operating/runbooks.md#re-run-or-force-a-release)): its releases on 2026-10-15 failed at Build only
-because `main` here did not hold the toolkit yet.
+is a push under `app/site/` and `toolkit/`. The knowledgebase's first release starts with its next push under its
+paths once `v1.0.0` is tagged (step 4). Its earlier releases failed at Build because `main` here did not hold the
+toolkit yet; re-running one of them ([runbooks](operating/runbooks.md#re-run-or-force-a-release)) works too, but
+builds with `main`, the toolkit ref it started with.
 
 The dispatcher starts the fetch build within seconds, and the fetch build starts `UMCCR-DocsSitesPipeline` a minute
-or two later. Each run's variables name the site, the commit and the release number.
+or two later. Each run's variables name the site, the commit and the release number. Releases run one at a time, so
+a release can wait a few minutes behind another site's.
 
 ```sh
 # Toolchain credentials: the latest releases
@@ -478,8 +485,6 @@ answers. The answer streams in, with its sources linking to docs pages.
 4. **Canonical host**: once `docs.umccr.org` resolves to the prod distribution, set
    `DOCS_CANONICAL_HOST[AppStage.PROD]` to `'docs.umccr.org'` in `infrastructure/config.ts`, merge, and approve
    PromoteToProd. Other prod hosts then redirect to it, so readers hold one session cookie.
-5. **Toolkit release**: release docs-platform `v1.0.0` and pin `DOCS_TOOLKIT_REF` to it, as
-   [releasing the platform](operating/releasing.md) describes.
 
 ## Later deploys
 
@@ -503,6 +508,9 @@ Before calling a stage done:
 - [ ] Silent renewal: delete the `__Host-docs_session` cookie and reload. You pass through "Checking sign-in…"
       without a click.
 - [ ] Sign-out ends the session: the next visit shows the sign-in card.
+- [ ] Only UMCCR accounts sign in: in a private window, sign in with a personal Google account. Google refuses it
+      (`org_internal`), since the stage's Google OAuth client is internal to the UMCCR Workspace
+      ([ADR-0005](design/adr/0005-reader-policy.md)); the pages and the chat panel both rely on that.
 - [ ] Loop guard: delete the cookie and reload several times in quick succession. By the fourth renewal within
       two minutes, the sign-in page stops with "Signing in keeps repeating".
 - [ ] The webhook's ping and push deliveries show success in **Recent Deliveries**.
@@ -539,9 +547,11 @@ aws logs tail "$LOG_GROUP" --since 1h
 | Webhook deliveries get 401 | the webhook's secret differs from `docs/github-webhook-secret` (log: `bad-signature`) | paste the value again (step 5) |
 | A push starts no release | the dispatcher ignored it | its log says why: `not-registered`, `no-docs-change` or `duplicate` |
 | The dispatcher logs `start-failed`: `OAuthProviderException: User is not authorized to access connection` | the fetch build's role lacks `codeconnections:GetConnection` on the connection; CloudTrail shows its `GetConnection` `AccessDenied` | deploy a version with the grant, then redeliver the push from the webhook's **Recent Deliveries** |
+| The dispatcher logs `start-failed` with a `forgetError` | DynamoDB failed twice: the release did not start, and the delivery's record stayed, so a redelivery is refused as a `duplicate` | [start the release by hand](operating/runbooks.md#start-a-release-by-hand) |
 | The fetch build cannot clone | the connector app's repository access, or the connection's status | step 5; step 2 |
 | `UMCCR-DocsSitesPipeline` fails at Source: `The object with key 'sources/<slug>/<commit>.zip' returned a Forbidden error` | the source action's role may read only its configured placeholder key, `sources/unset.zip`: CDK grants an S3 source action nothing more, and every run overrides the key | deploy a version whose `SourceActionRole` may read `sources/*`, then re-run the release ([runbooks](operating/runbooks.md#re-run-or-force-a-release)) |
 | A release fails at Build: `docs-platform at <ref> has no toolkit` (before 2026-10-15: pip could not open `requirements/build.txt`) | the site's `toolkitRef` names a docs-platform ref without the toolkit, such as `main` before this repository is merged | merge this repository first, or pin the site's `toolkitRef` to a ref that has the toolkit; to try a branch once, start the run with `TOOLKIT_REF` set to it |
+| A release fails at Build: `docs-platform has no ref <ref>` | the site's `toolkitRef` names a tag or commit docs-platform does not have, such as `v1.0.0` before the merge is tagged | push the tag ([releasing](operating/releasing.md)), then re-run the release ([runbooks](operating/runbooks.md#re-run-or-force-a-release)) |
 | Publish fails: `AccessDenied` on `AssumeRole` | the stage has no `docs/docs-publisher` role: its hosting stack is missing or older than this design | deploy the stage's hosting stack (step 3 or 8) |
 | Publish fails: `/docs/content-bucket-name is missing here` | the same | the same |
 | Publish warns that `/orcasonar/ingest-bucket-name` does not exist | OrcaSonar is not deployed in that stage | nothing: the pages publish, and documents follow once OrcaSonar is there |
@@ -549,6 +559,7 @@ aws logs tail "$LOG_GROUP" --since 1h
 | "Sign-in is temporarily unavailable" | right after a session key change; otherwise the session Lambda cannot read its key | wait a few minutes; then see the [runbooks](operating/runbooks.md#sign-in-fails-for-everyone) |
 | "Sign-in did not complete" after Google | the ID token was rejected (log: `invalid-token`) | check that `/_auth/env.js` holds the stage's docs client ID |
 | The chat panel cannot answer | OrcaSonar is not deployed in the stage, or today's allowance is used | OrcaSonar's runbook |
+| The chat panel says an answer stalled, or a search took too long | OrcaSonar sent nothing for 90 seconds (an answer) or did not answer in 45 (a search) | OrcaSonar's runbook: its chat function's logs, and Bedrock throttling |
 | `umccr-docs publish` refuses a mass delete | the build lost more than half its pages | check the build; if intended, publish by hand with `--allow-mass-delete` |
 | A build fails: `[[name]] does not match any note` | a note links to one that is not in the build, often a note nobody has committed yet | commit the linked note, or change the link; a working-tree build that passes may be relying on an uncommitted note |
 

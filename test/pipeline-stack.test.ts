@@ -272,10 +272,11 @@ describe('site publishing', () => {
     );
   };
 
-  test('is one V2 pipeline with parallel runs and required variables', () => {
+  test('is one V2 pipeline that runs one release at a time, with required variables', () => {
     const pipeline = sitesPipeline();
     expect(pipeline.PipelineType).toBe('V2');
-    expect(pipeline.ExecutionMode).toBe('PARALLEL');
+    // Two releases of one site publishing at once could leave a mix of both.
+    expect(pipeline.ExecutionMode).toBe('QUEUED');
     expect(pipeline.Variables!.map((variable) => variable.Name)).toEqual([
       'SLUG',
       'REPO',
@@ -328,7 +329,7 @@ describe('site publishing', () => {
     });
   });
 
-  test('stops with a reason, before pip, when the toolkit ref has no toolkit', () => {
+  test('stops with a reason, before pip, when the toolkit ref is missing or has no toolkit', () => {
     const specs = Object.values(template.findResources('AWS::CodeBuild::Project'))
       .map(
         (project) =>
@@ -338,9 +339,11 @@ describe('site publishing', () => {
       .filter((spec) => spec.includes('TOOLKIT_DIR'));
     expect(specs.length).toBeGreaterThan(0);
     for (const spec of specs) {
-      const check = spec.indexOf('has no toolkit');
-      expect(check).toBeGreaterThan(-1);
-      expect(check).toBeLessThan(spec.indexOf('pip install --quiet --require-hashes'));
+      for (const reason of ['has no ref', 'has no toolkit']) {
+        const check = spec.indexOf(reason);
+        expect(check).toBeGreaterThan(-1);
+        expect(check).toBeLessThan(spec.indexOf('pip install --quiet --require-hashes'));
+      }
     }
   });
 

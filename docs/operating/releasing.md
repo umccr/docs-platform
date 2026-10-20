@@ -15,7 +15,21 @@ for approval before prod.
 - Releases are semantic versions, `vMAJOR.MINOR.PATCH`.
 - A change that could break an existing site, such as a contract rule, a removed extension or an engine change,
   needs a new major version and a migration note.
-- Tag protection rules restrict who can create `v*` tags.
+- A registry `toolkitRef` is a release tag or a full commit SHA, never a branch; the registry refuses anything else.
+
+## Repository settings
+
+Review on `main` is the only gate before prod for the toolkit, the theme and `/platform/`: the site pipeline
+publishes `/platform/` from each merge with no approval, and the other sites build with tags cut from `main`. An
+organisation owner sets these under **Settings → Rules → Rulesets**:
+
+- **`main`**: require a pull request with one approval, and the `ci` checks to pass ("Toolkit tests and lint",
+  "Strict builds of the examples and the platform site", "CDK app tests, lint and synth", "Workflows, secrets and
+  information boundary"); block force pushes and deletion.
+- **`v*` tags**: only the platform owners may create them, and nobody may update or delete one: a moved tag would
+  change how sites build without a registry change.
+- **Code owners**: name the owners' team in [`.github/CODEOWNERS`](../../.github/CODEOWNERS), which holds a
+  placeholder, and require their review on `main`.
 
 ## Releasing the toolkit and theme
 
@@ -31,6 +45,9 @@ for approval before prod.
 4. Move sites to the new tag: change their `toolkitRef` in the registry (`DOCS_TOOLKIT_REF` for every site that uses
    the default) and merge. The infrastructure pipeline updates the dispatcher; each site builds with the new version
    on its next push.
+
+Steps 2 and 4 can be one merge, as for `v1.0.0`: then tag that merge straight away, since the sites' releases stop
+at Build ("has no ref") until the tag exists. Re-run any that stopped once it does.
 
 ## Rolling back a release
 

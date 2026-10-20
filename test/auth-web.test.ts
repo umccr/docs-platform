@@ -5,9 +5,11 @@ import { buildAuthWeb } from '../app/auth-web/build';
 import {
   isSignInLoop,
   oauthDomainFor,
+  oauthErrorMessage,
   recentExchanges,
   safeReturnPath,
   sessionErrorMessage,
+  SIGN_IN_FAILED_MESSAGE,
   SIGN_IN_LOOP_LIMIT,
   SIGN_IN_LOOP_WINDOW_MS,
 } from '../app/auth-web/src/paths';
@@ -65,6 +67,20 @@ describe('sessionErrorMessage', () => {
   test('falls back to a generic message', () => {
     expect(sessionErrorMessage(undefined)).toBe('Sign-in did not complete. Please try again.');
   });
+});
+
+describe('oauthErrorMessage', () => {
+  test('explains a cancelled or refused sign-in', () => {
+    expect(oauthErrorMessage('access_denied')).toContain('cancelled or refused');
+  });
+
+  // The page never echoes the URL: a link could otherwise put any text on the real sign-in page.
+  test.each([[null], ['server_error'], ['Call 555-0100 to unlock your account']])(
+    'shows the generic message for %p',
+    (code) => {
+      expect(oauthErrorMessage(code)).toBe(SIGN_IN_FAILED_MESSAGE);
+    }
+  );
 });
 
 describe('sign-in loop detection', () => {

@@ -237,28 +237,39 @@ export const createDispatcher =
       return reply(200, { duplicate: true, slug: route.slug });
     }
 
-    const release = await deps.nextRelease(route.slug);
-    const request: FetchRequest = {
-      slug: route.slug,
-      repo: route.repo,
-      commit: push.after,
-      release,
-      configPath: route.configPath,
-      toolkitRef: route.toolkitRef === SELF_TOOLKIT_REF ? push.after : route.toolkitRef,
-      stages: route.stages,
-      deliveryId,
-    };
+    // The delivery is recorded now: any failure must forget it, or GitHub's redelivery counts as a duplicate.
+    let release: number | undefined;
     try {
+      release = await deps.nextRelease(route.slug);
+      const request: FetchRequest = {
+        slug: route.slug,
+        repo: route.repo,
+        commit: push.after,
+        release,
+        configPath: route.configPath,
+        toolkitRef: route.toolkitRef === SELF_TOOLKIT_REF ? push.after : route.toolkitRef,
+        stages: route.stages,
+        deliveryId,
+      };
       const buildId = await deps.startFetch(request);
       deps.log({ outcome: 'dispatched', slug: route.slug, commit: push.after, release, buildId });
       return reply(202, { slug: route.slug, release, buildId });
     } catch (error) {
-      await deps.forgetDelivery(deliveryId);
+      // A release number taken here goes unused, which is harmless: numbers only have to grow.
+      let forgetError: string | undefined;
+      try {
+        await deps.forgetDelivery(deliveryId);
+      } catch (cause) {
+        // A redelivery is then refused as a duplicate; the runbook starts the release by hand instead.
+        forgetError = String(cause);
+      }
       deps.log({
         outcome: 'start-failed',
         slug: route.slug,
         commit: push.after,
+        release,
         error: String(error),
+        forgetError,
       });
       return reply(500, { error: 'start-failed' });
     }

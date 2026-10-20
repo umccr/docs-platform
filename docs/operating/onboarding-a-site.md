@@ -14,7 +14,7 @@ export const EXAMPLE_SITE: DocsSite = {
   branch: 'main', // pushes to this branch publish the site
   configPath: 'mkdocs.yml',
   docsPaths: ['docs/**', 'mkdocs.yml'], // a push that changes none of these publishes nothing
-  toolkitRef: DOCS_TOOLKIT_REF, // or a specific docs-platform release tag
+  toolkitRef: DOCS_TOOLKIT_REF, // or a docs-platform release tag or full commit SHA, never a branch
   stages: [AppStage.BETA, AppStage.PROD],
   title: 'Example',
   description: 'One line for the catalogue.',

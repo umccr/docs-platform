@@ -5,16 +5,33 @@ import { describe, expect, test } from '@jest/globals';
 
 /**
  * The chat panel's Markdown renderer, in the theme's umccr.js: OrcaSonar's answers are Markdown, and the panel builds
- * them into elements itself. These check the tree it builds from, which the panel turns into elements and text nodes.
+ * them into elements itself. These check the tree it builds from, which the panel turns into elements and text nodes,
+ * and how the panel reads an answer's event stream and gives up on one that stalls.
  */
 
 type MarkdownNode =
   string | { tag: string; children: MarkdownNode[]; href?: string; start?: number; ref?: number };
 
+/** The part of a fetch Response the stream reader uses. */
+interface StreamedResponse {
+  body: {
+    getReader(): {
+      read(): Promise<{ done: boolean; value?: Uint8Array }>;
+      cancel(): Promise<void>;
+    };
+  };
+}
+
 interface ChatMarkdown {
   markdownTree: (markdown: string) => MarkdownNode[];
   closeOpenMarks: (partial: string) => string;
   safeHref: (url: string) => string | null;
+  readEvents: (
+    response: StreamedResponse,
+    onEvent: (name: string, data: unknown) => boolean | void,
+    onChunk?: () => void
+  ) => Promise<void>;
+  watchdog: (controller: AbortController, ms: number) => { kick(): void; stop(): void };
 }
 
 const SCRIPT = path.join(
@@ -39,7 +56,7 @@ const load = (): ChatMarkdown => {
   return sandbox.exports as ChatMarkdown;
 };
 
-const { markdownTree, closeOpenMarks, safeHref } = load();
+const { markdownTree, closeOpenMarks, safeHref, readEvents, watchdog } = load();
 
 /** A tree as compact markup, for readable expectations. Text is escaped, so a `<` it holds shows as `&lt;`. */
 const html = (nodes: MarkdownNode[]): string =>
@@ -173,5 +190,92 @@ describe('chat panel Markdown', () => {
     expect(closeOpenMarks('See [Priorities](https://docs.um')).toBe('See Priorities');
     expect(closeOpenMarks('**done** and `code`')).toBe('**done** and `code`');
     expect(closeOpenMarks('```sh\nmake **')).toBe('```sh\nmake **');
+  });
+});
+
+/** A response whose body yields `chunks`, then ends, or with `open`, never does; it records a cancel. */
+const streamed = (chunks: string[], open = false) => {
+  const encoder = new TextEncoder();
+  const reads = { cancelled: false };
+  let next = 0;
+  const response: StreamedResponse = {
+    body: {
+      getReader: () => ({
+        read: () =>
+          next < chunks.length
+            ? Promise.resolve({ done: false, value: encoder.encode(chunks[next++]) })
+            : open
+              ? new Promise(() => undefined)
+              : Promise.resolve({ done: true }),
+        cancel: () => {
+          reads.cancelled = true;
+          return Promise.resolve();
+        },
+      }),
+    },
+  };
+  return { response, reads };
+};
+
+describe('answer stream', () => {
+  test('reads events split across chunks, and reports every chunk', async () => {
+    const { response } = streamed([
+      'event: meta\ndata: {"exchangeId":"x1"}\n',
+      '\nevent: delta\ndata: {"text":"Hi"}\n\n',
+    ]);
+    const events: Array<[string, unknown]> = [];
+    let chunks = 0;
+    await readEvents(
+      response,
+      (name, data) => {
+        events.push([name, data]);
+      },
+      () => chunks++
+    );
+    expect(events).toEqual([
+      ['meta', { exchangeId: 'x1' }],
+      ['delta', { text: 'Hi' }],
+    ]);
+    expect(chunks).toBe(2);
+  });
+
+  test('stops at the event that ends the answer, though the server keeps the stream open', async () => {
+    const { response, reads } = streamed(
+      [
+        'event: delta\ndata: {"text":"Hi"}\n\nevent: done\ndata: {}\n\n',
+        'event: delta\ndata: {"text":"late"}\n\n',
+      ],
+      true
+    );
+    const names: string[] = [];
+    await readEvents(response, (name) => {
+      names.push(name);
+      return name === 'done';
+    });
+    expect(names).toEqual(['delta', 'done']);
+    expect(reads.cancelled).toBe(true);
+  });
+});
+
+describe('stall watchdog', () => {
+  const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  test('aborts once the time passes without a kick', async () => {
+    const controller = new AbortController();
+    watchdog(controller, 10);
+    await sleep(30);
+    expect(controller.signal.aborted).toBe(true);
+  });
+
+  test('starts the time again at each kick, and does nothing once stopped', async () => {
+    const controller = new AbortController();
+    const watch = watchdog(controller, 30);
+    await sleep(20);
+    watch.kick();
+    await sleep(20);
+    expect(controller.signal.aborted).toBe(false);
+    watch.stop();
+    await sleep(40);
+    expect(controller.signal.aborted).toBe(false);
   });
 });

@@ -14,7 +14,12 @@ import {
   takeReturnPath,
   takeSignedOut,
 } from './auth';
-import { sessionErrorMessage, SESSION_PATH, SIGN_IN_LOOP_MESSAGE } from './paths';
+import {
+  oauthErrorMessage,
+  sessionErrorMessage,
+  SESSION_PATH,
+  SIGN_IN_LOOP_MESSAGE,
+} from './paths';
 
 /**
  * The `/_auth/` page. States follow orcahouse-ui's AuthGate: checking → signed out (with an optional message) →
@@ -137,7 +142,9 @@ async function start(): Promise<void> {
     return;
   }
   if (params.has('error')) {
-    showSignIn(params.get('error_description') ?? 'Sign-in did not complete.');
+    // error_description is free text from the URL: the console keeps it for support, the page never shows it.
+    console.warn('Sign-in error:', params.get('error'), params.get('error_description'));
+    showSignIn(oauthErrorMessage(params.get('error')));
     return;
   }
 

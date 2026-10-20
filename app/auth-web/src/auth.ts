@@ -7,6 +7,7 @@ import {
   oauthDomainFor,
   recentExchanges,
   safeReturnPath,
+  SIGN_IN_FAILED_MESSAGE,
   SIGN_IN_PATH,
 } from './paths';
 
@@ -69,7 +70,9 @@ export function configureAuth(): boolean {
           stop();
           resolve(true);
         } else if (payload.event === 'signInWithRedirect_failure') {
-          redirectError = payload.data.error?.message ?? 'Sign-in did not complete.';
+          // Amplify's message can be the URL's error_description, which a link can set: log it, never show it.
+          console.warn('Sign-in did not complete:', payload.data.error?.message);
+          redirectError = SIGN_IN_FAILED_MESSAGE;
           stop();
           resolve(false);
         }

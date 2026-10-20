@@ -93,7 +93,7 @@ Details: [docs/operating/](../operating/README.md) for the platform team, the
 - [x] Hosting: one `docs-publisher` role trusted by the toolchain's `docs-sites-publish`; SSM
       `/docs/content-bucket-name`; CSP for OrcaSonar and Cognito; `VITE_SONAR_API_URL` in `env.js`; `token.js`.
 - [x] Toolchain: dispatcher (function URL, webhook secret, dispatch table), fetch build, source bucket,
-      `UMCCR-DocsSitesPipeline` (V2, parallel, no approval, Slack on failure).
+      `UMCCR-DocsSitesPipeline` (V2, one release at a time since 2026-10-20, no approval, Slack on failure).
 - [x] Toolkit: `export-kb`; `publish --role-arn --release --documents`.
 - [x] Theme: chat panel (Ask, Search, sources, feedback, the 30-day notice).
 - [x] Retired the reusable workflow, `site.yml` and the caller template; CI gains the CDK job.
@@ -120,7 +120,10 @@ Details: [docs/operating/](../operating/README.md) for the platform team, the
 
 ### Before deploying anything
 
+- [ ] Protect `main` and `v*` tags with rulesets that require the CI checks
+      ([repository settings](../operating/releasing.md#repository-settings)).
 - [ ] Review and merge `umccr/infrastructure`, then this repository, then `management-knowledgebase`.
+- [ ] Tag the merge of this repository `v1.0.0`: `DOCS_TOOLKIT_REF` already names it.
 - [ ] Find how `portal.umccr.org` is wired in the `umccr.org` zone and mirror it for `docs.umccr.org`.
 - [ ] Turn on secret scanning, push protection and Dependabot here, and name the owners in `CODEOWNERS`.
 
@@ -137,8 +140,9 @@ Step-by-step commands, checks and troubleshooting: [docs/deploy.md](../deploy.md
       (2026-10-13). Fixed while testing, 2026-10-14 and 15: the fetch build may read the GitHub connection, the site
       pipeline's source action may read every release's object, and the site pipeline is `UMCCR-DocsSitesPipeline`.
 - [ ] Push to `/platform/` and to the knowledgebase; both publish to dev through the pipeline. Dispatch and fetch
-      work (2026-10-15); releases fail at Build until this repository's merge puts the toolkit on `main`, and the
-      knowledgebase's until two broken links in its notes are fixed (its strict build names both).
+      work (2026-10-15); releases fail at Build until this repository's merge puts the toolkit on `main`. The
+      knowledgebase's two broken links are fixed on its branch: a clean export of it passed `check`, `build` and
+      `verify-site` on 2026-10-20.
 - [x] Once OrcaSonar's stacks are in dev: documents appear under `docs/<slug>/` (`/platform/`'s, published by
       hand), and the chat panel answers (2026-10-15).
 - [ ] Engine bake-off, second pass: compare both engines side by side in beta, then settle ADR-0003.
@@ -150,7 +154,7 @@ Step-by-step commands, checks and troubleshooting: [docs/deploy.md](../deploy.md
 - [ ] Approve the infrastructure pipeline's prod stage.
 - [ ] OrcaSonar in stg and prod, from its repository: in each account, Anthropic's model agreements (manual), the
       data-retention decision, and the docs Cognito client; then its pipelines' PromoteToProd.
-- [ ] Release docs-platform `v1.0.0` and pin `DOCS_TOOLKIT_REF` to it.
+- [ ] Check that a personal Google account cannot sign in to prod (the deploy guide's verification checklist).
 - [ ] Set the prod canonical host to `docs.umccr.org` in `infrastructure/config.ts`.
 - [ ] Private security review, accessibility check and operational readiness review.
 - [ ] Decide whether to replace the dispatcher's function URL with dispatch from GitHub Actions before prod

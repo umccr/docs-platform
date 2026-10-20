@@ -4,8 +4,27 @@ All notable changes to the docs platform: the infrastructure, the `umccr-docs` t
 toolkit and theme changes up when their registry entry's `toolkitRef` moves to a release; see
 [docs/operating/releasing.md](docs/operating/releasing.md).
 
-## Unreleased
+## v1.0.0
 
+The first release: tag the commit that merges it to `main`. The registry pins every site but `/platform/` to it.
+
+- `UMCCR-DocsSitesPipeline` runs one release at a time, in the order they start (queued, no longer parallel). A
+  publish uploads, then deletes, then writes the release marker, so two releases of one site publishing together
+  could leave a mix of both, with the older one's marker live. Releases of different sites wait for each other too;
+  a run takes a few minutes.
+- Sites other than `/platform/` build with the toolkit at `v1.0.0` (`DOCS_TOOLKIT_REF`), no longer at `main`, and the
+  registry takes only a release tag or a full commit SHA as a `toolkitRef`: a merge to this repository no longer
+  changes how other sites build. A release whose ref does not exist, such as a tag not yet pushed, stops at Build and
+  says so.
+- The dispatcher forgets a delivery when it cannot take the release number, as it already did when the fetch build
+  would not start, so GitHub's redelivery starts the release instead of being refused as a duplicate. If forgetting
+  fails too, it answers 500 and logs `forgetError` rather than throwing.
+- Theme: the chat panel stops waiting for an answer that sends nothing for 90 seconds, or a search that takes 45, and
+  says so. It used to keep **Send** disabled until the page was reloaded. It also stops reading at an answer's `done`
+  or `error` event instead of waiting for the server to close the stream.
+- The sign-in page shows its own message for an error the hosted UI sends back, never the URL's
+  `error_description`, which anyone could set in a link to the real sign-in page; Amplify passed that text on too.
+  The browser console keeps the details.
 - The publisher serves files with Python's own media type table, not the publishing host's `mime.types`, so a file
   gets the same type from a laptop and from CodeBuild; `.xhtml`, `.xht` and `.shtml` are downloads. Documents (HTML,
   SVG and every XML type) are served as UTF-8, and the contract and `verify-site` check whichever files the

@@ -34,7 +34,7 @@ design records, plans, runbooks and deploy guide are in [docs/](docs/), read her
 | Pipeline | Starts on | Does |
 | --- | --- | --- |
 | `UMCCR-DocsInfrastructure` | a push to `main` under `bin/`, `infrastructure/` or `app/`, except `app/site/` | deploys `UMCCR-DocsHostingStack` to beta, gamma and, after approval, prod; its self-update deploys the dispatcher and the site pipeline |
-| `UMCCR-DocsSitesPipeline` | the dispatcher, once per release of a site; for `/platform/`, a push under `app/site/`, `toolkit/` or `requirements/build.txt` | builds the site, then publishes it to dev and prod with no approval |
+| `UMCCR-DocsSitesPipeline` | the dispatcher, once per release of a site; for `/platform/`, a push under `app/site/`, `toolkit/` or `requirements/build.txt` | builds the site, then publishes it to dev and prod with no approval, one release at a time |
 
 ## Layout
 

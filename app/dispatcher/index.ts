@@ -89,7 +89,12 @@ const nextRelease = async (slug: string): Promise<number> => {
       ReturnValues: 'UPDATED_NEW',
     })
   );
-  return Number(result.Attributes?.release?.N);
+  const release = Number(result.Attributes?.release?.N);
+  // Fail here rather than start a run whose publish would reject a release of NaN.
+  if (!Number.isSafeInteger(release) || release < 1) {
+    throw new Error(`No release number for ${slug}`);
+  }
+  return release;
 };
 
 const startFetch = async (request: FetchRequest): Promise<string> => {

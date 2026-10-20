@@ -14,8 +14,9 @@ Your repository holds only its Markdown and `mkdocs.yml`: no workflow, environme
    commit through the AWS Connector for GitHub app. No personal access token is involved.
 4. The fetch build starts the shared site pipeline with exactly those files.
 
-A release is usually live in dev and prod a few minutes after the push. There is no approval step: documentation
-changes no data and no running system.
+A release is usually live in dev and prod a few minutes after the push, a little later when another release, of any
+site, is ahead of it: releases publish one at a time. There is no approval step: documentation changes no data and
+no running system.
 
 ## Build
 
@@ -38,8 +39,8 @@ Dev first, then prod as soon as dev succeeds. A failure anywhere stops the relea
 team is notified.
 
 1. The publish step assumes the stage's `docs-publisher` role, narrowed for this run to your site's prefixes only.
-2. If a newer release of your site is already live (two pushes close together can finish out of order), it stops:
-   an older release never overwrites a newer one.
+2. If a newer release of your site is already live (as when an older release is retried), it stops: an older
+   release never overwrites a newer one.
 3. It uploads the exported documents to OrcaSonar under `docs/<slug>/`, and deletes documents for pages you
    removed.
 4. `umccr-docs publish` uploads every file under `sites/<slug>/`, then deletes the files your new build no longer

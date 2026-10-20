@@ -373,6 +373,40 @@ describe('dispatcher', () => {
     expect(forgotten).toEqual(['delivery-1']);
   });
 
+  test('forgets the delivery when no release number can be taken, so a redelivery can retry', async () => {
+    let failures = 1;
+    const nextRelease = () =>
+      failures-- > 0 ? Promise.reject(new Error('throttled')) : Promise.resolve(7);
+    const { deps: d, started, forgotten } = deps({ nextRelease });
+    const dispatch = createDispatcher(d);
+
+    expect((await dispatch(request(push()))).statusCode).toBe(500);
+    expect(forgotten).toEqual(['delivery-1']);
+    expect(started).toHaveLength(0);
+
+    expect((await dispatch(request(push()))).statusCode).toBe(202);
+    expect(started.map((fetch) => fetch.release)).toEqual([7]);
+  });
+
+  test('answers 500 and logs, without throwing, when the delivery cannot be forgotten either', async () => {
+    const logged: Array<Record<string, unknown>> = [];
+    const { deps: d } = deps({
+      startFetch: () => Promise.reject(new Error('throttled')),
+      forgetDelivery: () => Promise.reject(new Error('table unavailable')),
+      log: (entry) => logged.push(entry),
+    });
+    const result = await createDispatcher(d)(request(push()));
+    expect(result.statusCode).toBe(500);
+    expect(logged).toContainEqual(
+      expect.objectContaining({
+        outcome: 'start-failed',
+        release: 1,
+        error: 'Error: throttled',
+        forgetError: 'Error: table unavailable',
+      })
+    );
+  });
+
   test('refuses anything but POST', async () => {
     const { deps: d } = deps();
     const result = await createDispatcher(d)(request(push(), {}, { method: 'GET' }));

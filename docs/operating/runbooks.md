@@ -39,7 +39,8 @@ GitHub sends a ping when the webhook is saved; the dispatcher answers 200. Check
 ## Re-run or force a release
 
 - **Redeliver a push**: in the webhook's **Recent Deliveries**, choose the delivery and **Redeliver**. The dispatcher
-  starts nothing for a delivery it has already handled; a redelivery after a failed start is handled normally.
+  starts nothing for a delivery it has already handled; a redelivery after a failed start is handled normally,
+  unless the `start-failed` log line has a `forgetError`: then start the release by hand (below).
 - **Re-run a release**: in `UMCCR-DocsSitesPipeline`'s execution history, open the run and choose **Retry** on the
   failed stage. A retry keeps the run's variables, `TOOLKIT_REF` included, and a newer release that is already live
   is never overwritten; to publish older files or another toolkit, start a release by hand (below).

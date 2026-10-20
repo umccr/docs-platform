@@ -131,9 +131,19 @@ describe('validation', () => {
     ).not.toThrow();
   });
 
-  test.each(['', 'v1 .0', '../v1'])('rejects the toolkit ref %p', (toolkitRef) => {
-    expect(() => validateDocsSites([site({ toolkitRef })])).toThrow(/toolkit ref/);
-  });
+  test.each(['', 'v1 .0', '../v1', 'main', 'feat/docs', 'v1.2', 'a1b2c3d'])(
+    'rejects the toolkit ref %p: only a release tag or a full commit pins a build',
+    (toolkitRef) => {
+      expect(() => validateDocsSites([site({ toolkitRef })])).toThrow(/toolkit ref/);
+    }
+  );
+
+  test.each(['v1.0.0', 'v2.10.3', 'v2.0.0-rc.1', 'a'.repeat(40)])(
+    'accepts the toolkit ref %p',
+    (toolkitRef) => {
+      expect(() => validateDocsSites([site({ toolkitRef })])).not.toThrow();
+    }
+  );
 
   test('rejects a site that publishes nowhere', () => {
     expect(() => validateDocsSites([site({ stages: [] })])).toThrow(/any stage/);
