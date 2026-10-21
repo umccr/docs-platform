@@ -4,8 +4,10 @@ Everything behind [docs.umccr.org](https://docs.umccr.org), authenticated docume
 infrastructure and its pipelines, sign-in, the `umccr-docs` build toolkit, the shared theme with its chat panel,
 the conventions participating repositories follow, and the platform's own `/platform/` site.
 
-> **Status:** 2026-10-21. Merged to `main` and tagged `v0.1.0`. Hosting, sign-in, the dispatcher and the chat panel
-> run in dev, which pipeline 1 deploys; prod follows once its certificate is issued. See the
+> **Status:** 2026-10-21. Hosting, sign-in and the dispatcher run in dev and prod, which pipeline 1 deploys, and
+> `/platform/` and the knowledgebase publish to both through the site pipeline. The chat panel answers in dev, where
+> OrcaSonar runs. `v0.1.1` puts back the theme's script, which `v0.1.0`'s package left out
+> ([write-up](docs/issues/2026-10-21-theme-script-missing-from-wheel.md)). See the
 > [implementation plan](docs/plans/implementation-plan.md), and [docs/deploy.md](docs/deploy.md) to deploy.
 
 ## How it fits together

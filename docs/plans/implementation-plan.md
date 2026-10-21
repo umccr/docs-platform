@@ -140,28 +140,31 @@ Step-by-step commands, checks and troubleshooting: [docs/deploy.md](../deploy.md
 - [x] Deploy `DocsInfrastructurePipeline` to the toolchain account, and create the organisation webhook
       (2026-10-13). Fixed while testing, 2026-10-14 and 15: the fetch build may read the GitHub connection, the site
       pipeline's source action may read every release's object, and the site pipeline is `UMCCR-DocsSitesPipeline`.
-- [ ] Push to `/platform/` and to the knowledgebase; both publish to dev through the pipeline. Dispatch and fetch
-      work (2026-10-15). The first `/platform/` release after the merge (2026-10-21) failed at Publish beta:
-      `docs-publisher` had no grant for OrcaSonar's ingest bucket, which the hosting stack now gives it. The
-      knowledgebase's two broken links are fixed on its branch: a clean export of it passed `check`, `build` and
-      `verify-site` on 2026-10-20.
+- [x] Push to `/platform/` and to the knowledgebase; both publish to dev through the pipeline (2026-10-21, and to
+      prod). The first `/platform/` release after the merge failed at Publish beta, as `docs-publisher` had no grant
+      for OrcaSonar's ingest bucket; release 2, started by hand once the grant was deployed, published. The
+      knowledgebase's release 28 published once its `mkdocs.yml` was on `main`. Their pages lacked the theme's script
+      until `v0.1.1` ([write-up](../issues/2026-10-21-theme-script-missing-from-wheel.md)).
 - [x] Once OrcaSonar's stacks are in dev: documents appear under `docs/<slug>/` (`/platform/`'s, published by
       hand), and the chat panel answers (2026-10-15).
 - [ ] Engine bake-off, second pass: compare both engines side by side in beta, then settle ADR-0003.
 
 ### Production
 
-- [ ] Merge the gamma stage's removal (2026-10-21): stg runs no docs or OrcaSonar stage, and pipeline 1 stopped at
+- [x] Merge the gamma stage's removal (2026-10-21): stg runs no docs or OrcaSonar stage, and pipeline 1 stopped at
       gamma until then.
 - [x] Apply `cognito_aai` and `umccr_docs_domain` to `prod` (by 2026-10-21).
 - [x] Request the prod certificate again (2026-10-21): the first timed out (`VALIDATION_TIMED_OUT`), as
       `docs.umccr.org` never validated.
 - [x] Add the `umccr.org` records the prod output lists (2026-10-21, by hand with toolchain credentials:
       [deploying](../deploy.md#prod-the-umccrorg-records)).
-- [ ] Clear prod's failed first create. It ran on 2026-10-21 before the records existed; CloudFront refused the
-      pending certificate, and the rollback stopped at the non-empty content bucket, leaving `ROLLBACK_FAILED`
-      ([troubleshooting](../deploy.md#troubleshooting)).
-- [ ] Approve the infrastructure pipeline's prod stage, once the certificate is `ISSUED`.
+- [x] Clear prod's failed first create (2026-10-21). It ran before the records existed; CloudFront refused the
+      pending certificate, and the rollback stopped at the non-empty content bucket, leaving `ROLLBACK_FAILED`. The
+      bucket, kept when the stack was deleted, still held old versions, and blocked the next create until it was
+      emptied and deleted too ([troubleshooting](../deploy.md#troubleshooting)).
+- [x] Approve the infrastructure pipeline's prod stage (2026-10-21): `UMCCR-DocsHostingStack` is up in prod.
+- [ ] Release `v0.1.1` and rebuild both sites with it, so their pages have the theme's script again
+      ([write-up](../issues/2026-10-21-theme-script-missing-from-wheel.md), [releasing](../operating/releasing.md)).
 - [ ] OrcaSonar in prod, from its repository: in each account, Anthropic's model agreements (manual), the
       data-retention decision, and the docs Cognito client; then its pipelines' PromoteToProd.
 - [ ] Check that a personal Google account cannot sign in to prod (the deploy guide's verification checklist).

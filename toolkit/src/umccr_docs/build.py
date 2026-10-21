@@ -99,6 +99,13 @@ def markdown_renderer() -> Callable[[str], str]:
     return lambda text: renderer.reset().convert(text)
 
 
+# The theme's own files, which every page links. `verify-site` refuses a site without one of them.
+THEME_LOGO = "assets/umccr/logo.svg"
+THEME_STYLESHEET = "assets/umccr/umccr.css"
+THEME_SCRIPT = "assets/umccr/umccr.js"
+THEME_FILES = (THEME_LOGO, THEME_STYLESHEET, THEME_SCRIPT)
+
+
 def theme_dir() -> Path:
     return Path(str(resources.files("umccr_docs") / "theme"))
 
@@ -152,8 +159,8 @@ def effective_config(project: Project, slug: str) -> dict[str, Any]:
                 "language": "en",
                 # System fonts: pages make no third-party requests, and the site's CSP allows none.
                 "font": False,
-                "logo": "assets/umccr/logo.svg",
-                "favicon": "assets/umccr/logo.svg",
+                "logo": THEME_LOGO,
+                "favicon": THEME_LOGO,
                 "features": THEME_FEATURES,
                 "palette": [
                     {
@@ -172,8 +179,8 @@ def effective_config(project: Project, slug: str) -> dict[str, Any]:
                     },
                 ],
             },
-            "extra_css": ["assets/umccr/umccr.css", *(raw.get("extra_css") or [])],
-            "extra_javascript": ["assets/umccr/umccr.js"],
+            "extra_css": [THEME_STYLESHEET, *(raw.get("extra_css") or [])],
+            "extra_javascript": [THEME_SCRIPT],
             "markdown_extensions": MARKDOWN_EXTENSIONS,
             "plugins": plugins,
             "extra": {

@@ -3,7 +3,7 @@ import shutil
 import pytest
 from conftest import EXAMPLES
 
-from umccr_docs.build import build, effective_config
+from umccr_docs.build import THEME_FILES, THEME_SCRIPT, build, effective_config
 from umccr_docs.config import load_project
 from umccr_docs.verify import verify_site
 
@@ -80,7 +80,7 @@ def test_files_served_as_bytes_are_not_documents(tmp_path):
 
 def site_with(tmp_path, relative: str, content: str | bytes):
     site = tmp_path / "site"
-    for name in ("index.html", "404.html"):
+    for name in ("index.html", "404.html", *THEME_FILES):
         (site / name).parent.mkdir(parents=True, exist_ok=True)
         (site / name).write_text("ok")
     (site / relative).parent.mkdir(parents=True, exist_ok=True)
@@ -91,9 +91,17 @@ def site_with(tmp_path, relative: str, content: str | bytes):
     return site
 
 
-def test_verify_requires_index_and_404(tmp_path):
+def test_verify_requires_index_404_and_the_theme(tmp_path):
     (tmp_path / "site").mkdir()
     assert verify_site(tmp_path / "site") == [
         "index.html is missing from the site root",
         "404.html is missing from the site root",
+        *(f"{name} is missing: the toolkit was installed without part of its theme" for name in THEME_FILES),
     ]
+
+
+def test_verify_refuses_a_site_without_the_theme_script(tmp_path):
+    # What v0.1.0's wheel built: every page linked umccr.js, which the package did not hold.
+    site = site_with(tmp_path, "guide/index.html", "<p>Guide</p>")
+    (site / THEME_SCRIPT).unlink()
+    assert verify_site(site) == [f"{THEME_SCRIPT} is missing: the toolkit was installed without part of its theme"]

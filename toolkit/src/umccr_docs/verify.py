@@ -4,6 +4,7 @@ import re
 from pathlib import Path
 
 from umccr_docs.active_content import NOT_UTF8, decode_document, unsafe_html
+from umccr_docs.build import THEME_FILES
 from umccr_docs.media_types import content_type_for, is_document
 
 MAX_FILE_BYTES = 25 * 1024 * 1024
@@ -33,6 +34,12 @@ def verify_site(site_dir: Path) -> list[str]:
     for required in ("index.html", "404.html"):
         if not (site_dir / required).is_file():
             problems.append(f"{required} is missing from the site root")
+    # Every page links these, so a site without one loses the catalogue, the account menu or the chat panel. The usual
+    # cause is a toolkit installed without part of its theme:
+    # docs/issues/2026-10-21-theme-script-missing-from-wheel.md.
+    for required in THEME_FILES:
+        if not (site_dir / required).is_file():
+            problems.append(f"{required} is missing: the toolkit was installed without part of its theme")
 
     total = 0
     for path in sorted(site_dir.rglob("*")):

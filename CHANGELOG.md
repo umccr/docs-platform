@@ -4,8 +4,19 @@ All notable changes to the docs platform: the infrastructure, the `umccr-docs` t
 toolkit and theme changes up when their registry entry's `toolkitRef` moves to a release; see
 [docs/operating/releasing.md](docs/operating/releasing.md).
 
-## Unreleased
+## v0.1.1
 
+Puts the theme's script back in every site: tag the commit that merges it to `main`. The registry moves every site
+but `/platform/` to it.
+
+- The toolkit's package holds the theme's script, `assets/umccr/umccr.js`. CI and the site pipeline install the
+  toolkit from its wheel, which left the script out: the repository's `.gitignore` ignores `*.js`, and Hatch does not
+  match its exception for the theme from `toolkit/`. Pages still linked the script, so the sites the pipeline
+  published had no catalogue, account menu or chat panel. `make install`'s editable install reads the theme from the
+  source tree, so local builds were unaffected
+  ([write-up](docs/issues/2026-10-21-theme-script-missing-from-wheel.md)).
+- `verify-site` refuses a site without the theme's script, stylesheet or logo, so CI's site builds and the
+  pipeline's Build stop such a site before it is published.
 - Pipeline 1 deploys beta, then prod; the gamma stage is gone, as the stg account runs no docs stage. Prod now
   opens with the `PromoteToProd` approval, so a timed-out approval fails prod rather than beta.
 - The publish steps can export documents to OrcaSonar: `docs-publisher` may list, read, write and delete under

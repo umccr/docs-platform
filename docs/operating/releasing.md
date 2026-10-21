@@ -39,6 +39,9 @@ organisation owner sets these under **Settings → Rules → Rulesets**:
 ## Releasing the toolkit and theme
 
 1. Make sure `main` is green, and that the platform site on docs.dev.umccr.org and the example builds look right.
+   CI's site builds install the toolkit from its wheel, as the site pipeline does. `make install` installs it
+   editable, which reads the theme from the source tree, so a local build cannot show a file the package leaves out
+   ([2026-10-21](../issues/2026-10-21-theme-script-missing-from-wheel.md)).
 2. Update `CHANGELOG.md` and the toolkit's version (`toolkit/pyproject.toml`, `toolkit/src/umccr_docs/__init__.py`),
    and merge.
 3. Tag the merge commit and push the tag:
@@ -53,9 +56,12 @@ organisation owner sets these under **Settings → Rules → Rulesets**:
 4. Move sites to the new tag: change their `toolkitRef` in the registry (`DOCS_TOOLKIT_REF` for every site that uses
    the default) and merge. The infrastructure pipeline updates the dispatcher; each site builds with the new version
    on its next push.
+5. Rebuild the sites that should not wait for their next push, such as after a fix: start a release by hand for
+   each, with `TOOLKIT_REF` set to the tag ([runbooks](runbooks.md#start-a-release-by-hand)). A merge that changes
+   `toolkit/` already starts a `/platform/` release built with that commit. Then check each site in dev and prod.
 
-Steps 2 and 4 can be one merge, as for `v0.1.0`: then tag that merge straight away, since the sites' releases stop
-at Build ("has no ref") until the tag exists. Re-run any that stopped once it does.
+Steps 2 and 4 can be one merge, as for `v0.1.0` and `v0.1.1`: then tag that merge straight away, since the sites'
+releases stop at Build ("has no ref") until the tag exists. Re-run any that stopped once it does.
 
 ## Rolling back a release
 
