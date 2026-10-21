@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "umccr-docs"
-version = "0.1.0"
+version = "0.1.1"
 description = "Check, build and publish UMCCR documentation sites for docs.umccr.org"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -23,6 +23,11 @@ umccr-docs = "umccr_docs.cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/umccr_docs"]
+# Hatch leaves out what the repository's .gitignore ignores, read from this folder: `*.js` matches the theme's script,
+# and the exception for it is written from the repository root, so it never matches here. Without this line, the
+# wheel that CI and the site pipeline install has no umccr.js:
+# docs/issues/2026-10-21-theme-script-missing-from-wheel.md.
+artifacts = ["src/umccr_docs/theme/**/*.js"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

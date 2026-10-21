@@ -43,24 +43,39 @@ GitHub sends a ping when the webhook is saved; the dispatcher answers 200. Check
   unless the `start-failed` log line has a `forgetError`: then start the release by hand (below).
 - **Re-run a release**: in `UMCCR-DocsSitesPipeline`'s execution history, open the run and choose **Retry** on the
   failed stage. A retry keeps the run's variables, `TOOLKIT_REF` included, and a newer release that is already live
-  is never overwritten; to publish older files or another toolkit, start a release by hand (below).
+  is never overwritten; to publish older files or another toolkit, start a release by hand (below). CodePipeline
+  refuses to retry a run that started before the pipeline last changed, which pipeline 1's self-update does: start
+  that release by hand too.
 - **Publish without a content change**: re-run the last release (above), or push a commit that changes a file
   under the site's docs paths. An empty commit changes no file, so the dispatcher ignores it (`no-docs-change`),
   and redelivering a push that already started a release starts nothing.
 
 ## Start a release by hand
 
-For a rollback, or a rebuild with another toolkit. A publish is skipped when a newer release is live, so the run
-needs a new release number, taken from the site's counter so that the dispatcher's next release is newer still.
+For a rollback; a rebuild with another toolkit, such as moving a site to a fixed release straight away instead of at
+its next push; or a release whose run cannot be retried. A publish is skipped when a newer release is live, so the
+run needs a new release number, taken from the site's counter so that the dispatcher's next release is newer still.
+Steps 1 to 4 run with toolchain credentials.
 
-1. Read the variables of the release to start from (the live one, or the last good one):
+1. Read the variables of the release to start from (the live one, or the last good one). The site's live
+   `_publish.json`, in a stage's content bucket under `sites/<slug>/`, gives its `release` and `commit`; the run is
+   the one with that `RELEASE` in the pipeline's execution history:
 
    ```sh
+   aws codepipeline list-pipeline-executions --pipeline-name UMCCR-DocsSitesPipeline --max-items 10 \
+     --query 'pipelineExecutionSummaries[].[pipelineExecutionId, status, startTime]' --output table
    aws codepipeline get-pipeline-execution --pipeline-name UMCCR-DocsSitesPipeline \
      --pipeline-execution-id <execution-id> --query 'pipelineExecution.variables'
    ```
 
-   Its files are `sources/<SLUG>/<COMMIT>.zip` in the source bucket, kept for 30 days.
+   Its files are `sources/<SLUG>/<COMMIT>.zip` in the source bucket, kept for 30 days. Check that the object is still
+   there; after 30 days, push a change under the site's docs paths instead:
+
+   ```sh
+   SOURCE_BUCKET=$(aws codepipeline get-pipeline --name UMCCR-DocsSitesPipeline \
+     --query 'pipeline.stages[0].actions[0].configuration.S3Bucket' --output text)
+   aws s3api head-object --bucket "$SOURCE_BUCKET" --key "sources/<slug>/<commit>.zip" --query LastModified
+   ```
 
 2. Take the site's next release number:
 
@@ -74,7 +89,9 @@ needs a new release number, taken from the site's counter so that the dispatcher
    ```
 
 3. Write `start.json` with those variables, the new `RELEASE`, and `TOOLKIT_REF` changed if the rebuild needs
-   another toolkit. JSON, not CLI shorthand, because `STAGES` holds a comma:
+   another toolkit. A release tag must be on GitHub already, or the run stops at Build ("has no ref"); `/platform/`
+   builds with its own commit, so its `TOOLKIT_REF` stays equal to `COMMIT`. JSON, not CLI shorthand, because `STAGES`
+   holds a comma:
 
    ```json
    {
@@ -94,7 +111,16 @@ needs a new release number, taken from the site's counter so that the dispatcher
    }
    ```
 
-4. Start it: `aws codepipeline start-pipeline-execution --cli-input-json file://start.json`.
+4. Start it: `aws codepipeline start-pipeline-execution --cli-input-json file://start.json`. Delete `start.json`
+   afterwards, so it is not committed by mistake.
+
+5. Check: the run builds, then publishes to dev and prod, in a few minutes. Afterwards each stage's
+   `sites/<slug>/_publish.json` shows the new `release`. Read it with that stage's credentials:
+
+   ```sh
+   DOCS_BUCKET=$(aws ssm get-parameter --name /docs/content-bucket-name --query Parameter.Value --output text)
+   aws s3 cp "s3://$DOCS_BUCKET/sites/<slug>/_publish.json" -
+   ```
 
 ## A release failed
 
