@@ -23,6 +23,11 @@ There is no docs stage in the stg account.
 Cognito callback URLs in `umccr/infrastructure` `cognito_aai/app_docs.tf` and the certificate in
 `umccr_docs_domain` must cover the same hosts.
 
+A host in a stage's own zone, such as `docs.dev.umccr.org`, gets its records from Terraform (the certificate's
+validation) and the hosting stack (the alias). A host directly under `umccr.org`, such as `docs.umccr.org`, needs both
+of its records added by hand: the `umccr.org` zone is in the toolchain account, and nothing manages it as code. See
+[deploying](../deploy.md#prod-the-umccrorg-records).
+
 ## Sites
 
 Sites are registered in [`infrastructure/sites.ts`](../../infrastructure/sites.ts) and served at `/<slug>/` from
@@ -156,7 +161,8 @@ Before a stage's first deploy:
 1. `umccr/infrastructure` `cognito_aai`: apply `app_docs.tf` to the workspace (callback URLs, SSM
    `/cognito/docs-app/app-client-id`).
 2. `umccr/infrastructure` `umccr_docs_domain`: apply to the workspace (certificate, SSM `/docs/certificate_arn`). In
-   prod, add the `umccr.org` zone records it outputs and wait for the certificate to be issued.
+   prod, add the records it outputs to the `umccr.org` zone, by hand with toolchain credentials
+   ([deploying](../deploy.md#prod-the-umccrorg-records)), and wait for the certificate to be issued.
 
 Before the first release, an organisation owner creates the GitHub webhook (see [Runbooks](runbooks.md)).
 

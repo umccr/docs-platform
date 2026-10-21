@@ -11,6 +11,7 @@ OrcaSonar, the chat service, has its own guide in [umccr/orcasonar](https://gith
 | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- | ---------------- | ------------------------------------------------------------- |
 | Cognito app client `docs-app-<stage>`, SSM `/cognito/docs-app/app-client-id`                                                                                            | `umccr/infrastructure` `terraform/stacks/cognito_aai/app_docs.tf` | dev and prod     | Terraform, by hand                                            |
 | Certificate for the stage's docs hosts (us-east-1), SSM `/docs/certificate_arn`                                                                                         | `umccr/infrastructure` `terraform/stacks/umccr_docs_domain/`      | dev and prod     | Terraform, by hand                                            |
+| `docs.umccr.org` and its certificate validation record, in the `umccr.org` zone                                                                                         | the prod `umccr_docs_domain` output `umccr_org_zone_records`      | toolchain        | by hand, once ([step 1](#prod-the-umccrorg-records))          |
 | `DocsInfrastructurePipeline`: pipeline 1, the dispatcher, the fetch build, `UMCCR-DocsSitesPipeline`                                                                    | `bin/deploy.ts`, `infrastructure/toolchain/`, `app/dispatcher/`   | toolchain        | `cdk deploy` once, by hand; after that, pipeline 1 updates it |
 | `DocsHostingStack`: buckets, CloudFront, the edge function, the session key and Lambda, the `docs/docs-publisher` role, SSM `/docs/content-bucket-name`, the DNS record | `infrastructure/stage/`, `app/`                                   | dev (beta), prod | pipeline 1; beta can also be deployed by hand                 |
 | The organisation webhook                                                                                                                                                | the umccr organisation's settings on GitHub                       |                  | an organisation owner, once                                   |
@@ -34,8 +35,11 @@ Read-only checks of the toolchain and dev accounts found:
 stage then failed on stg's missing parameters; the stage has been removed since, as stg runs no docs stage. The first
 `/platform/` release failed at Publish beta: `docs-publisher` had no grant for OrcaSonar's ingest bucket, which the
 hosting stack now gives it. A read-only check of prod found every parameter the hosting stack reads and a CDK
-bootstrap that trusts the toolchain, but a certificate that timed out (step 8). stg holds no docs or OrcaSonar
-resources.
+bootstrap that trusts the toolchain, but a certificate that timed out (step 8). It was requested again the same
+day, and the first prod deploy failed at the distribution, as the `umccr.org` records were not there yet; the failed
+create left the stack `ROLLBACK_FAILED` ([troubleshooting](#troubleshooting)). The records were added later on
+2026-10-21 ([step 1](#prod-the-umccrorg-records)), and the certificate was issued within the hour. stg holds no docs
+or OrcaSonar resources.
 
 The [implementation plan](plans/implementation-plan.md#6-rollout) tracks what is left.
 
@@ -47,6 +51,7 @@ The [implementation plan](plans/implementation-plan.md#6-rollout) tracks what is
 | ------------------------------------------------------ | ------------------------------------------ |
 | Terraform, the hosting stack, stage checks             | admin on the stage account through AWS SSO |
 | The toolchain stack, the pipelines, the webhook secret | admin on the toolchain (bastion) account   |
+| The `umccr.org` records                                | admin on the toolchain (bastion) account   |
 | The webhook, the AWS Connector for GitHub app          | an owner of the umccr GitHub organisation  |
 
 The examples use the SSO profiles `bastion-admin` for the toolchain account and `dev` for the dev account; use
@@ -138,15 +143,85 @@ terraform apply
 
 The apply creates the ACM certificate for the stage's docs hosts in us-east-1 and its DNS validation record, waits
 for the certificate to be issued, and writes `/docs/certificate_arn`. The `umccr_org_zone_records` output is empty
-in dev. In prod it lists the records `docs.umccr.org` needs in the `umccr.org` zone; add them as that stack's README
-describes, within 72 hours: ACM stops trying after that (`VALIDATION_TIMED_OUT`), and the certificate must be
-requested again (step 8).
+in dev. In prod the apply does not wait: the certificate also names `docs.umccr.org`, which validates only once its
+record is in the `umccr.org` zone. Add the records next ([below](#prod-the-umccrorg-records)), within 72 hours:
+ACM stops trying after that (`VALIDATION_TIMED_OUT`), and the certificate must be requested again (step 8).
 
 ```sh
 CERT_ARN=$(aws ssm get-parameter --name /docs/certificate_arn --query Parameter.Value --output text)
 aws acm describe-certificate --region us-east-1 --certificate-arn "$CERT_ARN" \
-  --query Certificate.Status --output text   # ISSUED
+  --query Certificate.Status --output text   # ISSUED; in prod, only once the umccr.org records exist
 ```
+
+### prod: the `umccr.org` records
+
+**Done in prod on 2026-10-21.** Needed again only if a new certificate lists a different validation record, or for
+another host directly under `umccr.org`.
+
+`docs.umccr.org` is a name in the `umccr.org` zone, which is in the toolchain account, not in prod. No Terraform or
+CDK manages that zone, so `umccr_docs_domain` cannot write to it: its records are added by hand, as the portal's
+are. Until the first one exists, the prod certificate stays `PENDING_VALIDATION`, and a prod deploy fails at the
+distribution ([troubleshooting](#troubleshooting)).
+
+| Record                     | Type  | Value                                | What it is for                                                                                                    |
+| -------------------------- | ----- | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
+| `_<token>.docs.umccr.org.` | CNAME | `_<token>.<id>.acm-validations.aws.` | ACM's proof that the certificate may name `docs.umccr.org`. Keep it: every renewal checks it again                |
+| `docs.umccr.org.`          | CNAME | `docs.prod.umccr.org.`               | readers. The prod hosting stack creates `docs.prod.umccr.org` in prod's own zone, as an alias of the distribution |
+
+The second record leads nowhere until prod's hosting stack exists. That is harmless, and adding both together saves
+a second change.
+
+1. Read both records from the prod workspace:
+
+   ```sh
+   cd infrastructure/terraform/stacks/umccr_docs_domain
+   aws sso login --profile prod-admin && export AWS_PROFILE=prod-admin
+   terraform workspace select prod
+   terraform output -json umccr_org_zone_records > /tmp/umccr-org-records.json
+   jq . /tmp/umccr-org-records.json   # the validation record, then docs.umccr.org
+   ```
+
+2. Create them with toolchain credentials. `CREATE` never overwrites: if either record exists already, Route 53
+   refuses the whole change (`InvalidChangeBatch`) and changes nothing, so compare what is in the zone with the
+   output instead.
+
+   ```sh
+   aws sso login --profile bastion-admin && export AWS_PROFILE=bastion-admin
+   ZONE_ID=$(aws route53 list-hosted-zones-by-name --dns-name umccr.org --max-items 1 \
+     --query "HostedZones[?Name=='umccr.org.'].Id | [0]" --output text)
+   jq '{Comment: "docs.umccr.org: certificate validation, and the prod host",
+     Changes: [.[] | {Action: "CREATE", ResourceRecordSet: {Name: .name, Type: .type, TTL: 300,
+       ResourceRecords: [{Value: .value}]}}]}' /tmp/umccr-org-records.json > /tmp/umccr-org-change.json
+   CHANGE_ID=$(aws route53 change-resource-record-sets --hosted-zone-id "$ZONE_ID" \
+     --change-batch file:///tmp/umccr-org-change.json --query ChangeInfo.Id --output text)
+   aws route53 wait resource-record-sets-changed --id "$CHANGE_ID"
+   ```
+
+   Or in the toolchain account's Route 53 console: **Hosted zones → umccr.org → Create record**, once for each, as
+   a CNAME with TTL 300 and no alias. The name box already ends in `.umccr.org`, so type only what comes before it;
+   a pasted full name becomes `….umccr.org.umccr.org`.
+
+3. Check both at the zone's own name server, which answers at once: a public resolver can keep the earlier "no such
+   name" for up to 15 minutes. Then wait for the certificate, with prod credentials:
+
+   ```sh
+   NS=$(dig +short NS umccr.org | head -1)
+   jq -r '.[].name' /tmp/umccr-org-records.json | while read -r NAME; do dig +short CNAME "$NAME" "@$NS"; done
+   # each record's value, as the output lists it
+
+   export AWS_PROFILE=prod-admin
+   CERT_ARN=$(aws ssm get-parameter --name /docs/certificate_arn --query Parameter.Value --output text)
+   aws acm describe-certificate --region us-east-1 --certificate-arn "$CERT_ARN" \
+     --query 'Certificate.[Status, DomainValidationOptions[].ValidationStatus]' --output text
+   # ISSUED, then SUCCESS for each name
+   ```
+
+   ACM usually issues within half an hour of the record resolving, and sometimes takes a few hours. Deploy prod only
+   once it shows `ISSUED` (step 8).
+
+ACM gives a name the same validation record for every certificate in the same account, so a certificate requested
+again (step 8) normally validates with the record already in the zone: check that the output still matches, and
+add only what differs.
 
 ## Step 2: Pre-flight checks
 
@@ -455,14 +530,14 @@ To check, open any page on `https://docs.dev.umccr.org/` signed in, open the cha
 
 ## Step 8: prod
 
-1. **Terraform and checks**: steps 1 and 2 for `prod`. Add the `umccr.org` records the `umccr_docs_domain` output lists, and wait for the certificate to be `ISSUED`: CloudFront refuses any other. A certificate that shows `VALIDATION_TIMED_OUT` never recovers, because ACM stopped trying when its `docs.umccr.org` record was not there within 72 hours. Request a new one with `terraform apply -replace=aws_acm_certificate.docs` in `umccr_docs_domain` (workspace `prod`), which creates it before removing the old one and updates `/docs/certificate_arn`; then add or check the records the output lists, and wait for `ISSUED`. A stage's first deploy also creates its session key: CloudFormation generates the secret and builds it into the edge function, so there is nothing to run for it.
+1. **Terraform and checks**: steps 1 and 2 for `prod`. Add the `umccr.org` records the `umccr_docs_domain` output lists ([step 1](#prod-the-umccrorg-records)), and wait for the certificate to be `ISSUED`: CloudFront refuses any other. A certificate that shows `VALIDATION_TIMED_OUT` never recovers, because ACM stopped trying when its `docs.umccr.org` record was not there within 72 hours. Request a new one with `terraform apply -replace=aws_acm_certificate.docs` in `umccr_docs_domain` (workspace `prod`), which creates it before removing the old one and updates `/docs/certificate_arn`; then check the records the output lists against the zone, add any that differ, and wait for `ISSUED`. A stage's first deploy also creates its session key: CloudFormation generates the secret and builds it into the edge function, so there is nothing to run for it.
 2. **Prod**: approve **PromoteToProd**, the first action of `UMCCR-DocsInfrastructure`'s prod stage, in the toolchain account's CodePipeline console, within 60 minutes of the run reaching it. Otherwise start the pipeline again, with toolchain credentials:
 
    ```sh
    aws codepipeline start-pipeline-execution --name UMCCR-DocsInfrastructure
    ```
 
-   The prod stage deploys `UMCCR-DocsHostingStack` there. If the sites were registered for beta only (step 6), add `AppStage.PROD` back now; then release each site once (step 6), so prod gets its content.
+   The prod stage deploys `UMCCR-DocsHostingStack` there. If an earlier first deploy failed, its stack must go first: see `ROLLBACK_COMPLETE` and `ROLLBACK_FAILED` under [troubleshooting](#troubleshooting). Then start the pipeline again as above: retrying the failed action would run the deleted stack's change set. If the sites were registered for beta only (step 6), add `AppStage.PROD` back now; then release each site once (step 6), so prod gets its content.
 
 3. **Canonical host**: once `docs.umccr.org` resolves to the prod distribution, set `DOCS_CANONICAL_HOST[AppStage.PROD]` to `'docs.umccr.org'` in `infrastructure/config.ts`, merge, and approve PromoteToProd. Other prod hosts then redirect to it, so readers hold one session cookie.
 
@@ -516,9 +591,10 @@ aws logs tail "$LOG_GROUP" --since 1h
 | Symptom                                                                                                                            | Likely cause                                                                                                                                                                 | Fix                                                                                                                                                                                                                     |
 | ---------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | A deploy fails: `Parameter ... not found`                                                                                          | step 1 not applied in that account, or the wrong account                                                                                                                     | step 1; `aws sts get-caller-identity`                                                                                                                                                                                   |
-| A deploy fails: CloudFront rejects the certificate                                                                                 | the certificate is not `ISSUED` yet                                                                                                                                          | wait, then deploy again; `VALIDATION_TIMED_OUT` needs a new certificate (step 8)                                                                                                                                        |
+| A deploy fails: CloudFront rejects the certificate (`The specified SSL certificate doesn't exist, …`)                              | the certificate is not `ISSUED` yet; in prod, usually because a `umccr.org` record is missing                                                                                | add the records ([step 1](#prod-the-umccrorg-records)), wait for `ISSUED`, then deploy again; `VALIDATION_TIMED_OUT` needs a new certificate (step 8). After a failed first deploy, clear its stack first (below)       |
 | A deploy fails: `CNAMEAlreadyExists`                                                                                               | the host is attached to another distribution                                                                                                                                 | find and detach it                                                                                                                                                                                                      |
 | A stage's stack is in `ROLLBACK_COMPLETE`                                                                                          | its first deploy failed and rolled back; CloudFormation cannot update it                                                                                                     | delete the stack, fix the cause, and run the stage again                                                                                                                                                                |
+| A stage's stack is in `ROLLBACK_FAILED`: its content bucket failed to delete, `The bucket you tried to delete is not empty`        | its first deploy failed after files were copied into the content bucket; a failed first create deletes that bucket, and S3 refuses while it holds any object version         | empty `docs-cloudfront-<account>`, versions included (S3 console: **Empty**), then delete the stack without `--retain-resources`, as the bucket's fixed name would stop the next create; fix the cause, then step 8     |
 | `DocsInfrastructurePipeline` is in `ROLLBACK_COMPLETE`                                                                             | its first `cdk deploy` failed                                                                                                                                                | fix the cause and run `pnpm cdk deploy DocsInfrastructurePipeline` again: the CDK CLI deletes a stack that failed creation and creates it anew. Nothing is left behind: every kept resource uses `RetainExceptOnCreate` |
 | Creating pipeline 1 fails: `filePaths.excludes` (or `includes`) `must have length less than or equal to 8`                         | a trigger filter list has more than 8 patterns, CodePipeline's limit                                                                                                         | keep `DOCS_INFRASTRUCTURE_FILE_PATHS` and `DOCS_INFRASTRUCTURE_EXCLUDED_FILE_PATHS` to 8 each; `cdk synth` refuses longer lists                                                                                         |
 | Pipeline 1's first run fails at its source                                                                                         | the AWS Connector app cannot read `umccr/docs-platform`                                                                                                                      | step 5                                                                                                                                                                                                                  |
@@ -569,7 +645,9 @@ Only to remove a deployment.
    including object versions, and delete them by hand if they should go too.
 
 3. **Certificate**: `terraform destroy` in `umccr_docs_domain` for the workspace, after the stage's stack is gone:
-   ACM refuses to delete a certificate CloudFront still uses.
+   ACM refuses to delete a certificate CloudFront still uses. In prod, delete the two `umccr.org` records too, with
+   toolchain credentials: the change in [step 1](#prod-the-umccrorg-records) with `DELETE` in place of `CREATE`,
+   from the output read before the destroy.
 4. **Cognito client**: delete `app_docs.tf` and apply `cognito_aai`. **Never run `terraform destroy` on
    `cognito_aai`.**
 

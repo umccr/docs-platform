@@ -154,9 +154,14 @@ Step-by-step commands, checks and troubleshooting: [docs/deploy.md](../deploy.md
 - [ ] Merge the gamma stage's removal (2026-10-21): stg runs no docs or OrcaSonar stage, and pipeline 1 stopped at
       gamma until then.
 - [x] Apply `cognito_aai` and `umccr_docs_domain` to `prod` (by 2026-10-21).
-- [ ] Add the `umccr.org` records the prod output lists, and request the certificate again: it timed out
-      (`VALIDATION_TIMED_OUT` on 2026-10-21, as `docs.umccr.org` never validated), so it can never be issued.
-- [ ] Approve the infrastructure pipeline's prod stage.
+- [x] Request the prod certificate again (2026-10-21): the first timed out (`VALIDATION_TIMED_OUT`), as
+      `docs.umccr.org` never validated.
+- [x] Add the `umccr.org` records the prod output lists (2026-10-21, by hand with toolchain credentials:
+      [deploying](../deploy.md#prod-the-umccrorg-records)).
+- [ ] Clear prod's failed first create. It ran on 2026-10-21 before the records existed; CloudFront refused the
+      pending certificate, and the rollback stopped at the non-empty content bucket, leaving `ROLLBACK_FAILED`
+      ([troubleshooting](../deploy.md#troubleshooting)).
+- [ ] Approve the infrastructure pipeline's prod stage, once the certificate is `ISSUED`.
 - [ ] OrcaSonar in prod, from its repository: in each account, Anthropic's model agreements (manual), the
       data-retention decision, and the docs Cognito client; then its pipelines' PromoteToProd.
 - [ ] Check that a personal Google account cannot sign in to prod (the deploy guide's verification checklist).
@@ -176,7 +181,7 @@ Step-by-step commands, checks and troubleshooting: [docs/deploy.md](../deploy.md
 
 | Step | Needs |
 | --- | --- |
-| Hosting stack in a stage | `app_docs.tf` and `umccr_docs_domain` applied to that workspace |
+| Hosting stack in a stage | `app_docs.tf` and `umccr_docs_domain` applied to that workspace; in prod, the `umccr.org` records and an issued certificate |
 | A release of any site | the toolchain stack deployed, the webhook created, the repository visible to the AWS Connector app |
 | A release reaching a stage | that stage's hosting stack (its `docs-publisher` role and `/docs/content-bucket-name`) |
 | Documents reaching OrcaSonar | OrcaSonar's stateful stack in the stage (`/orcasonar/ingest-bucket-name`) |
