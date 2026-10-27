@@ -90,7 +90,8 @@ class TestResolution:
 class TestWikilinks:
     def rewrite(self, vault, text, from_note=PROJECT_ALPHA):
         problems: list[str] = []
-        return rewrite_wikilinks(text, from_note, vault, problems, text), problems
+        warnings: list[str] = []
+        return rewrite_wikilinks(text, from_note, vault, problems, warnings, text), problems, warnings
 
     @pytest.mark.parametrize(
         ("source", "expected"),
@@ -106,21 +107,33 @@ class TestWikilinks:
         ],
     )
     def test_rewrites(self, vault, source, expected):
-        assert self.rewrite(vault, source) == (expected, [])
+        assert self.rewrite(vault, source) == (expected, [], [])
 
     def test_leaves_code_alone(self, vault):
         text = "Use `[[beta]]` like this:\n\n```\n[[beta]]\n```\n"
-        assert self.rewrite(vault, text) == (text, [])
+        assert self.rewrite(vault, text) == (text, [], [])
 
     def test_reports_embeds_and_block_references(self, vault):
-        _, problems = self.rewrite(vault, "![[diagram.png]] and [[beta#^block-1]]")
+        _, problems, _ = self.rewrite(vault, "![[diagram.png]] and [[beta#^block-1]]")
         assert len(problems) == 2
         assert "embeds" in problems[0]
         assert "block references" in problems[1]
 
-    def test_reports_unresolved_links_with_their_line(self, vault):
-        _, problems = self.rewrite(vault, "# Title\n\nSee [[missing]].\n")
-        assert problems == ["Projects/alpha.md:3: [[missing]] does not match any note"]
+    def test_keeps_a_link_to_a_missing_note_as_text_and_warns_with_its_line(self, vault):
+        text = "# Title\n\nSee [[missing]] and [[missing#Heading|the label]].\n"
+        assert self.rewrite(vault, text) == (
+            text,
+            [],
+            [
+                "Projects/alpha.md:3: [[missing]] does not match any note",
+                "Projects/alpha.md:3: [[missing]] does not match any note",
+            ],
+        )
+
+    def test_reports_an_ambiguous_link(self):
+        _, problems, warnings = self.rewrite(Vault(NOTES), "[[alpha]]", from_note=GUIDE)
+        assert problems == ["Guides/writing.md:1: [[alpha]] is ambiguous: it matches Projects/alpha.md, Inbox/alpha.md"]
+        assert warnings == []
 
 
 class TestBasesFilters:
@@ -160,7 +173,7 @@ class TestBasesFilters:
 class TestBasesTables:
     def render(self, vault, query, sort_orders=None):
         problems: list[str] = []
-        table = render_query(query, HOME, vault, sort_orders or {}, problems)
+        table = render_query(query, HOME, vault, sort_orders or {}, problems, [])
         return table, problems
 
     def test_renders_sorted_rows_with_links(self, vault):
@@ -183,10 +196,14 @@ class TestBasesTables:
             "| [beta](Projects/beta.md) | Medium | [area](Projects/_domains/area.md) |",
         ]
 
-    def test_reports_a_link_to_a_missing_note(self, vault):
+    def test_shows_a_link_to_a_missing_note_as_text_and_warns(self, vault):
         query = {"filters": 'file.name == "gamma"', "views": [{"type": "table", "order": ["domains"]}]}
-        _, problems = self.render(vault, query)
-        assert problems == ["Home.md: frontmatter [[other]] does not match any note"]
+        problems: list[str] = []
+        warnings: list[str] = []
+        table = render_query(query, HOME, vault, {}, problems, warnings)
+        assert "| \\[\\[other\\]\\] |" in table.splitlines()
+        assert problems == []
+        assert warnings == ["Home.md: frontmatter [[other]] does not match any note"]
 
     def test_without_a_sort_order_text_sorts_alphabetically(self, vault):
         query = {
@@ -271,7 +288,7 @@ class TestProperties:
 
     def insert(self, body: str) -> str:
         note_with_properties = note("Projects/delta.md", status="active", lead="Ada")
-        return insert_properties(body, note_with_properties, self.FIELDS, Vault(NOTES), [])
+        return insert_properties(body, note_with_properties, self.FIELDS, Vault(NOTES), [], [])
 
     def test_go_after_the_first_heading(self):
         body = "# Delta\n\nIntro.\n"

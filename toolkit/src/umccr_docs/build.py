@@ -224,7 +224,8 @@ def work_dir_for(project: Project) -> Path:
 def _prepare(project: Project, slug: str, *, strict: bool) -> tuple[Path, Path]:
     """Fill the work directory (preprocessed docs, the theme, the configuration). Returns (work_dir, config)."""
     work_dir = work_dir_for(project)
-    preprocess(project, work_dir / "docs", strict=strict)
+    for warning in preprocess(project, work_dir / "docs", strict=strict):
+        print(f"warning: {warning}", file=sys.stderr)
     shutil.rmtree(work_dir / "theme", ignore_errors=True)
     shutil.copytree(theme_dir(), work_dir / "theme")
     return work_dir, write_config(effective_config(project, slug), work_dir / "mkdocs.yml")

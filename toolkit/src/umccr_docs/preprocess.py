@@ -107,9 +107,11 @@ def output_paths(project: Project, files: list[Path], problems: list[str]) -> di
 
 def preprocess(project: Project, out_dir: Path, *, strict: bool = True) -> list[str]:
     """
-    Write the site's docs into `out_dir`. Returns the problems found; raises DocsError instead when `strict`.
+    Write the site's docs into `out_dir`. Returns what to warn about: wikilinks to missing notes, which are published as
+    their `[[text]]`, and the problems found unless `strict`, which raises DocsError for them instead.
     """
     problems: list[str] = []
+    warnings: list[str] = []
     files = source_files(project.repo_root, project.docs_dir)
     outputs = output_paths(project, files, problems)
     markdown_files = [relative for relative in files if relative.suffix.lower() == ".md"]
@@ -141,22 +143,25 @@ def preprocess(project: Project, out_dir: Path, *, strict: bool = True) -> list[
         frontmatter, body = split_frontmatter(text)
         if obsidian and vault is not None:
             note = notes[PurePosixPath(relative.as_posix())]
-            body = _obsidian_body(body, note, vault, project, problems, text)
+            body = _obsidian_body(body, note, vault, project, problems, warnings, text)
         body = rewriter.rewrite(body, relative, problems)
         target_path.write_text(frontmatter + body, encoding="utf-8")
 
     if problems and strict:
         raise DocsError(f"{len(problems)} problem(s) in {_display(project)}:", problems)
-    return problems
+    # A Bases table can show the same missing link on every page that holds it: warn once.
+    return problems + list(dict.fromkeys(warnings))
 
 
-def _obsidian_body(body: str, note: Note, vault: Vault, project: Project, problems: list[str], text: str) -> str:
+def _obsidian_body(
+    body: str, note: Note, vault: Vault, project: Project, problems: list[str], warnings: list[str], text: str
+) -> str:
     settings = project.platform
     body = map_prose(body, lambda part: _OBSIDIAN_COMMENT.sub("", part))
-    body = render_bases(body, note, vault, settings.obsidian.sort_orders, problems, text)
+    body = render_bases(body, note, vault, settings.obsidian.sort_orders, problems, warnings, text)
     body = convert_callouts(body)
-    body = rewrite_wikilinks(body, note, vault, problems, text)
-    return insert_properties(body, note, settings.properties, vault, problems)
+    body = rewrite_wikilinks(body, note, vault, problems, warnings, text)
+    return insert_properties(body, note, settings.properties, vault, problems, warnings)
 
 
 def _display(project: Project) -> str:
