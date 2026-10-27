@@ -1,0 +1,24 @@
+{#-
+  Breadcrumbs above every page but a site's home: all UMCCR documentation, the site, then the sections the page is in,
+  each linked to its first page. A page hides them with `hide: [path]`.
+-#}
+{% import "partials/path-item.html" as item with context %}
+{% set umccr = config.extra.umccr or {} %}
+{% if not page.is_homepage and not (page.meta and page.meta.hide and "path" in page.meta.hide) %}
+  <nav class="md-path" aria-label="Breadcrumbs">
+    <ol class="md-path__list">
+      <li class="md-path__item">
+        <a href="/platform/" class="md-path__link"><span class="md-ellipsis">All documentation</span></a>
+      </li>
+      {#- On the platform's own site, its home is the catalogue already. -#}
+      {% if nav.homepage and umccr.slug != "platform" %}
+        <li class="md-path__item">
+          <a href="{{ nav.homepage.url | url }}" class="md-path__link"><span class="md-ellipsis">{{ config.site_name }}</span></a>
+        </li>
+      {% endif %}
+      {% for nav_item in page.ancestors | reverse %}
+        {{ item.render(nav_item) }}
+      {% endfor %}
+    </ol>
+  </nav>
+{% endif %}

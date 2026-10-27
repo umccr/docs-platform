@@ -1,0 +1,5 @@
+# Candidate engine, for the build-engine bake-off (ADR-0003). Not used by the workflow until it is chosen.
+#   uv pip compile --generate-hashes --python-version 3.12 --universal toolkit/requirements/zensical.in -o toolkit/requirements/zensical.txt
+zensical==0.0.66
+PyYAML>=6.0
+boto3>=1.34
