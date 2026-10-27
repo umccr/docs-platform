@@ -14,10 +14,12 @@ def _label(name: str) -> str:
     return words[:1].upper() + words[1:]
 
 
-def properties_block(note: Note, fields: tuple[str, ...], vault: Vault, problems: list[str]) -> str:
+def properties_block(
+    note: Note, fields: tuple[str, ...], vault: Vault, problems: list[str], warnings: list[str]
+) -> str:
     rows = []
     for name in fields:
-        value = format_value(note.frontmatter.get(name), note, vault, problems)
+        value = format_value(note.frontmatter.get(name), note, vault, problems, warnings)
         if value:
             rows.append(f"| {_label(name)} | {value} |")
     if not rows:
@@ -26,9 +28,11 @@ def properties_block(note: Note, fields: tuple[str, ...], vault: Vault, problems
     return f'<div class="umccr-properties" markdown>\n\n{table}\n\n</div>\n\n'
 
 
-def insert_properties(body: str, note: Note, fields: tuple[str, ...], vault: Vault, problems: list[str]) -> str:
+def insert_properties(
+    body: str, note: Note, fields: tuple[str, ...], vault: Vault, problems: list[str], warnings: list[str]
+) -> str:
     """Insert the table after the page's first `# ` heading, or at the top when there is none."""
-    block = properties_block(note, fields, vault, problems)
+    block = properties_block(note, fields, vault, problems, warnings)
     if not block:
         return body
     # A `# comment` in a shell sample is not a heading: look for one outside code, at the same offsets.

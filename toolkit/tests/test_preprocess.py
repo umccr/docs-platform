@@ -44,9 +44,32 @@ def vault_problems(make_project, notes: dict[str, str], config: str = OBSIDIAN_C
 
 
 def test_strict_mode_fails_on_problems(make_project):
-    root = make_project({"mkdocs.yml": OBSIDIAN_CONFIG, "vault/index.md": "# Home\n\n[[missing]]\n"})
+    root = make_project({"mkdocs.yml": OBSIDIAN_CONFIG, "vault/index.md": "# Home\n\n![[diagram.png]]\n"})
     with pytest.raises(DocsError, match="1 problem"):
         preprocess(load_project(root / "mkdocs.yml"), root / "out")
+
+
+def test_strict_mode_publishes_a_link_to_a_missing_note_as_text_and_warns(make_project):
+    root = make_project(
+        {
+            "mkdocs.yml": OBSIDIAN_CONFIG,
+            "vault/index.md": "# Home\n\nSee [[missing]].\n",
+            "vault/Projects/alpha.md": '---\ndomains:\n  - "[[missing]]"\n---\n# Alpha\n',
+            "vault/Projects/beta.md": '---\ndomains:\n  - "[[missing]]"\n---\n# Beta\n',
+            "vault/Projects/index.md": '# Projects\n\n```base\nfilters: file.inFolder("Projects")\n'
+            "views:\n  - type: table\n    order: [file.name, domains]\n```\n",
+        }
+    )
+    out = root / "out"
+    # The properties tables warn once each; the Bases table, with two rows linking to the note, warns once.
+    assert preprocess(load_project(root / "mkdocs.yml"), out) == [
+        "Projects/alpha.md: frontmatter [[missing]] does not match any note",
+        "Projects/beta.md: frontmatter [[missing]] does not match any note",
+        "Projects/index.md: frontmatter [[missing]] does not match any note",
+        "index.md:3: [[missing]] does not match any note",
+    ]
+    assert "See [[missing]].\n" in (out / "index.md").read_text()
+    assert "| [alpha](alpha.md) | \\[\\[missing\\]\\] |" in (out / "Projects" / "index.md").read_text()
 
 
 def test_an_ambiguous_name_outside_the_preferred_folders_is_a_problem(make_project):

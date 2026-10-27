@@ -4,6 +4,18 @@ All notable changes to the docs platform: the infrastructure, the `umccr-docs` t
 toolkit and theme changes up when their registry entry's `toolkitRef` moves to a release; see
 [docs/operating/releasing.md](docs/operating/releasing.md).
 
+## v0.1.2
+
+Stops a wikilink to a missing note from blocking a site: tag the commit that merges it to `main`. The registry moves
+every site but `/platform/` to it.
+
+- A wikilink to a note that is not in the vault, in a note or in its frontmatter, is published as its plain
+  `[[note]]` text, as Obsidian shows an unresolved link, and `umccr-docs build` prints a warning with the note and
+  line. It used to fail the build, so one such link in `/management-knowledgebase/`
+  (`[[hartwig-data-availability]]`, from 2026-10-23) stopped every later push publishing. Ambiguous links, embeds and
+  block references still fail the build. `export-kb` lets the same links through without repeating the warnings.
+- `umccr-docs build` and `serve` print what preprocessing warns about; a `--no-strict` build used to drop it.
+
 ## v0.1.1
 
 Puts the theme's script back in every site: tag the commit that merges it to `main`. The registry moves every site

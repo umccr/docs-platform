@@ -160,10 +160,10 @@ def _header(name: str, properties: dict[str, Any]) -> str:
     return "Name" if name == "file.name" else name.removeprefix("note.").removeprefix("file.")
 
 
-def _cell(note: Note, name: str, from_note: Note, vault: Vault, problems: list[str]) -> str:
+def _cell(note: Note, name: str, from_note: Note, vault: Vault, problems: list[str], warnings: list[str]) -> str:
     if name == "file.name":
         return f"[{note.name}]({Vault.relative_url(from_note, note)})"
-    return format_value(property_value(note, name), from_note, vault, problems)
+    return format_value(property_value(note, name), from_note, vault, problems, warnings)
 
 
 def render_query(
@@ -172,6 +172,7 @@ def render_query(
     vault: Vault,
     sort_orders: dict[str, tuple[str, ...]],
     problems: list[str],
+    warnings: list[str],
 ) -> str:
     unsupported = set(query) - {"filters", "views", "properties"}
     if unsupported:
@@ -203,7 +204,7 @@ def render_query(
             lines.append("| " + " | ".join(_header(column, properties) for column in columns) + " |")
             lines.append("| " + " | ".join("---" for _ in columns) + " |")
             for note in notes:
-                cells = [_cell(note, column, from_note, vault, problems) for column in columns]
+                cells = [_cell(note, column, from_note, vault, problems, warnings) for column in columns]
                 lines.append("| " + " | ".join(cells) + " |")
         else:
             lines.append("*No matching notes.*")
@@ -219,6 +220,7 @@ def render_bases(
     vault: Vault,
     sort_orders: dict[str, tuple[str, ...]],
     problems: list[str],
+    warnings: list[str],
     source_text: str,
 ) -> str:
     """Replace each top-level ```` ```base ```` block in `body` with its rendered table."""
@@ -228,7 +230,7 @@ def render_bases(
         if not (segment.fenced and segment.info == "base" and segment.level == 0):
             parts.append(segment.text)
             continue
-        parts.append(_render_block(segment, note, vault, sort_orders, problems, source_text))
+        parts.append(_render_block(segment, note, vault, sort_orders, problems, warnings, source_text))
     return "".join(parts)
 
 
@@ -238,6 +240,7 @@ def _render_block(
     vault: Vault,
     sort_orders: dict[str, tuple[str, ...]],
     problems: list[str],
+    warnings: list[str],
     source_text: str,
 ) -> str:
     location = f"{note.path}:{line_of(source_text, segment.text) or '?'}"
@@ -245,7 +248,7 @@ def _render_block(
         query = yaml.safe_load(fenced_body(segment)) or {}
         if not isinstance(query, dict):
             raise UnsupportedBase("the block must be a YAML mapping")
-        return render_query(query, note, vault, sort_orders, problems)
+        return render_query(query, note, vault, sort_orders, problems, warnings)
     except (UnsupportedBase, yaml.YAMLError) as error:
         problems.append(f"{location}: Bases block: {error}")
         return segment.text

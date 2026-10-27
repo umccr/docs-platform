@@ -85,6 +85,9 @@ extra:
 When a name matches notes in several folders, `prefer_folders` decides; otherwise a note in the linking note's own
 folder wins; otherwise the build reports the link as ambiguous. Write `[[folder/note]]` to be explicit.
 
+A link to a note that is not in the vault, such as one nobody has written yet, shows as its plain `[[note]]` text,
+as Obsidian shows an unresolved link. The build warns with the note and line, and publishes the rest of the site.
+
 **Bases.** The build supports `filters` with nested `and`, `or` and `not`; `==` and `!=`; `.contains(...)`;
 `.contains(link("note"))`; `file.inFolder("Folder")`; and `table` views with `name`, `order`, `sort` and `limit`,
 using frontmatter properties and `file.name`, `file.folder` and `file.path`. `properties.<name>.displayName`
@@ -99,6 +102,6 @@ something wrong.
 
 ```sh
 umccr-docs check   # the contract
-umccr-docs build   # a strict build: broken links fail it
+umccr-docs build   # a strict build: broken Markdown links fail it; wikilinks to missing notes warn
 umccr-docs serve   # a live preview on http://127.0.0.1:8000
 ```
