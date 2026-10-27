@@ -1,7 +1,7 @@
-# Build output: never commit a generated site (see app/site/docs/publishing.md). app/site/ itself is the platform
+# Build output: never commit a generated site (see docs/site/publishing.md). docs/site/ itself is the platform
 # site's source; the site/ it builds into is still ignored.
 site/
-!/app/site/
+!/docs/site/
 .umccr-docs/
 
 # Python

@@ -65,7 +65,7 @@ export const SELF_TOOLKIT_REF = 'self';
 
 /**
  * The toolkit every other site builds with: a docs-platform release tag. Push the tag before, or straight after, the
- * merge that moves this to it: until the tag exists, those sites' releases stop at Build (docs/operating/releasing.md).
+ * merge that moves this to it: until the tag exists, those sites' releases stop at Build (docs/site/runbook.md).
  */
 export const DOCS_TOOLKIT_REF = 'v0.1.2';
 
@@ -92,20 +92,28 @@ const PATH_PATTERN = /^(?!\/)(?!.*(?:^|\/)\.\.(?:\/|$))[^\s]+$/;
 export const RESERVED_SLUGS = ['sites'];
 
 /**
- * The docs platform's own site, in `app/site/`: catalogue, onboarding and conventions. `/` redirects here. It builds
- * with the toolkit at the same commit, so a theme or toolkit change shows on this site first. The repository's
- * `docs/` folder (design records, plans, runbooks) is not part of it.
+ * The docs platform's own site, in `docs/site/` with its `mkdocs.yml` at the repository root: the catalogue, onboarding
+ * and conventions, and the platform's project pages (design, deploying, the runbook). `/` redirects here. It builds
+ * with the toolkit at the same commit, so a theme or toolkit change shows on this site first. The rest of `docs/`
+ * (design records, plans, issue write-ups) is not part of it, and neither are the toolkit's examples and templates.
  */
 export const PLATFORM_SITE: DocsSite = {
   slug: 'platform',
   repo: PLATFORM_REPO,
   branch: 'main',
-  configPath: 'app/site/mkdocs.yml',
-  docsPaths: ['app/site/**', 'toolkit/**', 'requirements/build.txt'],
+  configPath: 'mkdocs.yml',
+  docsPaths: [
+    'mkdocs.yml',
+    'docs/site/**',
+    'toolkit/src/**',
+    'toolkit/pyproject.toml',
+    'toolkit/requirements/build.txt',
+  ],
   toolkitRef: SELF_TOOLKIT_REF,
   stages: [AppStage.BETA, AppStage.PROD],
   title: 'UMCCR docs platform',
-  description: 'Catalogue of UMCCR documentation, onboarding and authoring conventions.',
+  description:
+    'Catalogue of UMCCR documentation, how to publish yours, and how the platform is built and run.',
 };
 
 /** Platform Services management knowledge base, an Obsidian vault (`PlatformServices/`). */

@@ -16,7 +16,7 @@ files=()
 while IFS= read -r file; do
   [[ -f "$file" ]] && files+=("$file")
 done < <(git ls-files --cached --others --exclude-standard |
-  grep -v -E '^(requirements/[^/]+\.txt|scripts/check-boundary\.sh|pnpm-lock\.yaml)$')
+  grep -v -E '^(toolkit/requirements/[^/]+\.txt|scripts/check-boundary\.sh|pnpm-lock\.yaml)$')
 
 status=0
 
@@ -37,9 +37,9 @@ check "docs bucket names" 'docs-cloudfront-(logs-)?[0-9]'
 check "AWS access key IDs" 'AKIA[0-9A-Z]{16}'
 check "private keys" '-----BEGIN [A-Z ]*PRIVATE KEY-----'
 
-# app/site/ is the platform site's source, so below it only its own build output (site/, .umccr-docs/) counts.
+# docs/site/ is the platform site's source, so below it only its own build output (site/, .umccr-docs/) counts.
 generated="$(printf '%s\n' "${files[@]}" | awk '
-  { path = "/" $0; sub("^/app/site/", "/", path) }
+  { path = "/" $0; sub("^/docs/site/", "/", path) }
   path ~ /\/(site|\.umccr-docs)\// || path ~ /\.tfstate|\/\.env$|terraform\.tfvars$/
 ' || true)"
 if [[ -n "$generated" ]]; then

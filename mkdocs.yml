@@ -1,0 +1,29 @@
+# This repository's own site, published at https://docs.umccr.org/platform/ (the root, /, redirects here): the
+# catalogue, how to read and publish documentation, and the platform's own project pages. Only docs/site/ is published:
+# the design records, plans and issue write-ups elsewhere in docs/ are read on GitHub.
+site_name: UMCCR documentation
+site_description: The catalogue of UMCCR documentation, how to publish yours, and how the platform is built and run.
+site_url: https://docs.umccr.org/platform/
+repo_url: https://github.com/umccr/docs-platform
+repo_name: umccr/docs-platform
+edit_uri: edit/main/docs/site/
+docs_dir: docs/site
+
+# A link to a heading that does not exist fails the strict build, as a link to a missing page does.
+validation:
+  anchors: warn
+
+nav:
+  - Catalogue: index.md
+  - Reading: reading.md
+  - Publishing:
+      - Onboarding a repository: onboarding.md
+      - Authoring: authoring.md
+      - Publishing contract: publishing.md
+  - Docs platform:
+      - Project: project.md
+      - Tech stack: tech.md
+      - Design: design.md
+      - Deploying: deploy.md
+      - Runbook: runbook.md
+      - Changelog: changelog.md

@@ -16,8 +16,8 @@ no migration path.
 - Obsidian support and every other preprocessing step run before the engine, not as MkDocs plugins, so they work
   with either engine.
 - The theme is template overrides and CSS, which Zensical also supports.
-- `extra.platform.engine: zensical` and `requirements/zensical.txt` exist for a bake-off against the example sites
-  and a pilot vault. The outcome updates this record.
+- `extra.platform.engine: zensical` and `toolkit/requirements/zensical.txt` exist for a bake-off against the example
+  sites and a pilot vault. The outcome updates this record.
 
 ## Bake-off so far (2026-09-29)
 

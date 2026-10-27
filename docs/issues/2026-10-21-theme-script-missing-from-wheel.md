@@ -49,13 +49,13 @@ unaffected.
   pipeline's Build run that check before anything is published.
 - Released as `v0.1.1`; the registry moves every site but `/platform/` to it (`DOCS_TOOLKIT_REF`). The merge starts
   a `/platform/` release built with that commit. The knowledgebase picks `v0.1.1` up on its next push, or straight
-  away with a release started by hand ([runbooks](../operating/runbooks.md#start-a-release-by-hand)).
+  away with a release started by hand ([runbook](../site/runbook.md#start-a-release-by-hand)).
 
 Checked: with the wheel installed as CI installs it, the two examples and `/platform/` build, pass `verify-site`
 and hold `assets/umccr/umccr.js`.
 
 ## Follow-ups
 
-- [Releasing](../operating/releasing.md): local builds cannot show a file the package leaves out; CI's site builds
-  can.
-- [Deploying](../deploy.md#troubleshooting): a troubleshooting entry for pages without the theme's script.
+- [Releasing](../site/runbook.md#release-the-toolkit-and-theme): local builds cannot show a file the package
+  leaves out; CI's site builds can.
+- [Deploying](../site/deploy.md#troubleshooting): a troubleshooting entry for pages without the theme's script.

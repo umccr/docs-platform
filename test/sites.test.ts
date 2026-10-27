@@ -45,21 +45,28 @@ describe('registry', () => {
     });
   });
 
-  test('builds the platform site from app/site with the toolkit at the pushed commit', () => {
+  test('builds the platform site from docs/site with the toolkit at the pushed commit', () => {
     const platform = DOCS_SITES.find((entry) => entry.slug === 'platform')!;
     expect(platform).toMatchObject({
       repo: 'umccr/docs-platform',
-      configPath: 'app/site/mkdocs.yml',
+      configPath: 'mkdocs.yml',
       toolkitRef: 'self',
     });
 
-    // The site's pages, the toolkit and the theme publish it; the team's docs/ folder and the CDK app never do.
+    // The site's pages and configuration, the toolkit, the theme and the engine's pins publish it; the rest of docs/,
+    // the toolkit's examples and templates, and the CDK app never do.
     const publishes = (file: string) => touchesDocs([file], platform.docsPaths);
-    expect(publishes('app/site/docs/onboarding.md')).toBe(true);
-    expect(publishes('app/site/mkdocs.yml')).toBe(true);
+    expect(publishes('docs/site/onboarding.md')).toBe(true);
+    expect(publishes('docs/site/runbook.md')).toBe(true);
+    expect(publishes('mkdocs.yml')).toBe(true);
     expect(publishes('toolkit/src/umccr_docs/theme/assets/umccr/umccr.css')).toBe(true);
+    expect(publishes('toolkit/pyproject.toml')).toBe(true);
+    expect(publishes('toolkit/requirements/build.txt')).toBe(true);
     expect(publishes('docs/design/adr/0008-infrastructure-in-docs-platform.md')).toBe(false);
     expect(publishes('docs/plans/implementation-plan.md')).toBe(false);
+    expect(publishes('toolkit/examples/basic-site/mkdocs.yml')).toBe(false);
+    expect(publishes('toolkit/templates/mkdocs.yml')).toBe(false);
+    expect(publishes('toolkit/requirements/dev.txt')).toBe(false);
     expect(publishes('app/session/index.ts')).toBe(false);
   });
 });

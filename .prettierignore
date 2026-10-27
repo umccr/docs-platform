@@ -1,6 +1,5 @@
 # Prettier formats the CDK app only (bin/, infrastructure/, app/, test/). The toolkit is formatted by ruff, and the
 # docs, the platform site, examples and YAML keep their own conventions.
-app/site
 node_modules
 cdk.out
 .cdk.staging

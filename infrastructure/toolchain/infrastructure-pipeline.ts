@@ -9,7 +9,8 @@ import { DocsSitePublishing } from './site-publishing';
 /**
  * Repository paths that start the docs infrastructure pipeline when changed on `main`: the CDK app, the stacks and
  * the code they deploy (Lambdas, the edge function, the sign-in page). The toolkit, the theme and the platform site
- * (`app/site/`) live in this repository too, but they reach readers through the site pipeline, not this one.
+ * (`docs/site/` and `mkdocs.yml`) live in this repository too, but they reach readers through the site pipeline, not
+ * this one.
  */
 export const DOCS_INFRASTRUCTURE_FILE_PATHS = [
   'bin/**',
@@ -22,12 +23,11 @@ export const DOCS_INFRASTRUCTURE_FILE_PATHS = [
 ];
 
 /**
- * Paths that must not start the pipeline although an include matches them: the platform site (inside `app/`, but
- * published by the site pipeline) and Markdown. An exclude wins over an include. Paths no include matches, such as
- * `docs/`, `toolkit/`, `examples/` and `templates/`, never start the pipeline, so listing them would only use up the
- * eight patterns a list may hold.
+ * Paths that must not start the pipeline although an include matches them: Markdown, such as a README beside the code.
+ * An exclude wins over an include. Paths no include matches, such as `docs/`, `toolkit/` and `mkdocs.yml`, never start
+ * the pipeline, so listing them would only use up the eight patterns a list may hold.
  */
-export const DOCS_INFRASTRUCTURE_EXCLUDED_FILE_PATHS = ['app/site/**', '**/*.md'];
+export const DOCS_INFRASTRUCTURE_EXCLUDED_FILE_PATHS = ['**/*.md'];
 
 /** Pipeline 1's name. docs.umccr.org belongs to UMCCR, so nothing here is named for OrcaBus. */
 export const DOCS_INFRASTRUCTURE_PIPELINE_NAME = 'UMCCR-DocsInfrastructure';

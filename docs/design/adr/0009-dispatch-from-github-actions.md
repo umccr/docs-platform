@@ -24,7 +24,7 @@ security controls rightly question. Hiding it was not possible without giving up
 
 ## Decision
 
-- Each registered site's repository has a small workflow, from `templates/docs-workflow.yml`, that calls the
+- Each registered site's repository has a small workflow, from `toolkit/templates/docs-workflow.yml`, that calls the
   shared reusable workflow `.github/workflows/publish-docs.yml` in this repository on a push to the site's branch,
   and on **Run workflow**.
 - The shared workflow signs in to the toolchain account through GitHub OIDC as **`docs-dispatch`**. The role trusts

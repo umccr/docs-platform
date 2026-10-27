@@ -1,8 +1,8 @@
 # Plan: publishing from GitHub
 
 > **Status: plan, not in effect.** Publishing still runs as [ADR-0006](../design/adr/0006-dispatched-publishing.md)
-> and [deploy.md](../deploy.md) describe: the organisation webhook calls the dispatcher's function URL, which checks
-> the webhook's signature. This page is the plan for replacing that, proposed in
+> and [deploy.md](../site/deploy.md) describe: the organisation webhook calls the dispatcher's function URL, which
+> checks the webhook's signature. This page is the plan for replacing that, proposed in
 > [ADR-0009](../design/adr/0009-dispatch-from-github-actions.md) and deferred on 2026-10-15
 > ([issue](../issues/2026-10-14-dispatcher-function-url.md)). An implementation with tests was written on
 > 2026-10-14 and reverted before merge; [what implementing it changes](#what-implementing-it-changes) records it.
@@ -24,7 +24,7 @@ Nothing on this path can be invoked from the internet, and no site repository ho
 
 | Piece | Where | What it does |
 | --- | --- | --- |
-| The site's workflow | `.github/workflows/docs.yml` in each site's repository, copied from `templates/docs-workflow.yml` (new) | runs on a push to the site's branch, or on **Run workflow**, and calls the shared workflow with the organisation secret |
+| The site's workflow | `.github/workflows/docs.yml` in each site's repository, copied from `toolkit/templates/docs-workflow.yml` (new) | runs on a push to the site's branch, or on **Run workflow**, and calls the shared workflow with the organisation secret |
 | The platform site's workflow | `.github/workflows/platform-site.yml` (new) | the same, for `/platform/` |
 | The shared workflow | `.github/workflows/publish-docs.yml` (new) | signs in as `docs-dispatch`, finds the changed files, invokes the dispatcher and reports its answer |
 | Organisation secret `DOCS_DISPATCH_ROLE_ARN` | the umccr organisation's Actions secrets | the role's ARN; keeps the account ID out of public repositories and their logs. Not a credential |
@@ -169,7 +169,7 @@ flowchart TD
 | --- | --- | --- | --- |
 | `dispatched` | a release started | succeeds; the summary names the release and build | watch `UMCCR-DocsSitesPipeline` |
 | `ignored`, `no-docs-change` | the push changed nothing under the site's `docsPaths` | succeeds | nothing; **Run workflow** publishes anyway |
-| `ignored`, `not-registered` | the repository or branch is not in the deployed registry. Rare: the role refuses these first | succeeds | register the site ([onboarding](../operating/onboarding-a-site.md)) |
+| `ignored`, `not-registered` | the repository or branch is not in the deployed registry. Rare: the role refuses these first | succeeds | register the site ([onboarding](../site/runbook.md#register-a-site)) |
 | `ignored`, `unsupported-event` | an event other than a push or a manual run | succeeds | nothing |
 | `duplicate` | the same run attempt asked twice, for example an invocation the AWS CLI retried | succeeds | nothing |
 | `rejected`, `invalid-token` | token B failed its signature, issuer, audience or expiry check | fails | use the shared workflow unchanged; the dispatcher's log names the check |
@@ -209,10 +209,10 @@ reverted. Re-creating it means:
 | `infrastructure/sites.ts`, `infrastructure/toolchain/site-publishing.ts` | doc comments: the workflow instead of the webhook |
 | `.github/workflows/publish-docs.yml` | new: the shared workflow. `aws-actions/configure-aws-credentials` pinned to a commit, `role-duration-seconds: 900`, `mask-aws-account-id: true` |
 | `.github/workflows/platform-site.yml` | new: calls it with `./`, which needs a `zizmor: ignore[self-repository]` until the pinned actionlint accepts `$/` |
-| `templates/docs-workflow.yml` | new: the site's caller, at `@main`, explaining when to pin a commit instead |
+| `toolkit/templates/docs-workflow.yml` | new: the site's caller, at `@main`, explaining when to pin a commit instead |
 | `scripts/check-dispatcher.sh` | new: the post-deploy check in step 3 below |
 | `test/dispatcher.test.ts`, `test/github-token.test.ts`, `test/publish-workflow.test.ts`, `test/pipeline-stack.test.ts` | the dispatcher's checks; the verifier against real RSA signatures; the workflow's own script against stubbed `gh`, `curl` and `aws`; no function URL, the role's trust and policy, the trust policy's length. Drop `AwsSolutions-SMG4` from the accepted rules: the secret goes |
-| `docs/deploy.md`, `docs/operating/*`, `app/site/docs/publishing.md`, `app/site/docs/onboarding.md`, `README.md`, `SECURITY.md`, `CHANGELOG.md` | the workflow instead of the webhook; ADR-0009 to accepted, and ADR-0006 to superseded in part |
+| `docs/site/deploy.md`, `docs/site/runbook.md`, `docs/site/design.md`, `docs/site/publishing.md`, `docs/site/onboarding.md`, `README.md`, `SECURITY.md`, `docs/site/changelog.md` | the workflow instead of the webhook; ADR-0009 to accepted, and ADR-0006 to superseded in part |
 
 Each site's repository gains `.github/workflows/docs.yml` from the template.
 
@@ -352,8 +352,8 @@ In `umccr/management-knowledgebase`, commit:
 - the `README.md` section on the published site.
 
 Before merging, build the commit the way the pipeline will: from committed content only (the recipe is in
-[deploy.md, Publishing by hand](../deploy.md#publishing-by-hand), without the publish step). Then merge to `main`. The
-push changes `mkdocs.yml` and notes under `PlatformServices/`, so its workflow run should answer `dispatched`. Check
+[deploy.md, Publishing by hand](../site/deploy.md#publishing-by-hand), without the publish step). Then merge to
+`main`. The push changes `mkdocs.yml` and notes under `PlatformServices/`, so its workflow run should answer `dispatched`. Check
 it as in step 5, with `management-knowledgebase` in place of `platform`, and open
 `https://docs.dev.umccr.org/management-knowledgebase/`.
 
@@ -373,15 +373,15 @@ it as in step 5, with `management-knowledgebase` in place of `platform`, and ope
 
 Deploying `DocsInfrastructurePipeline` from the commit before this change brings back a public function URL, at a new
 address, and a webhook secret with a new value, so an organisation owner would add the organisation webhook again
-with both, as [deploy.md step 5](../deploy.md#step-5-github) describes today. Until a fix lands, sites can be
-published [by hand](../deploy.md#publishing-by-hand) instead, which avoids reopening the function.
+with both, as [deploy.md step 5](../site/deploy.md#step-5-github) describes today. Until a fix lands, sites can be
+published [by hand](../site/deploy.md#publishing-by-hand) instead, which avoids reopening the function.
 
 ## Adding a site later
 
 1. Register it in `infrastructure/sites.ts`, and let pipeline 1 deploy the change: the self-update adds the routing
-   entry and the role's trusted subject together ([onboarding a site](../operating/onboarding-a-site.md)).
-2. Copy `templates/docs-workflow.yml` to `.github/workflows/docs.yml` in the site's repository, with the registered
-   branch under `on.push`.
+   entry and the role's trusted subject together ([registering a site](../site/runbook.md#register-a-site)).
+2. Copy `toolkit/templates/docs-workflow.yml` to `.github/workflows/docs.yml` in the site's repository, with the
+   registered branch under `on.push`.
 3. If the organisation secret or the AWS Connector app is limited to selected repositories, add the site's
    repository to each.
 4. **Run workflow** for the first release.

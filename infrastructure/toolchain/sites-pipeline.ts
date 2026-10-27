@@ -65,10 +65,16 @@ const INSTALL_TOOLKIT = [
   `git clone --quiet ${TOOLKIT_REPOSITORY} "$TOOLKIT_DIR"`,
   // A ref that does not exist, such as a release tag the registry names before the tag is pushed.
   'git -C "$TOOLKIT_DIR" checkout --quiet "$TOOLKIT_REF" || { echo "docs-platform has no ref $TOOLKIT_REF: push the tag, or point the site toolkitRef at a ref that exists"; exit 1; }',
-  // A ref without the toolkit, such as main before this repository was first merged, otherwise fails in pip with a
-  // missing file. Say what to do instead.
-  'test -f "$TOOLKIT_DIR/requirements/build.txt" || { echo "docs-platform at $TOOLKIT_REF has no toolkit: merge it to main, or point the site toolkitRef at a ref that has one"; exit 1; }',
-  'python -m pip install --quiet --require-hashes --no-deps -r "$TOOLKIT_DIR/requirements/build.txt"',
+  [
+    // The engine's pins are in the toolkit's folder. Refs up to v0.1.2 keep them at the repository root, and a site's
+    // toolkitRef, or a rollback, may still name one of those.
+    'pins="$TOOLKIT_DIR/toolkit/requirements/build.txt"',
+    '[ -f "$pins" ] || pins="$TOOLKIT_DIR/requirements/build.txt"',
+    // A ref without the toolkit, such as main before this repository was first merged, otherwise fails in pip with a
+    // missing file. Say what to do instead.
+    'test -f "$pins" || { echo "docs-platform at $TOOLKIT_REF has no toolkit: merge it to main, or point the site toolkitRef at a ref that has one"; exit 1; }',
+    'python -m pip install --quiet --require-hashes --no-deps -r "$pins"',
+  ].join('\n'),
   'python -m pip install --quiet --no-deps "$TOOLKIT_DIR/toolkit"',
 ];
 

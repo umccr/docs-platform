@@ -28,7 +28,7 @@ const ACCEPTED_DOCS_HOSTING_RULES = [
   'AwsSolutions-CFR1', // no geo restriction: readers work from anywhere, and every page requires a session
   'AwsSolutions-CFR2', // no WAF in the first release; every request is checked for a session at the edge
   // The session key is also built into the edge function, which Secrets Manager rotation cannot update; it rotates
-  // by a new generation in config.ts instead (see docs/operating/runbooks.md).
+  // by a new generation in config.ts instead (see docs/site/runbook.md).
   'AwsSolutions-SMG4',
 ];
 
