@@ -12,6 +12,6 @@ docs_dir: docs
 #   - Home: index.md
 #   - Guide: guide.md
 
-# Optional: a banner on every page.
+# Optional: the banner on every page, 'Internal: UMCCR staff only' unless you word it differently.
 # extra:
 #   classification: 'Internal: UMCCR staff only'

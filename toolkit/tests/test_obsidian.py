@@ -1,3 +1,4 @@
+import datetime
 from pathlib import PurePosixPath
 
 import pytest
@@ -5,7 +6,7 @@ import pytest
 from umccr_docs.obsidian.bases import UnsupportedBase, evaluate, render_query
 from umccr_docs.obsidian.callouts import convert_callouts
 from umccr_docs.obsidian.links import rewrite_wikilinks
-from umccr_docs.obsidian.properties import insert_properties
+from umccr_docs.obsidian.properties import insert_properties, properties_block
 from umccr_docs.obsidian.vault import LinkError, Note, Vault
 
 
@@ -292,7 +293,7 @@ class TestProperties:
 
     def test_go_after_the_first_heading(self):
         body = "# Delta\n\nIntro.\n"
-        assert self.insert(body).startswith('# Delta\n\n<div class="umccr-properties" markdown>')
+        assert self.insert(body).startswith('# Delta\n\n<dl class="umccr-properties" markdown>')
 
     def test_skip_comments_in_code_before_the_first_heading(self):
         body = "Setup:\n\n```bash\n# install the tools\nmake install\n```\n\n# Delta\n\nIntro.\n"
@@ -303,5 +304,18 @@ class TestProperties:
     def test_go_on_top_when_only_code_has_a_heading_line(self):
         body = "    # an indented comment\n\n~~~\n# a fenced one\n~~~\n"
         inserted = self.insert(body)
-        assert inserted.startswith('<div class="umccr-properties" markdown>')
+        assert inserted.startswith('<dl class="umccr-properties" markdown>')
         assert inserted.endswith(body)
+
+    def test_name_each_property_and_text_value_for_the_theme(self):
+        delta = note("Projects/delta.md", status="On hold", updated=datetime.date(2026, 9, 8), members=["Ada", "Grace"])
+        block = properties_block(delta, ("status", "updated", "members"), Vault(NOTES), [], [])
+        assert block.strip().splitlines() == [
+            '<dl class="umccr-properties" markdown>',
+            '<div data-property="status" data-value="on-hold" markdown><dt>Status</dt>'
+            '<dd markdown="span">On hold</dd></div>',
+            '<div data-property="updated" markdown><dt>Updated</dt>'
+            '<dd markdown="span"><time datetime="2026-09-08">8 Sep 2026</time></dd></div>',
+            '<div data-property="members" markdown><dt>Members</dt><dd markdown="span">Ada, Grace</dd></div>',
+            "</dl>",
+        ]

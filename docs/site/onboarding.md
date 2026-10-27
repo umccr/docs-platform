@@ -13,15 +13,15 @@ The slug is the site's path. It is permanent, so choose it with care:
 
 ## 2. Add the configuration
 
-Copy a template from this repository's [`templates/`](https://github.com/umccr/docs-platform/tree/main/templates)
-into your repository: `mkdocs.yml` at the repository root, from `templates/mkdocs.yml`, or
-`templates/mkdocs-obsidian.yml` for an Obsidian vault. Set `site_name`, `site_url`
-(`https://docs.umccr.org/<slug>/`), `repo_url` and `docs_dir`.
+Copy a template from this repository's
+[`toolkit/templates/`](https://github.com/umccr/docs-platform/tree/main/toolkit/templates) into your repository:
+`mkdocs.yml` at the repository root, from `mkdocs.yml`, or `mkdocs-obsidian.yml` for an Obsidian vault. Set
+`site_name`, `site_url` (`https://docs.umccr.org/<slug>/`), `repo_url` and `docs_dir`.
 
 Preview locally the way the site pipeline builds:
 
 ```sh
-pip install --require-hashes --no-deps -r <docs-platform>/requirements/build.txt
+pip install --require-hashes --no-deps -r <docs-platform>/toolkit/requirements/build.txt
 pip install --no-deps <docs-platform>/toolkit
 umccr-docs serve
 ```

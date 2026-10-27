@@ -5,7 +5,7 @@ site pipeline installs it at the git ref the site registry pins for each site (`
 `infrastructure/sites.ts`). Authors can use it locally to preview a site the way the pipeline builds it.
 
 ```sh
-pip install --require-hashes --no-deps -r requirements/build.txt   # pinned engine
+pip install --require-hashes --no-deps -r toolkit/requirements/build.txt   # pinned engine
 pip install --no-deps ./toolkit
 
 umccr-docs check --slug <slug>     # the project contract
@@ -14,4 +14,11 @@ umccr-docs serve --slug <slug>     # the same, with live reload on http://127.0.
 umccr-docs export-kb --slug <slug> # the pages as documents for OrcaSonar, into kb/
 ```
 
-See `app/site/docs/authoring.md` and `app/site/docs/publishing.md` for what each command enforces.
+See `docs/site/authoring.md` and `docs/site/publishing.md` for what each command enforces.
+
+| Path | Holds |
+| --- | --- |
+| `src/`, `tests/` | the `umccr_docs` package, with the theme in `src/umccr_docs/theme/`, and its tests |
+| `requirements/` | the hash-pinned engine (`build.txt`), the repository's test and lint tools (`dev.txt`), and Zensical for the engine bake-off |
+| `templates/` | `mkdocs.yml` templates that participating repositories copy |
+| `examples/` | synthetic sites CI builds strictly on every change: plain Markdown and an Obsidian vault |

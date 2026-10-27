@@ -1,6 +1,6 @@
 {#-
   Footer: the site's source and build, so a reader can tell where a page came from and how fresh it is.
-  Values come from `extra.umccr`, set by `umccr-docs build`.
+  Values come from `extra.umccr`, set by `umccr-docs build`. The platform's own site also links its release notes.
 -#}
 {%- set umccr = config.extra.umccr or {} -%}
 <div class="md-copyright">
@@ -27,4 +27,9 @@
     {%- if umccr.built %} · built {{ umccr.built }}{% endif %}
     · <a href="/platform/">All UMCCR documentation</a>
   </div>
+  {%- if umccr.slug == "platform" %}
+    <nav class="umccr-footer-links" aria-label="Platform">
+      <a href="/platform/changelog/">Release notes</a>
+    </nav>
+  {%- endif %}
 </div>

@@ -1,0 +1,54 @@
+{#-
+  Material's content partial with a page header and a pager. Under the title goes a line with the page's `updated`
+  date and a link to edit it; the stylesheet rules off the header after the lead paragraph. Vault pages show both in
+  their properties instead, and `hide: [meta]` leaves the line out. The pager links the previous and next pages;
+  `hide: [footer]` leaves it out, as it does Material's.
+
+  Zensical renders this too, with MiniJinja, which has no string methods: the line goes in with `replace`, after the
+  title's permalink, which only the title has. Variables start with umccr_, as the partials included here see them.
+-#}
+{% include "partials/tags.html" %}
+{% include "partials/actions.html" %}
+{% set umccr_hide = page.meta.hide if page.meta and page.meta.hide else [] %}
+{% set umccr_updated = page.meta.updated if page.meta and page.meta.updated else "" %}
+{% if umccr_updated and umccr_updated is not string %}
+  {% set umccr_updated = umccr_updated.day ~ " " ~ umccr_updated.strftime("%b %Y") %}
+{% endif %}
+{% set umccr_show_meta = (umccr_updated or page.edit_url) and "meta" not in umccr_hide %}
+{% set umccr_show_meta = umccr_show_meta and "umccr-properties" not in page.content %}
+{% set umccr_meta %}
+  <p class="umccr-page-meta">
+    {%- if umccr_updated %}<span>Updated {{ umccr_updated }}</span>{% endif -%}
+    {%- if page.edit_url %}<a href="{{ page.edit_url }}" rel="edit">Edit this page</a>{% endif -%}
+  </p>
+{% endset %}
+{% set umccr_title = page.toc | first %}
+{% if "<h1" not in page.content %}
+  <h1>{{ page.title | d(config.site_name, true) }}</h1>
+  {% if umccr_show_meta %}{{ umccr_meta }}{% endif %}
+  {{ page.content }}
+{% elif umccr_show_meta and umccr_title and umccr_title.level == 1 %}
+  {% set umccr_title_end = 'href="#' ~ umccr_title.id ~ '" title="Permanent link">&para;</a></h1>' %}
+  {{ page.content | replace(umccr_title_end, umccr_title_end ~ umccr_meta) }}
+{% else %}
+  {{ page.content }}
+{% endif %}
+{% include "partials/source-file.html" %}
+{% include "partials/feedback.html" %}
+{% include "partials/comments.html" %}
+{% if (page.previous_page or page.next_page) and "footer" not in umccr_hide %}
+  <nav class="umccr-pager" aria-label="Previous and next pages">
+    {% if page.previous_page %}
+      <a href="{{ page.previous_page.url | url }}" class="umccr-pager__link umccr-pager__link--prev" rel="prev">
+        <span class="umccr-pager__direction">Previous</span>
+        <span class="umccr-pager__title">{{ page.previous_page.title }}</span>
+      </a>
+    {% endif %}
+    {% if page.next_page %}
+      <a href="{{ page.next_page.url | url }}" class="umccr-pager__link umccr-pager__link--next" rel="next">
+        <span class="umccr-pager__direction">Next</span>
+        <span class="umccr-pager__title">{{ page.next_page.title }}</span>
+      </a>
+    {% endif %}
+  </nav>
+{% endif %}

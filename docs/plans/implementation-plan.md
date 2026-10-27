@@ -22,8 +22,8 @@ OrcaSonar, a separate service, which indexes the documents each publish exports.
 | Repository | Path | Owns |
 | --- | --- | --- |
 | `umccr/docs-platform` (this one) | `bin/`, `infrastructure/`, `app/` | hosting, sign-in, the site registry, the dispatcher and both pipelines |
-| | `toolkit/`, `templates/`, `app/site/` | the `umccr-docs` toolkit and theme, conventions, and the `/platform/` site |
-| | `docs/` | the platform team's design records, plans, issues, runbooks and deploy guide (not published) |
+| | `toolkit/`, `docs/site/`, `mkdocs.yml` | the `umccr-docs` toolkit and theme, conventions, and the `/platform/` site, with the platform's design, deploy guide and runbook |
+| | the rest of `docs/` | the platform team's design records, plans and issues (not published) |
 | `umccr/infrastructure` | `terraform/stacks/cognito_aai/app_docs.tf` | the public `docs-app` Cognito client |
 | | `terraform/stacks/umccr_docs_domain/` | the docs certificate (us-east-1), `/docs/certificate_arn` |
 | `umccr/orcasonar` | its own | the chat API, knowledge base and ingest bucket |
@@ -73,14 +73,14 @@ push ─▶ organisation webhook ─▶ dispatcher Lambda (toolchain) ─▶ fet
 Chat: the theme's panel loads `/_auth/env.js` and `/_auth/token.js` when opened, and calls
 `https://sonar.<stage>.umccr.org/api/v1` (`/chat` streamed, `/search`, `/feedback`) with the reader's ID token.
 
-Details: [docs/operating/](../operating/README.md) for the platform team, the
-[publishing contract](../../app/site/docs/publishing.md) for site owners.
+Details: [Design](../site/design.md) for the platform team, the [publishing contract](../site/publishing.md) for site
+owners.
 
 ## 4. Pipelines
 
 | Pipeline | Source | Starts on | Deploys or publishes |
 | --- | --- | --- | --- |
-| `UMCCR-DocsInfrastructure` (toolchain stack `DocsInfrastructurePipeline`) | this repository | a push to `main` under `bin/`, `infrastructure/`, `app/` (not `app/site/`) | `DocsHostingStack` to beta and, after approval, prod; its self-update deploys the dispatcher, the fetch build and `UMCCR-DocsSitesPipeline` |
+| `UMCCR-DocsInfrastructure` (toolchain stack `DocsInfrastructurePipeline`) | this repository | a push to `main` under `bin/`, `infrastructure/`, `app/` (not Markdown) | `DocsHostingStack` to beta and, after approval, prod; its self-update deploys the dispatcher, the fetch build and `UMCCR-DocsSitesPipeline` |
 | `UMCCR-DocsSitesPipeline` | any registered repository, through the dispatcher | a push under a site's docs paths | the site to dev, then prod; documents to OrcaSonar |
 
 ## 5. Work by repository
@@ -122,7 +122,7 @@ Details: [docs/operating/](../operating/README.md) for the platform team, the
 
 - [x] Protect `main` with a ruleset (2026-10-20): changes only through pull requests, no force push or deletion.
 - [ ] Add the `ci` checks to the `main` ruleset, and protect `v*` tags
-      ([repository settings](../operating/releasing.md#repository-settings)).
+      ([repository settings](../site/runbook.md#repository-settings)).
 - [x] Merge this repository and tag the merge `v0.1.0` (2026-10-21).
 - [ ] Merge `umccr/infrastructure`, already applied to dev and prod, and `management-knowledgebase`.
 - [ ] Find how `portal.umccr.org` is wired in the `umccr.org` zone and mirror it for `docs.umccr.org`.
@@ -130,7 +130,7 @@ Details: [docs/operating/](../operating/README.md) for the platform team, the
 
 ### Dev
 
-Step-by-step commands, checks and troubleshooting: [docs/deploy.md](../deploy.md).
+Step-by-step commands, checks and troubleshooting: [Deploying](../site/deploy.md).
 
 - [x] Apply `cognito_aai` and `umccr_docs_domain` to `dev`; deploy the beta hosting stack.
 - [x] Read-only pre-flight in the toolchain and dev accounts (2026-10-12): every prerequisite exists, no name is
@@ -157,14 +157,15 @@ Step-by-step commands, checks and troubleshooting: [docs/deploy.md](../deploy.md
 - [x] Request the prod certificate again (2026-10-21): the first timed out (`VALIDATION_TIMED_OUT`), as
       `docs.umccr.org` never validated.
 - [x] Add the `umccr.org` records the prod output lists (2026-10-21, by hand with toolchain credentials:
-      [deploying](../deploy.md#prod-the-umccrorg-records)).
+      [deploying](../site/deploy.md#prod-the-umccrorg-records)).
 - [x] Clear prod's failed first create (2026-10-21). It ran before the records existed; CloudFront refused the
       pending certificate, and the rollback stopped at the non-empty content bucket, leaving `ROLLBACK_FAILED`. The
       bucket, kept when the stack was deleted, still held old versions, and blocked the next create until it was
-      emptied and deleted too ([troubleshooting](../deploy.md#troubleshooting)).
+      emptied and deleted too ([troubleshooting](../site/deploy.md#troubleshooting)).
 - [x] Approve the infrastructure pipeline's prod stage (2026-10-21): `UMCCR-DocsHostingStack` is up in prod.
 - [ ] Release `v0.1.1` and rebuild both sites with it, so their pages have the theme's script again
-      ([write-up](../issues/2026-10-21-theme-script-missing-from-wheel.md), [releasing](../operating/releasing.md)).
+      ([write-up](../issues/2026-10-21-theme-script-missing-from-wheel.md),
+      [releasing](../site/runbook.md#release-the-toolkit-and-theme)).
 - [ ] OrcaSonar in prod, from its repository: in each account, Anthropic's model agreements (manual), the
       data-retention decision, and the docs Cognito client; then its pipelines' PromoteToProd.
 - [ ] Check that a personal Google account cannot sign in to prod (the deploy guide's verification checklist).
@@ -178,7 +179,7 @@ Step-by-step commands, checks and troubleshooting: [docs/deploy.md](../deploy.md
 
 - [ ] Name the owners' team in `.github/CODEOWNERS` and require their review on `main` (deferred 2026-10-20).
 - [ ] Release `v1.0.0` once ADR-0003 is settled, the first users' feedback is in, and a team outside platform
-      depends on the contract with a site of its own ([versioning](../operating/releasing.md#versioning)).
+      depends on the contract with a site of its own ([versioning](../site/runbook.md#versioning)).
 
 ### Order of dependencies
 
@@ -193,7 +194,7 @@ Step-by-step commands, checks and troubleshooting: [docs/deploy.md](../deploy.md
 
 ## 7. Operations
 
-- **Runbooks:** [docs/operating/runbooks.md](../operating/runbooks.md): the webhook, failed and re-run releases,
+- **Runbook:** [docs/site/runbook.md](../site/runbook.md): the webhook, failed and re-run releases,
   key rotation, revocation, takedown, rollback, permanent removal, sign-in failures.
 - **Logs:** CloudFront standard logs and session Lambda logs, 90 days; dispatcher logs, 90 days. No cookies, tokens
   or keys are logged; the Lambdas log the Cognito `sub` or the site, not emails or content.

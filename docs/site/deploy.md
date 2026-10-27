@@ -2,6 +2,7 @@
 
 Every step to deploy docs.umccr.org from this repository: the Terraform it depends on, the hosting stack in each stage account, the toolchain stack with both pipelines, the organisation webhook, and the first site releases.
 OrcaSonar, the chat service, has its own guide in [umccr/orcasonar](https://github.com/umccr/orcasonar/blob/main/docs/deploy.md); [step 7](#step-7-orcasonar) covers where the two meet.
+Operating the platform once it is deployed is in the [runbook](runbook.md). This page is `docs/site/deploy.md` in [umccr/docs-platform](https://github.com/umccr/docs-platform), so it can be read on GitHub before docs.umccr.org is up, or while it is down.
 
 > **This repository is public.** The commands below print account IDs, ARNs, bucket names and secret values. Keep them in your terminal or a private note: never paste them into this repository, a pull request or an issue.
 
@@ -15,7 +16,7 @@ OrcaSonar, the chat service, has its own guide in [umccr/orcasonar](https://gith
 | `DocsInfrastructurePipeline`: pipeline 1, the dispatcher, the fetch build, `UMCCR-DocsSitesPipeline`                                                                    | `bin/deploy.ts`, `infrastructure/toolchain/`, `app/dispatcher/`   | toolchain        | `cdk deploy` once, by hand; after that, pipeline 1 updates it |
 | `DocsHostingStack`: buckets, CloudFront, the edge function, the session key and Lambda, the `docs/docs-publisher` role, SSM `/docs/content-bucket-name`, the DNS record | `infrastructure/stage/`, `app/`                                   | dev (beta), prod | pipeline 1; beta can also be deployed by hand                 |
 | The organisation webhook                                                                                                                                                | the umccr organisation's settings on GitHub                       |                  | an organisation owner, once                                   |
-| Site content: `/platform/` (from `app/site/`) and every registered site                                                                                                 | each site's repository                                            | dev and prod     | `UMCCR-DocsSitesPipeline`, on push                            |
+| Site content: `/platform/` (from `docs/site/`) and every registered site                                                                                                | each site's repository                                            | dev and prod     | `UMCCR-DocsSitesPipeline`, on push                            |
 
 The hosting stack is CloudFormation stack `UMCCR-DocsHostingStack` in each stage account, tagged `umccr-org:Product: Docs`. `cdk diff` and `cdk deploy` select it by its construct path, `DocsInfrastructurePipeline/DeploymentPipeline/<Stage>/DocsHostingStack` with `<Stage>` either `Beta` or `Prod`, which also name pipeline 1's stages. Pipeline 1 is this repository's own construct, `infrastructure/toolchain/deployment-pipeline.ts`, adapted from the OrcaBus one so that nothing is named for OrcaBus.
 Both pipelines deploy to dev and prod only: the stg account runs no docs stage.
@@ -43,9 +44,9 @@ was refused too: the content bucket, kept when the failed stack was deleted, sti
 emptied and deleted, prod deployed, and `/platform/` (release 2, started by hand) and the knowledgebase (release 28)
 published to dev and prod. Their pages lacked the theme's script, which `v0.1.0`'s package left out, so they showed
 no catalogue, account menu or chat panel; `v0.1.1` fixes that
-([write-up](issues/2026-10-21-theme-script-missing-from-wheel.md)). stg holds no docs or OrcaSonar resources.
+([write-up](../issues/2026-10-21-theme-script-missing-from-wheel.md)). stg holds no docs or OrcaSonar resources.
 
-The [implementation plan](plans/implementation-plan.md#6-rollout) tracks what is left.
+The [implementation plan](../plans/implementation-plan.md#6-rollout) tracks what is left.
 
 ## Before you start
 
@@ -377,13 +378,13 @@ step is needed again only for a new toolchain account or after a teardown.
 
 Before deploying:
 
-- **Protect** `main` and the release tags first ([repository settings](operating/releasing.md#repository-settings)):
+- **Protect** `main` and the release tags first ([repository settings](runbook.md#repository-settings)):
   from the merge on, a merge to `main` publishes `/platform/` to prod with no approval, and deploys infrastructure
   to beta.
 - **Merge** the pull requests: `umccr/infrastructure`, then this repository, then `umccr/management-knowledgebase`.
-- **Tag** the commit that merges this repository `v0.1.0` straight away ([releasing](operating/releasing.md),
+- **Tag** the commit that merges this repository `v0.1.0` straight away ([releasing](runbook.md#release-the-toolkit-and-theme),
   step 3). Every site but `/platform/` builds with that tag, so their releases stop at Build ("has no ref v0.1.0")
-  until it exists; re-run them afterwards ([runbooks](operating/runbooks.md#re-run-or-force-a-release)).
+  until it exists; re-run them afterwards ([runbook](runbook.md#re-run-or-force-a-release)).
 - **GitHub access**: the AWS Connector for GitHub app must be able to read `umccr/docs-platform` (step 5), or the
   first run fails at its source.
 
@@ -430,15 +431,15 @@ aws cloudformation describe-stacks --stack-name DocsInfrastructurePipeline \
 ```
 
 The two outputs, `SitePublishingDispatcherWebhookUrl…` and `SitePublishingDispatcherWebhookSecretName…`, are for
-step 5. From now on, pipeline 1 deploys every merge to `main` that changes `bin/`, `infrastructure/` or `app/`
-(except `app/site/`), including changes to this stack.
+step 5. From now on, pipeline 1 deploys every merge to `main` that changes `bin/`, `infrastructure/` or `app/`,
+including changes to this stack.
 
 The site pipeline was called `DocsSitesPipeline` until 2026-10-15. The first deploy after that replaces it with
 `UMCCR-DocsSitesPipeline`: the old pipeline and its run history are deleted, the artifact bucket and roles stay, and
 the Slack failure rule becomes `UMCCR-DocsSitesPipeline-Failures`. Its name differs from the pipeline's because
 CloudFormation creates the replacement rule before deleting the old one, and rule names must be unique in the
 account. Re-run any release that failed under the old name
-([runbooks](operating/runbooks.md#re-run-or-force-a-release)).
+([runbook](runbook.md#re-run-or-force-a-release)).
 
 ## Step 5: GitHub
 
@@ -485,15 +486,15 @@ under **Settings → GitHub Apps → AWS Connector for GitHub → Configure**:
 A release starts when a push to a registered site's branch changes one of its `docsPaths`
 (`infrastructure/sites.ts`):
 
-| Site                         | Repository and branch                   | Paths that publish it                                 | Builds with                      |
-| ---------------------------- | --------------------------------------- | ----------------------------------------------------- | -------------------------------- |
-| `/platform/`                 | `umccr/docs-platform` `main`            | `app/site/**`, `toolkit/**`, `requirements/build.txt` | the toolkit at the pushed commit |
-| `/management-knowledgebase/` | `umccr/management-knowledgebase` `main` | `PlatformServices/**`, `mkdocs.yml`                   | `DOCS_TOOLKIT_REF`, `v0.1.2`     |
+| Site                         | Repository and branch                   | Paths that publish it                                                                                      | Builds with                      |
+| ---------------------------- | --------------------------------------- | ---------------------------------------------------------------------------------------------------------- | -------------------------------- |
+| `/platform/`                 | `umccr/docs-platform` `main`            | `mkdocs.yml`, `docs/site/**`, `toolkit/src/**`, `toolkit/pyproject.toml`, `toolkit/requirements/build.txt` | the toolkit at the pushed commit |
+| `/management-knowledgebase/` | `umccr/management-knowledgebase` `main` | `PlatformServices/**`, `mkdocs.yml`                                                                        | `DOCS_TOOLKIT_REF`, `v0.1.2`     |
 
 The webhook exists before this repository is merged, so the merge itself starts the first `/platform/` release: it
-is a push under `app/site/` and `toolkit/`. The knowledgebase's first release starts with its next push under its
+is a push under `docs/site/` and `toolkit/`. The knowledgebase's first release starts with its next push under its
 paths once `v0.1.0` is tagged (step 4). Its earlier releases failed at Build because `main` here did not hold the
-toolkit yet; re-running one of them ([runbooks](operating/runbooks.md#re-run-or-force-a-release)) works too, but
+toolkit yet; re-running one of them ([runbook](runbook.md#re-run-or-force-a-release)) works too, but
 builds with `main`, the toolkit ref it started with.
 
 The dispatcher starts the fetch build within seconds, and the fetch build starts `UMCCR-DocsSitesPipeline` a minute
@@ -547,15 +548,15 @@ To check, open any page on `https://docs.dev.umccr.org/` signed in, open the cha
 
 ## Later deploys
 
-| A change to                                                          | Deploys through                                                                                  |
-| -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| `bin/`, `infrastructure/`, `app/` except `app/site/`                 | merge to `main`, then pipeline 1: the self-update (toolchain changes), beta, PromoteToProd, prod |
-| the site registry, `infrastructure/sites.ts`                         | the same; see [onboarding a site](operating/onboarding-a-site.md)                                |
-| `app/site/`, `toolkit/`, `requirements/build.txt`                    | merge to `main`, then `UMCCR-DocsSitesPipeline`: `/platform/` in dev, then prod                  |
-| a site's docs, in its own repository                                 | push, then `UMCCR-DocsSitesPipeline`                                                             |
-| the toolkit and theme, for the other sites                           | a release tag, then their `toolkitRef`; see [releasing the platform](operating/releasing.md)     |
-| the session key                                                      | see the [runbooks](operating/runbooks.md#rotate-the-session-key)                                 |
-| `docs/`, `examples/`, `templates/`, and Markdown outside `app/site/` | nothing deploys; CI runs                                                                         |
+| A change to                                                                                                                                         | Deploys through                                                                                               |
+| --------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `bin/`, `infrastructure/`, `app/`                                                                                                                   | merge to `main`, then pipeline 1: the self-update (toolchain changes), beta, PromoteToProd, prod              |
+| the site registry, `infrastructure/sites.ts`                                                                                                        | the same; see [registering a site](runbook.md#register-a-site)                                                |
+| `mkdocs.yml`, `docs/site/`, the toolkit's package (`toolkit/src/`, `toolkit/pyproject.toml`) and its engine pins (`toolkit/requirements/build.txt`) | merge to `main`, then `UMCCR-DocsSitesPipeline`: `/platform/` in dev, then prod                               |
+| a site's docs, in its own repository                                                                                                                | push, then `UMCCR-DocsSitesPipeline`                                                                          |
+| the toolkit and theme, for the other sites                                                                                                          | a release tag, then their `toolkitRef`; see [releasing the toolkit](runbook.md#release-the-toolkit-and-theme) |
+| the session key                                                                                                                                     | see the [runbook](runbook.md#rotate-the-session-key)                                                          |
+| the rest of `docs/`, the toolkit's examples and templates, and Markdown outside `docs/site/`                                                        | nothing deploys; CI runs                                                                                      |
 
 ## Verification checklist
 
@@ -569,14 +570,14 @@ Before calling a stage done:
 - [ ] Sign-out ends the session: the next visit shows the sign-in card.
 - [ ] Only UMCCR accounts sign in: in a private window, sign in with a personal Google account. Google refuses it
       (`org_internal`), since the stage's Google OAuth client is internal to the UMCCR Workspace
-      ([ADR-0005](design/adr/0005-reader-policy.md)); the pages and the chat panel both rely on that.
+      ([ADR-0005](../design/adr/0005-reader-policy.md)); the pages and the chat panel both rely on that.
 - [ ] Loop guard: delete the cookie and reload several times in quick succession. By the fourth renewal within
       two minutes, the sign-in page stops with "Signing in keeps repeating".
 - [ ] The webhook's ping and push deliveries show success in **Recent Deliveries**.
 - [ ] A push under a site's docs paths starts one release, which publishes to dev and then prod; a push outside
       them starts none, and the dispatcher logs `no-docs-change`.
 - [ ] A page deleted in its repository is gone from the site after the next release.
-- [ ] Taking a site offline ([runbooks](operating/runbooks.md#take-a-site-offline)) makes it a 404 on the next
+- [ ] Taking a site offline ([runbook](runbook.md#take-a-site-offline)) makes it a 404 on the next
       request; the next release restores it.
 - [ ] Once OrcaSonar is in the stage: after a release, documents appear under `docs/<slug>/` in its ingest bucket,
       and the chat panel answers with sources.
@@ -607,21 +608,21 @@ aws logs tail "$LOG_GROUP" --since 1h
 | Webhook deliveries get 401                                                                                                         | the webhook's secret differs from `docs/github-webhook-secret` (log: `bad-signature`)                                                                                        | paste the value again (step 5)                                                                                                                                                                                          |
 | A push starts no release                                                                                                           | the dispatcher ignored it                                                                                                                                                    | its log says why: `not-registered`, `no-docs-change` or `duplicate`                                                                                                                                                     |
 | The dispatcher logs `start-failed`: `OAuthProviderException: User is not authorized to access connection`                          | the fetch build's role lacks `codeconnections:GetConnection` on the connection; CloudTrail shows its `GetConnection` `AccessDenied`                                          | deploy a version with the grant, then redeliver the push from the webhook's **Recent Deliveries**                                                                                                                       |
-| The dispatcher logs `start-failed` with a `forgetError`                                                                            | DynamoDB failed twice: the release did not start, and the delivery's record stayed, so a redelivery is refused as a `duplicate`                                              | [start the release by hand](operating/runbooks.md#start-a-release-by-hand)                                                                                                                                              |
+| The dispatcher logs `start-failed` with a `forgetError`                                                                            | DynamoDB failed twice: the release did not start, and the delivery's record stayed, so a redelivery is refused as a `duplicate`                                              | [start the release by hand](runbook.md#start-a-release-by-hand)                                                                                                                                                         |
 | The fetch build cannot clone                                                                                                       | the connector app's repository access, or the connection's status                                                                                                            | step 5; step 2                                                                                                                                                                                                          |
-| `UMCCR-DocsSitesPipeline` fails at Source: `The object with key 'sources/<slug>/<commit>.zip' returned a Forbidden error`          | the source action's role may read only its configured placeholder key, `sources/unset.zip`: CDK grants an S3 source action nothing more, and every run overrides the key     | deploy a version whose `SourceActionRole` may read `sources/*`, then re-run the release ([runbooks](operating/runbooks.md#re-run-or-force-a-release))                                                                   |
+| `UMCCR-DocsSitesPipeline` fails at Source: `The object with key 'sources/<slug>/<commit>.zip' returned a Forbidden error`          | the source action's role may read only its configured placeholder key, `sources/unset.zip`: CDK grants an S3 source action nothing more, and every run overrides the key     | deploy a version whose `SourceActionRole` may read `sources/*`, then re-run the release ([runbook](runbook.md#re-run-or-force-a-release))                                                                               |
 | A release fails at Build: `docs-platform at <ref> has no toolkit` (before 2026-10-15: pip could not open `requirements/build.txt`) | the site's `toolkitRef` names a docs-platform ref without the toolkit, such as `main` before this repository is merged                                                       | merge this repository first, or pin the site's `toolkitRef` to a ref that has the toolkit; to try a branch once, start the run with `TOOLKIT_REF` set to it                                                             |
-| A release fails at Build: `docs-platform has no ref <ref>`                                                                         | the site's `toolkitRef` names a tag or commit docs-platform does not have, such as `v0.1.0` before the merge is tagged                                                       | push the tag ([releasing](operating/releasing.md)), then re-run the release ([runbooks](operating/runbooks.md#re-run-or-force-a-release))                                                                               |
+| A release fails at Build: `docs-platform has no ref <ref>`                                                                         | the site's `toolkitRef` names a tag or commit docs-platform does not have, such as `v0.1.0` before the merge is tagged                                                       | push the tag ([releasing](runbook.md#release-the-toolkit-and-theme)), then re-run the release ([runbook](runbook.md#re-run-or-force-a-release))                                                                         |
 | Publish fails: `AccessDenied` on `AssumeRole`                                                                                      | the stage has no `docs/docs-publisher` role: its hosting stack is missing or older than this design                                                                          | deploy the stage's hosting stack (step 3 or 8)                                                                                                                                                                          |
 | Publish fails: `/docs/content-bucket-name is missing here`                                                                         | the same                                                                                                                                                                     | the same                                                                                                                                                                                                                |
 | Publish fails: `AccessDenied` on `ListObjectsV2` for OrcaSonar's ingest bucket                                                     | the stage's hosting stack predates the publisher's grant for that bucket (OrcaSonar's bucket policy only defers to IAM), or OrcaSonar's stateful stack or bucket was renamed | deploy the current hosting stack (pipeline 1); after a rename, update `ORCASONAR_INGEST_BUCKET_NAME_PREFIX` in `infrastructure/config.ts`                                                                               |
 | Publish warns that `/orcasonar/ingest-bucket-name` does not exist                                                                  | OrcaSonar is not deployed in that stage                                                                                                                                      | nothing: the pages publish, and documents follow once OrcaSonar is there                                                                                                                                                |
 | Cognito shows `redirect_mismatch`                                                                                                  | the host's `/_auth/` URL is missing from `app_docs.tf` for the workspace                                                                                                     | step 1, and use the registered host                                                                                                                                                                                     |
-| "Sign-in is temporarily unavailable"                                                                                               | right after a session key change; otherwise the session Lambda cannot read its key                                                                                           | wait a few minutes; then see the [runbooks](operating/runbooks.md#sign-in-fails-for-everyone)                                                                                                                           |
+| "Sign-in is temporarily unavailable"                                                                                               | right after a session key change; otherwise the session Lambda cannot read its key                                                                                           | wait a few minutes; then see the [runbook](runbook.md#sign-in-fails-for-everyone)                                                                                                                                       |
 | "Sign-in did not complete" after Google                                                                                            | the ID token was rejected (log: `invalid-token`)                                                                                                                             | check that `/_auth/env.js` holds the stage's docs client ID                                                                                                                                                             |
 | The chat panel cannot answer                                                                                                       | OrcaSonar is not deployed in the stage, or today's allowance is used                                                                                                         | OrcaSonar's runbook                                                                                                                                                                                                     |
 | The chat panel says an answer stalled, or a search took too long                                                                   | OrcaSonar sent nothing for 90 seconds (an answer) or did not answer in 45 (a search)                                                                                         | OrcaSonar's runbook: its chat function's logs, and Bedrock throttling                                                                                                                                                   |
-| Pages show no catalogue, account menu or chat panel; the browser console reports a 404 for `assets/umccr/umccr.js`                 | the site was built with a toolkit older than `v0.1.1`, whose package left the theme's script out ([write-up](issues/2026-10-21-theme-script-missing-from-wheel.md))          | move the site to `v0.1.1` or later (`toolkitRef`), then release it again ([runbooks](operating/runbooks.md#start-a-release-by-hand)); `verify-site` now refuses such a site                                             |
+| Pages show no catalogue, account menu or chat panel; the browser console reports a 404 for `assets/umccr/umccr.js`                 | the site was built with a toolkit older than `v0.1.1`, whose package left the theme's script out ([write-up](../issues/2026-10-21-theme-script-missing-from-wheel.md))       | move the site to `v0.1.1` or later (`toolkitRef`), then release it again ([runbook](runbook.md#start-a-release-by-hand)); `verify-site` now refuses such a site                                                         |
 | `umccr-docs publish` refuses a mass delete                                                                                         | the build lost more than half its pages                                                                                                                                      | check the build; if intended, publish by hand with `--allow-mass-delete`                                                                                                                                                |
 | A build warns `[[name]] does not match any note`, and the page shows `[[name]]` as text                                            | a note links to one that is not in the build, often a note nobody has committed yet                                                                                          | commit the linked note, or change the link; a working-tree build may be finding an uncommitted note. Before `v0.1.2` this failed the build                                                                              |
 
@@ -671,15 +672,15 @@ git checkout the toolkit takes every file in the folder.
 ```sh
 cd docs-platform
 python3.12 -m venv .venv && source .venv/bin/activate
-pip install --require-hashes --no-deps -r requirements/build.txt
+pip install --require-hashes --no-deps -r toolkit/requirements/build.txt
 pip install --no-deps ./toolkit
 
 aws sso login --profile dev && export AWS_PROFILE=dev AWS_REGION=ap-southeast-2
 export UMCCR_DOCS_SOURCE_REPO=umccr/docs-platform UMCCR_DOCS_COMMIT=$(git rev-parse HEAD)
 DOCS_BUCKET=$(aws ssm get-parameter --name /docs/content-bucket-name --query Parameter.Value --output text)
 
-umccr-docs check --config app/site/mkdocs.yml
-umccr-docs build --config app/site/mkdocs.yml --site-dir /tmp/platform-site
+umccr-docs check --config mkdocs.yml
+umccr-docs build --config mkdocs.yml --site-dir /tmp/platform-site
 umccr-docs verify-site /tmp/platform-site
 umccr-docs publish /tmp/platform-site --slug platform --bucket "$DOCS_BUCKET" --dry-run
 umccr-docs publish /tmp/platform-site --slug platform --bucket "$DOCS_BUCKET"
@@ -689,7 +690,7 @@ For another site, run the same from its repository with its own `--config` and `
 `UMCCR_DOCS_SOURCE_REPO`. To send the documents to OrcaSonar as well, export them and name its bucket:
 
 ```sh
-umccr-docs export-kb --config app/site/mkdocs.yml --commit "$UMCCR_DOCS_COMMIT" --out /tmp/platform-kb
+umccr-docs export-kb --config mkdocs.yml --commit "$UMCCR_DOCS_COMMIT" --out /tmp/platform-kb
 umccr-docs publish /tmp/platform-site --slug platform --bucket "$DOCS_BUCKET" --documents /tmp/platform-kb \
   --documents-bucket "$(aws ssm get-parameter --name /orcasonar/ingest-bucket-name --query Parameter.Value --output text)"
 ```

@@ -60,7 +60,7 @@ a short workflow file.
 - reserved concurrency on the dispatcher, for example 10, so a burst of unsigned requests cannot use the account's
   Lambda concurrency. GitHub's deliveries need far less: about 75 a day on 2026-10-13;
 - rotating the webhook secret on a schedule, and when someone who could read it leaves
-  ([runbooks](../operating/runbooks.md#rotate-the-webhook-secret)).
+  ([runbook](../site/runbook.md#rotate-the-webhook-secret)).
 
 **Next steps:**
 

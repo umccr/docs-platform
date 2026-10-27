@@ -4,7 +4,7 @@ site_description: A synthetic site that exercises the docs.umccr.org theme and b
 site_url: https://docs.umccr.org/example-basic/
 repo_url: https://github.com/umccr/docs-platform
 repo_name: umccr/docs-platform
-edit_uri: edit/main/examples/basic-site/docs/
+edit_uri: edit/main/toolkit/examples/basic-site/docs/
 docs_dir: docs
 
 nav:
@@ -12,6 +12,7 @@ nav:
   - Guide:
       - guide/getting-started.md
       - guide/writing.md
+      - guide/components.md
 
 extra:
   classification: 'Example: synthetic content'

@@ -17,7 +17,7 @@ Optional settings under `extra`:
 
 ```yaml
 extra:
-  classification: 'Internal: UMCCR staff only'   # a banner on every page
+  classification: 'Internal: UMCCR staff only'   # the banner on every page; this text is the default
   platform:
     source_format: markdown   # or obsidian
 ```
@@ -27,6 +27,12 @@ extra:
 Available on every site: admonitions (`!!! note`), collapsible blocks (`??? note`), content tabs, task lists,
 `==highlight==`, footnotes, definition lists, abbreviations, attribute lists, Markdown inside HTML blocks, code
 highlighting and heading permalinks.
+
+How a page looks follows from what it holds. Its first paragraph is the lead, set larger under the title. An
+`updated:` date in its front matter shows under the title, with a link to edit the page on GitHub; `hide: [meta]`
+leaves that line out. A code block's header names its language, `terminal` for shell, and `title="mkdocs.yml"`
+names a file instead. The basic example in this repository, `toolkit/examples/basic-site/`, has a Components page
+with every element; `umccr-docs serve` in that folder previews it.
 
 Links between pages are relative paths to `.md` files, as in any MkDocs site. A link that leaves `docs_dir`, such
 as `../README.md`, is rewritten to the file in your repository on GitHub, so it keeps working. Images must be inside
@@ -65,7 +71,7 @@ extra:
   platform:
     source_format: obsidian
     home: Home.md                       # published as the site's front page
-    properties: [status, priority, lead, updated]   # shown in a table at the top of each note
+    properties: [status, priority, lead, updated]   # shown in a card at the top of each note
     obsidian:
       prefer_folders: [Projects]        # which note a name means when several folders have one
       sort_orders:
@@ -76,7 +82,7 @@ extra:
 | --- | --- |
 | `[[note]]`, `[[note\|label]]`, `[[folder/note]]` | links, resolved by filename as Obsidian does |
 | `[[note#Heading]]`, `[[#Heading]]` | links to the heading |
-| wikilinks in frontmatter, such as `domains: ["[[area]]"]` | links in the properties table and in tables |
+| wikilinks in frontmatter, such as `domains: ["[[area]]"]` | links in the properties card and in tables |
 | ```` ```base ```` blocks | tables, computed from frontmatter when the site is built |
 | `> [!note] Title` callouts, including `-` and `+` folding | admonitions |
 | `%% comments %%` | removed |

@@ -4,7 +4,7 @@ site_description: A synthetic Obsidian vault for the docs.umccr.org Obsidian ada
 site_url: https://docs.umccr.org/example-vault/
 repo_url: https://github.com/umccr/docs-platform
 repo_name: umccr/docs-platform
-edit_uri: edit/main/examples/obsidian-vault/vault/
+edit_uri: edit/main/toolkit/examples/obsidian-vault/vault/
 docs_dir: vault
 
 extra:

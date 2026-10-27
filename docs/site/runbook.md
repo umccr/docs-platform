@@ -1,9 +1,13 @@
-# Docs runbooks
+# Runbook
 
-Operational procedures for `docs.<stage>.umccr.org`. The session key and the site registry are code in this
-repository, so changing either is a pull request that `DocsInfrastructurePipeline` deploys: beta, then prod after
-approval. Content changes are S3 operations with admin credentials for the stage account; releases are runs of
-`UMCCR-DocsSitesPipeline` in the toolchain account.
+Operational procedures for `docs.<stage>.umccr.org`, and for releasing the toolkit and theme. The session key and the
+site registry are code in this repository, so changing either is a pull request that `DocsInfrastructurePipeline`
+deploys: beta, then prod after approval. Content changes are S3 operations with admin credentials for the stage
+account; releases are runs of `UMCCR-DocsSitesPipeline` in the toolchain account. Deploying the platform itself is in
+[Deploying](deploy.md), and how its pieces fit together in [Design](design.md).
+
+This page is `docs/site/runbook.md` in [umccr/docs-platform](https://github.com/umccr/docs-platform), so it can be
+read on GitHub when docs.umccr.org itself is down.
 
 ## First deploy of a stage
 
@@ -35,6 +39,55 @@ GitHub sends a ping when the webhook is saved; the dispatcher answers 200. Check
 3. The dispatcher reads the secret again when a signature does not match, at most once a minute per execution
    environment, and at least every five minutes. Deliveries signed between steps 1 and 2 fail with 401, and so may
    one or two just after; redeliver any that failed (below).
+
+## Register a site
+
+Registering a repository's documentation at `docs.umccr.org/<slug>/`. The site's own side is one `mkdocs.yml`; see
+[Onboarding a repository](onboarding.md).
+
+### 1. Register the site
+
+Append a `DocsSite` to `DOCS_SITES` in [`infrastructure/sites.ts`](https://github.com/umccr/docs-platform/blob/main/infrastructure/sites.ts):
+
+```ts
+export const EXAMPLE_SITE: DocsSite = {
+  slug: 'example', // URL path and S3 prefix; immutable once published
+  repo: 'umccr/example', // the repository the dispatcher clones
+  branch: 'main', // pushes to this branch publish the site
+  configPath: 'mkdocs.yml',
+  docsPaths: ['docs/**', 'mkdocs.yml'], // a push that changes none of these publishes nothing
+  toolkitRef: DOCS_TOOLKIT_REF, // or a docs-platform release tag or full commit SHA, never a branch
+  stages: [AppStage.BETA, AppStage.PROD],
+  title: 'Example',
+  description: 'One line for the catalogue.',
+};
+```
+
+- **Slug**: lowercase letters, digits and inner hyphens, at most 49 characters. It must not reveal a confidential
+  project or repository name. `sites` is reserved.
+- **Docs paths**: globs relative to the repository root. Keep them tight in code repositories, so code-only pushes
+  don't rebuild the site.
+- **Stages**: sites publish to beta (dev) and prod, the platform's two stages.
+- **Registry visibility**: this repository is public, so the repository name becomes public too.
+
+Merging starts `DocsInfrastructurePipeline`. Its self-update gives the dispatcher the new routing entry, and each
+stage deploy adds the slug to the edge function and the catalogue. Registering a site before its first push is
+harmless: the path is a 404 until content arrives.
+
+### 2. Check GitHub access
+
+The fetch build clones through the AWS Connector for GitHub app. If the app is installed for selected repositories
+only, an organisation owner adds the site's repository in the organisation's settings (**GitHub Apps → AWS
+Connector for GitHub → Configure**). Nothing else is needed: the organisation webhook already covers every
+repository.
+
+### 3. First release
+
+The next push to the site's branch that changes its docs paths publishes it. Watch the release in the
+`UMCCR-DocsSitesPipeline` execution history, where each run's variables name the site, commit and release. To publish
+without waiting for a new push, redeliver the latest push that changed the site's docs paths from the webhook's
+settings: the dispatcher ignored it while the site was unregistered, so it is not a duplicate (see
+[Re-run or force a release](#re-run-or-force-a-release)).
 
 ## Re-run or force a release
 
@@ -138,7 +191,7 @@ The pipeline posts failed runs to the alerts Slack channel. Each run's variables
 
 Routinely, for example every 90 days, or whenever anyone may have seen the key:
 
-1. In [`infrastructure/config.ts`](../../infrastructure/config.ts), increase the stage's `DOCS_SESSION_KEY_GENERATION`.
+1. In [`infrastructure/config.ts`](https://github.com/umccr/docs-platform/blob/main/infrastructure/config.ts), increase the stage's `DOCS_SESSION_KEY_GENERATION`.
 2. Merge, and let the pipeline deploy it; for prod, approve **PromoteToProd**.
 
 The deploy creates a new secret with a new generated value, builds it into the viewer-request function, points the
@@ -184,7 +237,7 @@ aws s3 rm s3://<DocsBucketName>/sites/<slug>/ --recursive   # the site is a 404 
 
 The bucket is versioned, so this can be undone (below). Then either:
 
-- **keep it offline**: remove the site's entry in [`sites.ts`](../../infrastructure/sites.ts) and merge, so the slug
+- **keep it offline**: remove the site's entry in [`sites.ts`](https://github.com/umccr/docs-platform/blob/main/infrastructure/sites.ts) and merge, so the slug
   is unregistered and the dispatcher ignores its pushes; or
 - **bring it back**: fix the content in the site's repository and publish, or restore previous versions.
 
@@ -220,6 +273,15 @@ Every file without a fingerprint in its name is published `no-cache`, so CloudFr
 request and a deleted page stops being served immediately. Only fingerprinted theme assets are cached long-term,
 and they hold no content.
 
+## Remove a site
+
+1. Take it offline immediately by deleting its objects under `sites/<slug>/`; pages are served `no-cache`, so it
+   is a 404 on the next request (see [Take a site offline](#take-a-site-offline)).
+2. Remove its registry entry. The pipeline unregisters the slug, and the dispatcher ignores its pushes from then on.
+3. Ask the OrcaSonar team to remove its documents under `docs/<slug>/`, or delete them with admin credentials.
+4. If the content must not be recoverable, also delete the previous object versions
+   ([Remove content permanently](#remove-content-permanently)).
+
 ## Sign-in fails for everyone
 
 1. Check the session Lambda's log group (`DocsSessionLogGroup`) for the outcome:
@@ -233,3 +295,83 @@ and they hold no content.
    for that workspace.
 3. The alarms `DocsSessionUnavailableAlarm` (sign-ins refused as unavailable), `DocsSessionErrorsAlarm` and
    `DocsSessionThrottlesAlarm` track the session Lambda.
+
+## Release the toolkit and theme
+
+The site registry pins the toolkit, theme and engine version each site builds with: `toolkitRef` in
+[`infrastructure/sites.ts`](https://github.com/umccr/docs-platform/blob/main/infrastructure/sites.ts). A release of this repository therefore changes no site
+until its registry entry moves to it, so sites move deliberately, one at a time or together. The platform's own site,
+`/platform/`, builds with the toolkit at the pushed commit, so a theme or toolkit change shows there first.
+
+Infrastructure changes are separate: a merge to `main` under `bin/`, `infrastructure/` or `app/` starts the
+infrastructure pipeline, which deploys to beta and then waits for approval before prod.
+
+1. Make sure `main` is green, and that the platform site on docs.dev.umccr.org and the example builds look right.
+   CI's site builds install the toolkit from its wheel, as the site pipeline does. `make install` installs it
+   editable, which reads the theme from the source tree, so a local build cannot show a file the package leaves out
+   ([2026-10-21](../issues/2026-10-21-theme-script-missing-from-wheel.md)).
+2. Update the [changelog](changelog.md) and the toolkit's version (`toolkit/pyproject.toml`,
+   `toolkit/src/umccr_docs/__init__.py`), and merge.
+3. Tag the merge commit and push the tag:
+
+   ```sh
+   git tag -s v0.2.0 -m "v0.2.0"
+   git push origin v0.2.0
+   ```
+
+   `-s` signs the tag; without a signing key, `-a` makes an annotated tag instead.
+
+4. Move sites to the new tag: change their `toolkitRef` in the registry (`DOCS_TOOLKIT_REF` for every site that uses
+   the default) and merge. The infrastructure pipeline updates the dispatcher; each site builds with the new version
+   on its next push.
+5. Rebuild the sites that should not wait for their next push, such as after a fix: start a release by hand for
+   each, with `TOOLKIT_REF` set to the tag ([Start a release by hand](#start-a-release-by-hand)). A merge that
+   changes the toolkit's package already starts a `/platform/` release built with that commit. Then check each site
+   in dev and prod.
+
+Steps 2 and 4 can be one merge, as for `v0.1.0` and `v0.1.1`: then tag that merge straight away, since the sites'
+releases stop at Build ("has no ref") until the tag exists. Re-run any that stopped once it does.
+
+### Versioning
+
+- Releases are semantic versions, `vMAJOR.MINOR.PATCH`. The toolkit's package version (`toolkit/pyproject.toml` and
+  `umccr_docs.__version__`) is the same as the tag.
+- Until `v1.0.0` the platform is in initial development, `0.y.z`: the authoring contract and the engine
+  ([ADR-0003](../design/adr/0003-build-engine.md)) can still change. A change that could break an existing site,
+  such as a contract rule, a removed extension or an engine change, takes the next minor version (`v0.2.0`) and a
+  migration note; fixes and compatible additions take the next patch (`v0.1.1`).
+- `v1.0.0` comes once the engine is decided, the first users' feedback is in, and a team outside the platform team
+  depends on the contract with a site of its own. From then on, a breaking change needs a new major version.
+- A registry `toolkitRef` is a release tag or a full commit SHA, never a branch; the registry refuses anything else.
+
+### Repository settings
+
+Review on `main` is the only gate before prod for the toolkit, the theme and `/platform/`: the site pipeline
+publishes `/platform/` from each merge with no approval, and the other sites build with tags cut from `main`. An
+organisation owner sets these under **Settings → Rules → Rulesets**:
+
+- **`main`**: require a pull request with one approval, and the `ci` checks to pass ("Toolkit tests and lint",
+  "Strict builds of the examples and the platform site", "CDK app tests, lint and synth", "Workflows, secrets and
+  information boundary"); block force pushes and deletion.
+- **`v*` tags**: only the platform owners may create them, and nobody may update or delete one: a moved tag would
+  change how sites build without a registry change.
+- **Code owners**, later: once the owners' team is named in [`.github/CODEOWNERS`](https://github.com/umccr/docs-platform/blob/main/.github/CODEOWNERS), which
+  holds a placeholder for now, require their review on `main` too.
+
+### Roll back a release
+
+Point the affected sites' `toolkitRef` back at the previous tag and merge. Once the infrastructure pipeline has
+updated the dispatcher, each site builds with that tag on its next push under its docs paths.
+
+To rebuild a site straight away, [start a release by hand](#start-a-release-by-hand) from its live release's source
+object, with `TOOLKIT_REF` set to the previous tag. Re-running an existing release does not do this: it keeps the
+`TOOLKIT_REF` it started with, and is skipped when a newer release is live.
+
+### Update pinned dependencies
+
+- Engine and toolkit runtime: edit `toolkit/requirements/build.in` and regenerate `toolkit/requirements/build.txt`
+  with the command at the top of the file. The hashes change with it.
+- CDK app: `pnpm update`, then `pnpm test` and a template diff before merging.
+- Actions: every third-party action is pinned to a full commit SHA with its version in a comment. Update both.
+- The build engine decision and the MkDocs 1.x pin are recorded in
+  [ADR-0003](../design/adr/0003-build-engine.md).

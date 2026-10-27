@@ -12,7 +12,7 @@ BIN := $(VENV)/bin
 # ruff and the toolkit.
 export PATH := $(abspath $(BIN)):$(PATH)
 
-SITE_CONFIGS := examples/basic-site/mkdocs.yml examples/obsidian-vault/mkdocs.yml app/site/mkdocs.yml
+SITE_CONFIGS := toolkit/examples/basic-site/mkdocs.yml toolkit/examples/obsidian-vault/mkdocs.yml mkdocs.yml
 
 .PHONY: install check fix audit-fix test sites serve synth clean
 
@@ -21,8 +21,8 @@ SITE_CONFIGS := examples/basic-site/mkdocs.yml examples/obsidian-vault/mkdocs.ym
 install:
 	@$(PNPM) install --frozen-lockfile
 	@test -x $(BIN)/python || $(PYTHON) -m venv $(VENV)
-	@$(BIN)/pip install --quiet --require-hashes --no-deps -r requirements/build.txt
-	@$(BIN)/pip install --quiet --require-hashes -r requirements/dev.txt
+	@$(BIN)/pip install --quiet --require-hashes --no-deps -r toolkit/requirements/build.txt
+	@$(BIN)/pip install --quiet --require-hashes -r toolkit/requirements/dev.txt
 	@$(BIN)/pip install --quiet --no-deps -e ./toolkit
 	@pre-commit install --install-hooks
 
@@ -52,10 +52,11 @@ test:
 	@$(PNPM) test
 	@$(BIN)/pytest toolkit
 
-# Strict builds and pre-publish checks of the examples and the /platform/ site, as CI runs them.
+# Strict builds and pre-publish checks of the examples and the /platform/ site, as CI runs them. Each builds into a
+# folder named for its config's folder; the root mkdocs.yml, the /platform/ site, into build/sites/platform.
 sites:
 	@for config in $(SITE_CONFIGS); do \
-	  site="build/sites/$$(dirname "$$config" | tr '/' '-')"; \
+	  site="build/sites/$$(dirname "$$config" | tr '/' '-' | sed 's/^\.$$/platform/')"; \
 	  $(BIN)/umccr-docs check --config "$$config" && \
 	  $(BIN)/umccr-docs build --config "$$config" --site-dir "$$site" && \
 	  $(BIN)/umccr-docs verify-site "$$site" || exit 1; \
@@ -63,11 +64,11 @@ sites:
 
 # Preview the /platform/ site on http://127.0.0.1:8000.
 serve:
-	@$(BIN)/umccr-docs serve --config app/site/mkdocs.yml
+	@$(BIN)/umccr-docs serve --config mkdocs.yml
 
 synth:
 	@$(PNPM) cdk synth --quiet
 
 # Build output only; the virtualenv and node_modules stay.
 clean:
-	@rm -rf cdk.out build .umccr-docs app/site/.umccr-docs examples/*/.umccr-docs
+	@rm -rf cdk.out build .umccr-docs toolkit/examples/*/.umccr-docs

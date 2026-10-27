@@ -11,13 +11,11 @@ export default defineConfig([
     'coverage',
     '.pnpm-store',
     '**/*.d.ts',
-    // The Python toolkit (with the theme's browser script), the docs, the platform site, the examples and build output
-    // are not part of the CDK app. The hand-written edge function under app/ is linted via the JS override below.
+    // The Python toolkit (with the theme's browser script, the examples and the templates), the docs with the platform
+    // site, and build output are not part of the CDK app. The hand-written edge function under app/ is linted via the
+    // JS override below.
     'toolkit',
     'docs',
-    'app/site',
-    'examples',
-    'templates',
     'site',
     // `make sites` builds into build/sites/.
     'build',

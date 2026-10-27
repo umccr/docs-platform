@@ -2,7 +2,50 @@
 
 All notable changes to the docs platform: the infrastructure, the `umccr-docs` toolkit and the theme. Sites pick
 toolkit and theme changes up when their registry entry's `toolkitRef` moves to a release; see
-[docs/operating/releasing.md](docs/operating/releasing.md).
+[releasing the toolkit and theme](runbook.md#release-the-toolkit-and-theme).
+
+## Unreleased
+
+The repository's layout, and the platform's own pages on `/platform/`. The toolkit and theme build sites as `v0.1.2`
+does, so no site needs to move for this.
+
+Merging it fails that merge's own `/platform/` release at Build: until pipeline 1's self-update deploys the new
+registry, the dispatcher still builds the site from `app/site/mkdocs.yml`. The live site stays as it was. Once the
+self-update is done, [start a release by hand](runbook.md#start-a-release-by-hand) with `CONFIG_PATH` `mkdocs.yml`,
+or merge any change under `docs/site/`.
+
+- Layout: the `/platform/` site moved from `app/site/` to `docs/site/`, with its `mkdocs.yml` at the repository root,
+  and `examples/`, `templates/` and `requirements/` moved into `toolkit/`. Participating repositories copy their
+  `mkdocs.yml` from `toolkit/templates/`.
+- The site pipeline installs the engine's pins from `toolkit/requirements/build.txt`, or from `requirements/build.txt`
+  at refs up to `v0.1.2`, so sites and rollbacks pinned to those still build.
+- `/platform/` publishes the platform's own pages: the project, the tech stack and conventions, the design,
+  deploying, the runbook and this changelog. They replace `docs/deploy.md`, `docs/operating/` and the `CHANGELOG.md`
+  at the repository root, so the chat panel can answer from them too. The design records, plans and issue
+  write-ups stay in `docs/`, read on GitHub.
+- `/platform/` publishes on a push that changes `mkdocs.yml`, `docs/site/`, the toolkit's package or the engine's
+  pins, and no longer on the toolkit's examples or templates. Its strict build also fails on a link to a heading that
+  does not exist.
+- Pipeline 1 no longer excludes `app/site/**` from its trigger: nothing under `app/` is published by the site pipeline
+  any more.
+
+A new look for the theme. `/platform/` shows it once it merges; other sites, once the registry moves them to the
+next release.
+
+- Header: the UMCCR Docs name, the site's name, search, the colour scheme, the repository and the account menu. The
+  classification banner is on every site, "Internal: UMCCR staff only" unless `extra.classification` words it
+  differently.
+- Pages: breadcrumbs from all documentation to the page's section, a larger lead paragraph, a line with the page's
+  `updated` date and an edit link, and the previous and next pages at the end. Callouts read "Note: …"; code blocks
+  are dark, with a header naming the language and a Copy button; tables, task lists, the navigation and "On this
+  page" are restyled. In the dark scheme, links had almost no contrast; now they do.
+- Vault notes show their properties as a card: status and health as coloured pills, linked values as chips, dates
+  as `28 Sep 2026`. A note's `status` no longer shows as an icon in the navigation.
+- Chat panel: docked on the right below the header, with Ask and Search, This site only, a new conversation, and
+  sources as cards naming their site. Answers can be rated and copied. ⌘K or Ctrl+K opens it, and the search box
+  offers to ask the docs, or to search every site, from its results.
+- The catalogue: a question box with suggested questions, the sites as cards, the guides and who can read.
+- The basic example has a Components page with every element the theme styles.
 
 ## v0.1.2
 
@@ -26,7 +69,7 @@ but `/platform/` to it.
   match its exception for the theme from `toolkit/`. Pages still linked the script, so the sites the pipeline
   published had no catalogue, account menu or chat panel. `make install`'s editable install reads the theme from the
   source tree, so local builds were unaffected
-  ([write-up](docs/issues/2026-10-21-theme-script-missing-from-wheel.md)).
+  ([write-up](../issues/2026-10-21-theme-script-missing-from-wheel.md)).
 - `verify-site` refuses a site without the theme's script, stylesheet or logo, so CI's site builds and the
   pipeline's Build stop such a site before it is published.
 - Pipeline 1 deploys beta, then prod; the gamma stage is gone, as the stg account runs no docs stage. Prod now
@@ -40,7 +83,7 @@ but `/platform/` to it.
 
 The first release, for the first users: tag the commit that merges it to `main`. The registry pins every site but
 `/platform/` to it. Versions stay `0.y.z` while the authoring contract and the engine can still change; see
-[releasing](docs/operating/releasing.md#versioning).
+[versioning](runbook.md#versioning).
 
 - `UMCCR-DocsSitesPipeline` runs one release at a time, in the order they start (queued, no longer parallel). A
   publish uploads, then deletes, then writes the release marker, so two releases of one site publishing together
@@ -124,9 +167,9 @@ The first release, for the first users: tag the commit that merges it to `main`.
   design pages and records, plans, issues, runbooks and the deploy guide (`docs/deploy.md`, replacing
   `deploy-dev.md`), and is not published: the design records, runbooks and "Releasing the platform" left the site.
 - The infrastructure moved here from `umccr/frontend-infrastructure-pipelines` `lib/docs/`
-  ([ADR-0008](docs/design/adr/0008-infrastructure-in-docs-platform.md)): the CDK app in `bin/` and `infrastructure/`, the
+  ([ADR-0008](../design/adr/0008-infrastructure-in-docs-platform.md)): the CDK app in `bin/` and `infrastructure/`, the
   code it deploys in `app/`. Stack names and hosting templates are unchanged.
-- Dispatched publishing ([ADR-0006](docs/design/adr/0006-dispatched-publishing.md)): an organisation webhook, a dispatcher
+- Dispatched publishing ([ADR-0006](../design/adr/0006-dispatched-publishing.md)): an organisation webhook, a dispatcher
   Lambda, a fetch build and one shared site pipeline, `UMCCR-DocsSitesPipeline`, publishing to dev then prod. One
   `docs-publisher` role per stage replaces the per-site GitHub OIDC roles. The registry gains `branch`,
   `configPath`, `docsPaths`, `toolkitRef` and `stages`.
@@ -135,7 +178,7 @@ The first release, for the first users: tag the commit that merges it to `main`.
 - `umccr-docs export-kb`: pages as plain Markdown with metadata, for OrcaSonar.
 - `umccr-docs publish`: `--role-arn` (assume `docs-publisher` narrowed to the site, bucket names from SSM),
   `--release` (newer release wins) and `--documents` (mirror the export into OrcaSonar's ingest bucket).
-- Theme: chat panel ([ADR-0007](docs/design/adr/0007-chat-through-orcasonar.md)), calling OrcaSonar with the reader's
+- Theme: chat panel ([ADR-0007](../design/adr/0007-chat-through-orcasonar.md)), calling OrcaSonar with the reader's
   Cognito ID token through `/_auth/token.js`. The content pages' Content Security Policy allows OrcaSonar and the
   Cognito API.
 

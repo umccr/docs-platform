@@ -31,10 +31,10 @@ def test_example_vault(tmp_path):
     assert "[Inbox/alpha](alpha.md)" in inbox
 
     writing = (out / "Guides" / "writing.md").read_text()
-    assert "(https://github.com/umccr/docs-platform/blob/main/examples/obsidian-vault/README.md)" in writing
+    assert "(https://github.com/umccr/docs-platform/blob/main/toolkit/examples/obsidian-vault/README.md)" in writing
 
     alpha = (out / "Projects" / "alpha.md").read_text()
-    assert "| Lead | Ada |" in alpha
+    assert '<dt>Lead</dt><dd markdown="span">Ada</dd>' in alpha
     assert "`[[not-a-link]]`" in alpha
 
 
@@ -61,7 +61,7 @@ def test_strict_mode_publishes_a_link_to_a_missing_note_as_text_and_warns(make_p
         }
     )
     out = root / "out"
-    # The properties tables warn once each; the Bases table, with two rows linking to the note, warns once.
+    # The properties lists warn once each; the Bases table, with two rows linking to the note, warns once.
     assert preprocess(load_project(root / "mkdocs.yml"), out) == [
         "Projects/alpha.md: frontmatter [[missing]] does not match any note",
         "Projects/beta.md: frontmatter [[missing]] does not match any note",

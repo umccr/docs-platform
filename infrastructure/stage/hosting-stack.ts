@@ -237,7 +237,7 @@ export class DocsHostingStack extends Stack {
     new Alarm(this, 'DocsSessionUnavailableAlarm', {
       alarmDescription:
         'docs.umccr.org sign-ins refused as unavailable: the session key is unreadable, or differs from the ' +
-        'one the edge holds. Expected for a few minutes after a key rotation; see docs/operating/runbooks.md.',
+        'one the edge holds. Expected for a few minutes after a key rotation; see docs/site/runbook.md.',
       metric: unavailableSignIns.metric({ statistic: Stats.SUM, period: Duration.minutes(5) }),
       threshold: 5,
       evaluationPeriods: 1,

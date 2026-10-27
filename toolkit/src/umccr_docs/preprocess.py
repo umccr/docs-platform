@@ -3,7 +3,7 @@ Copy a project's docs into a build directory, turning source-specific syntax int
 
 Both source formats get the same treatment for links that leave `docs_dir` (for example to the repository's
 README): they point at the file in the source repository instead of failing the build. Obsidian vaults also get
-wikilinks, Bases tables, callouts, comments and the properties table; see `umccr_docs.obsidian`.
+wikilinks, Bases tables, callouts, comments and the properties list; see `umccr_docs.obsidian`.
 """
 
 import os

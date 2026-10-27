@@ -4,11 +4,15 @@
  *
  * 1. Account menu: shows who is signed in, read from the ID token Amplify stored at sign-in (the same
  *    CognitoIdentityServiceProvider.* keys the portal apps use). Display only; the edge enforces the session.
- * 2. Catalogue: renders the registered sites into #umccr-catalogue from /_platform/data/catalog.json.
- * 3. Chat panel: asks OrcaSonar, UMCCR's documentation search and answer service. On first open it loads
+ * 2. Catalogue: renders the registered sites into #umccr-catalogue from /_platform/data/catalog.json, and the
+ *    question box, which asks every site in the chat panel, into #umccr-ask.
+ * 3. Search: the header's search results gain a row that asks the docs the same question and one that searches
+ *    every site, both in the chat panel.
+ * 4. Chat panel: asks OrcaSonar, UMCCR's documentation search and answer service. On first open it loads
  *    /_auth/env.js and /_auth/token.js, which hold the platform's Amplify code; OrcaSonar checks the reader's
  *    Cognito ID token, not the docs session cookie. Answers are Markdown, which the panel builds into elements
- *    itself, and titles and snippets are text: nothing OrcaSonar returns is ever parsed as HTML.
+ *    itself, and titles and snippets are text: nothing OrcaSonar returns is ever parsed as HTML. ⌘K or Ctrl+K opens
+ *    and closes it.
  */
 (function () {
   'use strict';
@@ -120,6 +124,114 @@
     header.appendChild(container);
   }
 
+  // ---------------------------------------------------------------------------------------------------------------
+  // Icons: Octicons (MIT), the set the theme's own icons come from, drawn inline.
+
+  var SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
+  var ICONS = {
+    plus: [
+      'M7.75 2a.75.75 0 0 1 .75.75V7h4.25a.75.75 0 0 1 0 1.5H8.5v4.25a.75.75 0 0 1-1.5 0V8.5H2.75a.75.75 0 0 1 0-1.5H7V2.75A.75.75 0 0 1 7.75 2',
+    ],
+    close: [
+      'M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.75.75 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.75.75 0 0 1-.734-.215L8 9.06l-3.22 3.22a.75.75 0 0 1-1.042-.018.75.75 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06',
+    ],
+    up: [
+      'M8.347.631A.75.75 0 0 1 9.123.26l.238.04a3.25 3.25 0 0 1 2.591 4.098L11.494 6h.665a3.25 3.25 0 0 1 3.118 4.167l-1.135 3.859A2.75 2.75 0 0 1 11.503 16H6.586a3.75 3.75 0 0 1-2.184-.702A1.75 1.75 0 0 1 3 16H1.75A1.75 1.75 0 0 1 0 14.25v-6.5C0 6.784.784 6 1.75 6h3.417a.25.25 0 0 0 .217-.127ZM4.75 13.649l.396.33c.404.337.914.521 1.44.521h4.917a1.25 1.25 0 0 0 1.2-.897l1.135-3.859A1.75 1.75 0 0 0 12.159 7.5H10.5a.75.75 0 0 1-.721-.956l.731-2.558a1.75 1.75 0 0 0-1.127-2.14L6.69 6.611a1.75 1.75 0 0 1-1.523.889H4.75ZM3.25 7.5h-1.5a.25.25 0 0 0-.25.25v6.5c0 .138.112.25.25.25H3a.25.25 0 0 0 .25-.25Z',
+    ],
+    down: [
+      'M7.653 15.369a.75.75 0 0 1-.776.371l-.238-.04a3.25 3.25 0 0 1-2.591-4.099L4.506 10h-.665A3.25 3.25 0 0 1 .723 5.833l1.135-3.859A2.75 2.75 0 0 1 4.482 0H9.43c.78.003 1.538.25 2.168.702A1.75 1.75 0 0 1 12.989 0h1.272A1.75 1.75 0 0 1 16 1.75v6.5A1.75 1.75 0 0 1 14.25 10h-3.417a.25.25 0 0 0-.217.127ZM11.25 2.351l-.396-.33a2.25 2.25 0 0 0-1.44-.521H4.496a1.25 1.25 0 0 0-1.199.897L2.162 6.256A1.75 1.75 0 0 0 3.841 8.5H5.5a.75.75 0 0 1 .721.956l-.731 2.558a1.75 1.75 0 0 0 1.127 2.14L9.31 9.389a1.75 1.75 0 0 1 1.523-.889h.417Zm1.5 6.149h1.5a.25.25 0 0 0 .25-.25v-6.5a.25.25 0 0 0-.25-.25H13a.25.25 0 0 0-.25.25Z',
+    ],
+    copy: [
+      'M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z',
+      'M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z',
+    ],
+    check: [
+      'M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.75.75 0 0 1 .018-1.042.75.75 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0',
+    ],
+    send: [
+      'M3.47 7.78a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1-.018 1.042.75.75 0 0 1-1.042.018L9 4.81v7.44a.75.75 0 0 1-1.5 0V4.81L4.53 7.78a.75.75 0 0 1-1.06 0',
+    ],
+  };
+
+  function icon(name) {
+    var svg = document.createElementNS(SVG_NAMESPACE, 'svg');
+    svg.setAttribute('viewBox', '0 0 16 16');
+    svg.setAttribute('aria-hidden', 'true');
+    ICONS[name].forEach(function (d) {
+      var path = document.createElementNS(SVG_NAMESPACE, 'path');
+      path.setAttribute('d', d);
+      svg.appendChild(path);
+    });
+    return svg;
+  }
+
+  /** A button showing only an icon; `label` names it for screen readers and as its tooltip. */
+  function iconButton(name, label) {
+    var button = element('button', 'umccr-chat__icon');
+    button.type = 'button';
+    button.title = label;
+    button.setAttribute('aria-label', label);
+    button.appendChild(icon(name));
+    return button;
+  }
+
+  /**
+   * Ask or Search: two buttons, Ask pressed at first. onChange(mode) runs whenever the mode is set afterwards, by the
+   * reader or by set().
+   */
+  function modeSwitch(onChange) {
+    var group = element('div', 'umccr-modes');
+    group.setAttribute('role', 'group');
+    group.setAttribute('aria-label', 'Ask or search');
+    var buttons = {};
+    function press(mode) {
+      Object.keys(buttons).forEach(function (key) {
+        buttons[key].setAttribute('aria-pressed', String(key === mode));
+      });
+    }
+    function set(mode) {
+      press(mode);
+      onChange(mode);
+    }
+    ['ask', 'search'].forEach(function (mode) {
+      var button = element('button', '', mode === 'ask' ? 'Ask' : 'Search');
+      button.type = 'button';
+      button.addEventListener('click', function () {
+        set(mode);
+      });
+      buttons[mode] = button;
+      group.appendChild(button);
+    });
+    press('ask');
+    return { element: group, set: set };
+  }
+
+  // ---------------------------------------------------------------------------------------------------------------
+  // 2. Catalogue
+
+  var ONBOARDING_URL = '/platform/onboarding/';
+
+  /** Two letters for a site's card: the first letters of its first two words, leaving out "UMCCR". */
+  function siteInitials(title) {
+    var words = String(title || '')
+      .split(/\s+/)
+      .filter(function (word) {
+        return word && word.toUpperCase() !== 'UMCCR';
+      });
+    var letters = words.length > 1 ? words[0].charAt(0) + words[1].charAt(0) : (words[0] || '').slice(0, 2);
+    return letters.toUpperCase() || '?';
+  }
+
+  function siteCard(initials, title, description, path, href) {
+    var card = element('a', 'umccr-catalogue__site');
+    card.href = href;
+    card.appendChild(element('span', 'umccr-catalogue__initials', initials));
+    card.appendChild(element('span', 'umccr-catalogue__title', title));
+    card.appendChild(element('span', 'umccr-catalogue__description', description));
+    card.appendChild(element('span', 'umccr-catalogue__path', path));
+    return card;
+  }
+
   function renderCatalogue() {
     var target = document.getElementById('umccr-catalogue');
     if (!target || target.getAttribute('data-loaded')) {
@@ -136,31 +248,168 @@
         return response.json();
       })
       .then(function (catalogue) {
+        var sites = catalogue.sites || [];
         target.textContent = '';
-        target.className = 'umccr-catalogue';
-        (catalogue.sites || []).forEach(function (site) {
-          var card = document.createElement('a');
-          card.className = 'umccr-catalogue__site';
-          card.href = site.url;
-          var title = document.createElement('strong');
-          title.textContent = site.title;
-          var description = document.createElement('span');
-          description.textContent = site.description || '';
-          card.appendChild(title);
-          card.appendChild(description);
-          target.appendChild(card);
+        var head = element('h2', 'umccr-catalogue__head', 'Sites');
+        head.appendChild(element('span', 'umccr-catalogue__count', String(sites.length)));
+        target.appendChild(head);
+
+        var grid = element('div', 'umccr-catalogue');
+        sites.forEach(function (site) {
+          grid.appendChild(siteCard(siteInitials(site.title), site.title, site.description, site.url, site.url));
         });
+        var add = siteCard(
+          '+',
+          'Publish your documentation',
+          'Link a repository and publish its MkDocs or Obsidian documentation here.',
+          'Onboarding a repository →',
+          ONBOARDING_URL
+        );
+        add.className += ' umccr-catalogue__site--add';
+        grid.appendChild(add);
+        target.appendChild(grid);
       })
       .catch(function () {
         target.textContent = 'The catalogue could not be loaded. Refresh the page to try again.';
       });
   }
 
+  /**
+   * The catalogue's question box (#umccr-ask): asks, or searches, every site in the chat panel. The list it holds in
+   * the page becomes its suggested questions.
+   */
+  function renderAsk() {
+    var target = document.getElementById('umccr-ask');
+    if (!target || target.getAttribute('data-loaded') || !chat) {
+      return;
+    }
+    target.setAttribute('data-loaded', 'true');
+    var suggestions = Array.prototype.map
+      .call(target.querySelectorAll('li'), function (item) {
+        return item.textContent.trim();
+      })
+      .filter(Boolean);
+    target.textContent = '';
+    target.className = 'umccr-ask';
+
+    var mode = 'ask';
+    var box = element('form', 'umccr-ask__box');
+    var input = element('input', 'umccr-ask__input');
+    input.type = 'text';
+    input.maxLength = 2000;
+    input.placeholder = 'Ask a question or search all UMCCR documentation…';
+    input.setAttribute('aria-label', 'Ask a question or search all UMCCR documentation');
+    box.appendChild(input);
+    box.appendChild(
+      modeSwitch(function (value) {
+        mode = value;
+      }).element
+    );
+    box.addEventListener('submit', function (event) {
+      event.preventDefault();
+      var text = input.value.trim();
+      if (text) {
+        input.value = '';
+        chat.start(text, mode, true);
+      }
+    });
+    target.appendChild(box);
+
+    if (suggestions.length) {
+      var row = element('div', 'umccr-ask__suggestions', 'Suggested:');
+      suggestions.forEach(function (text) {
+        var chip = element('button', 'umccr-ask__suggestion', text);
+        chip.type = 'button';
+        chip.addEventListener('click', function () {
+          chat.start(text, 'ask', true);
+        });
+        row.appendChild(chip);
+      });
+      target.appendChild(row);
+    }
+  }
+
   // ---------------------------------------------------------------------------------------------------------------
-  // 3. Chat panel
+  // 3. Search
+
+  function closeSearch() {
+    var toggle = document.getElementById('__search');
+    if (toggle && toggle.checked) {
+      toggle.checked = false;
+      toggle.dispatchEvent(new Event('change'));
+    }
+    if (document.activeElement && document.activeElement.blur) {
+      document.activeElement.blur();
+    }
+  }
+
+  /**
+   * The header's search box says what it searches, and its results gain a row that asks the docs the same question
+   * and one that searches every site, both in the chat panel. Both are links in the results, so Material's arrow keys
+   * reach them.
+   */
+  function enhanceSearch() {
+    var input = document.querySelector('.md-search__input');
+    var output = document.querySelector('.md-search__output');
+    var scrollwrap = output && output.querySelector('.md-search__scrollwrap');
+    if (!input || !scrollwrap || !chat || output.querySelector('.umccr-search-ask')) {
+      return;
+    }
+    input.placeholder = 'Search this site';
+
+    var askRow = element('a', 'umccr-search-ask');
+    askRow.href = '#umccr-chat';
+    var allRow = element('a', 'umccr-search-all');
+    allRow.href = '#umccr-chat';
+
+    function update() {
+      var query = input.value.trim();
+      askRow.hidden = allRow.hidden = !query;
+      askRow.textContent = '';
+      askRow.appendChild(element('strong', '', 'Ask the docs:'));
+      askRow.appendChild(document.createTextNode('“' + query + '”'));
+      askRow.appendChild(element('span', '', '— get an answer with sources'));
+      askRow.appendChild(element('kbd', '', '↵'));
+      allRow.textContent = 'Search all UMCCR documentation for “' + query + '”';
+    }
+
+    function handOver(mode, allSites) {
+      return function (event) {
+        event.preventDefault();
+        var query = input.value.trim();
+        if (query) {
+          closeSearch();
+          chat.start(query, mode, allSites);
+        }
+      };
+    }
+
+    askRow.addEventListener('click', handOver('ask', false));
+    allRow.addEventListener('click', handOver('search', true));
+    input.addEventListener('input', update);
+    update();
+    scrollwrap.insertBefore(askRow, scrollwrap.firstChild);
+    scrollwrap.appendChild(allRow);
+
+    var keys = element('div', 'umccr-search-keys');
+    [
+      ['↑ ↓', 'navigate'],
+      ['↵', 'open'],
+      ['esc', 'close'],
+    ].forEach(function (hint) {
+      keys.appendChild(element('kbd', '', hint[0]));
+      keys.appendChild(element('span', '', hint[1]));
+    });
+    output.appendChild(keys);
+  }
+
+  // ---------------------------------------------------------------------------------------------------------------
+  // 4. Chat panel
 
   var DOCS_ORIGIN = 'https://docs.umccr.org';
   var authLoading = null;
+  // The panel's controls for the question box and the search rows, once it is on the page: chat.start(...).
+  var chat = null;
 
   // An answer that sends nothing for this long has stalled, and a search that takes this long will not answer: the
   // panel stops waiting, so the reader can ask again. OrcaSonar sends text every few seconds while it answers.
@@ -202,6 +451,12 @@
   function currentSlug() {
     var segment = window.location.pathname.split('/')[1] || '';
     return /^[a-z0-9-]+$/.test(segment) ? segment : '';
+  }
+
+  /** The site's name, as the header shows it. */
+  function siteName() {
+    var topic = document.querySelector('.md-header__topic .md-ellipsis');
+    return topic ? topic.textContent.trim() : '';
   }
 
   /** A citation's link on this host: docs pages only, so dev answers link to dev pages. */
@@ -814,7 +1069,8 @@
 
   /**
    * An answer in container, shown as it arrives. add(text) for each delta, cite(citations) when they arrive, and
-   * finish(then) when the stream ends: it resolves once everything received is on screen and then() has run.
+   * finish(then) when the stream ends: it resolves once everything received is on screen and then() has run. element is
+   * the answer's own element.
    */
   function answerView(container, log) {
     var view = element('div', 'umccr-chat__answer');
@@ -875,6 +1131,7 @@
     }
 
     return {
+      element: view,
       add: function (more) {
         if (!more) {
           return;
@@ -921,7 +1178,10 @@
     };
   }
 
-  /** Sources under an answer or search results. Cited ones are numbered and ordered as the answer cites them. */
+  /**
+   * Sources under an answer or search results, one card each with the site it is on. Cited ones are numbered and
+   * ordered as the answer cites them.
+   */
   function renderSources(container, citations, cited) {
     var items = (citations || []).filter(function (citation) {
       return citation && docsHref(citation.url);
@@ -937,11 +1197,14 @@
     container.appendChild(element('p', 'umccr-chat__sources-title', 'Sources'));
     var list = element('ol', 'umccr-chat__sources');
     items.forEach(function (citation) {
-      var item = document.createElement('li');
+      var href = docsHref(citation.url);
+      var item = element('li', 'umccr-chat__source');
       if (cited && citation.ref > 0) {
         item.value = citation.ref;
+        item.appendChild(element('span', 'umccr-chat__ref', String(citation.ref)));
       }
-      item.appendChild(link(citation.title || citation.url, docsHref(citation.url)));
+      item.appendChild(link(citation.title || citation.url, href));
+      item.appendChild(element('span', 'umccr-chat__source-site', new URL(href).pathname.split('/')[1]));
       if (citation.snippet) {
         item.appendChild(element('span', 'umccr-chat__snippet', citation.snippet));
       }
@@ -950,20 +1213,51 @@
     container.appendChild(list);
   }
 
-  function renderFeedback(container, auth, exchangeId) {
+  /** Under a finished answer: ratings, when OrcaSonar can record them, and a button that copies the answer. */
+  function renderFeedback(container, auth, exchangeId, answer) {
     var row = element('div', 'umccr-chat__feedback');
-    row.appendChild(element('span', '', 'Was this helpful?'));
-    ['up', 'down'].forEach(function (rating) {
-      var button = element('button', 'umccr-chat__rate', rating === 'up' ? 'Yes' : 'No');
-      button.type = 'button';
-      button.addEventListener('click', function () {
-        row.textContent = 'Thanks for the feedback.';
-        sonarPost(auth, '/feedback', { exchangeId: exchangeId, rating: rating }, 'application/json').catch(
+    var label = element('span', 'umccr-chat__feedback-label', exchangeId ? 'Was this helpful?' : '');
+    row.appendChild(label);
+    if (exchangeId) {
+      var ratings = [];
+      [
+        ['up', 'Helpful'],
+        ['down', 'Not helpful'],
+      ].forEach(function (choice) {
+        var button = iconButton(choice[0], choice[1]);
+        button.setAttribute('aria-pressed', 'false');
+        button.addEventListener('click', function () {
+          ratings.forEach(function (other) {
+            other.disabled = true;
+          });
+          button.setAttribute('aria-pressed', 'true');
+          label.textContent = 'Thanks for the feedback.';
+          sonarPost(auth, '/feedback', { exchangeId: exchangeId, rating: choice[0] }, 'application/json').catch(
+            function () {}
+          );
+        });
+        ratings.push(button);
+        row.appendChild(button);
+      });
+      row.appendChild(element('span', 'umccr-chat__feedback-divider'));
+    }
+    if (navigator.clipboard) {
+      var copy = iconButton('copy', 'Copy the answer');
+      copy.addEventListener('click', function () {
+        navigator.clipboard.writeText(answer.innerText).then(
+          function () {
+            copy.replaceChild(icon('check'), copy.firstChild);
+            copy.setAttribute('aria-label', 'Copied');
+            window.setTimeout(function () {
+              copy.replaceChild(icon('copy'), copy.firstChild);
+              copy.setAttribute('aria-label', 'Copy the answer');
+            }, 2000);
+          },
           function () {}
         );
       });
-      row.appendChild(button);
-    });
+      row.appendChild(copy);
+    }
     container.appendChild(row);
   }
 
@@ -1035,9 +1329,7 @@
             } else if (name === 'done') {
               ending = function () {
                 renderSources(container, sources, true);
-                if (exchangeId) {
-                  renderFeedback(container, state.auth, exchangeId);
-                }
+                renderFeedback(container, state.auth, exchangeId, view.element);
               };
             }
             return ending !== null;
@@ -1131,12 +1423,15 @@
       return;
     }
     var slug = currentSlug();
-    var state = { auth: null, conversationId: null, busy: false };
+    var state = { auth: null, conversationId: null, busy: false, mode: 'ask' };
+    var mac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
 
     var launcher = element('button', 'umccr-chat__launcher', 'Ask the docs');
     launcher.type = 'button';
     launcher.setAttribute('aria-controls', 'umccr-chat');
     launcher.setAttribute('aria-expanded', 'false');
+    launcher.setAttribute('aria-keyshortcuts', mac ? 'Meta+K' : 'Control+K');
+    launcher.appendChild(element('kbd', '', mac ? '⌘K' : 'Ctrl K'));
 
     var panel = element('section', 'umccr-chat');
     panel.id = 'umccr-chat';
@@ -1144,12 +1439,61 @@
     panel.setAttribute('aria-label', 'Ask the UMCCR documentation');
 
     var head = element('div', 'umccr-chat__head');
-    head.appendChild(element('strong', '', 'Ask the docs'));
-    var close = element('button', 'umccr-chat__close', 'Close');
-    close.type = 'button';
+    head.appendChild(element('strong', 'umccr-chat__title', 'Ask the docs'));
+    head.appendChild(element('span', 'umccr-chat__service', 'OrcaSonar'));
+    var restart = iconButton('plus', 'New conversation');
+    var close = iconButton('close', 'Close');
+    head.appendChild(restart);
     head.appendChild(close);
     panel.appendChild(head);
 
+    var toolbar = element('div', 'umccr-chat__toolbar');
+    var modes = modeSwitch(function (mode) {
+      state.mode = mode;
+      updatePlaceholder();
+    });
+    toolbar.appendChild(modes.element);
+    var scope = element('label', 'umccr-chat__scope');
+    var scoped = document.createElement('input');
+    scoped.type = 'checkbox';
+    scoped.checked = Boolean(slug);
+    scoped.disabled = !slug;
+    scope.appendChild(scoped);
+    scope.appendChild(document.createTextNode('This site only'));
+    if (slug) {
+      scope.appendChild(element('span', 'umccr-chat__site', siteName() || slug));
+    }
+    toolbar.appendChild(scope);
+    panel.appendChild(toolbar);
+
+    var log = element('div', 'umccr-chat__log');
+    log.setAttribute('aria-live', 'polite');
+    var empty = element(
+      'p',
+      'umccr-chat__empty',
+      'Ask about anything in UMCCR documentation. Answers cite the pages they come from.'
+    );
+    log.appendChild(empty);
+    panel.appendChild(log);
+    state.log = log;
+
+    var form = element('form', 'umccr-chat__form');
+    var composer = element('div', 'umccr-chat__composer');
+    var question = document.createElement('textarea');
+    question.className = 'umccr-chat__question';
+    question.rows = 1;
+    question.maxLength = 2000;
+    question.required = true;
+    question.setAttribute('aria-label', 'Your question');
+    composer.appendChild(question);
+    var send = element('button', 'umccr-chat__send');
+    send.type = 'submit';
+    send.title = 'Send';
+    send.setAttribute('aria-label', 'Send');
+    send.appendChild(icon('send'));
+    composer.appendChild(send);
+    form.appendChild(composer);
+    panel.appendChild(form);
     panel.appendChild(
       element(
         'p',
@@ -1159,105 +1503,159 @@
       )
     );
 
-    var log = element('div', 'umccr-chat__log');
-    log.setAttribute('aria-live', 'polite');
-    panel.appendChild(log);
-    state.log = log;
-
-    var form = element('form', 'umccr-chat__form');
-    var modes = element('div', 'umccr-chat__modes');
-    ['ask', 'search'].forEach(function (mode) {
-      var label = element('label', '', '');
-      var input = document.createElement('input');
-      input.type = 'radio';
-      input.name = 'umccr-chat-mode';
-      input.value = mode;
-      input.checked = mode === 'ask';
-      label.appendChild(input);
-      label.appendChild(document.createTextNode(mode === 'ask' ? ' Ask' : ' Search'));
-      modes.appendChild(label);
-    });
-    var scope = element('label', 'umccr-chat__scope', '');
-    var scoped = document.createElement('input');
-    scoped.type = 'checkbox';
-    scoped.checked = Boolean(slug);
-    scoped.disabled = !slug;
-    scope.appendChild(scoped);
-    scope.appendChild(document.createTextNode(' This site only'));
-    modes.appendChild(scope);
-    form.appendChild(modes);
-
-    var question = document.createElement('textarea');
-    question.className = 'umccr-chat__question';
-    question.rows = 3;
-    question.maxLength = 2000;
-    question.required = true;
-    question.placeholder = 'For example: how do I add a site to docs.umccr.org?';
-    question.setAttribute('aria-label', 'Your question');
-    form.appendChild(question);
-    var send = element('button', 'umccr-chat__send', 'Send');
-    send.type = 'submit';
-    form.appendChild(send);
-    panel.appendChild(form);
-
     state.sites = function () {
       return scoped.checked && slug ? [slug] : undefined;
     };
 
-    function setOpen(open) {
-      panel.hidden = !open;
-      launcher.setAttribute('aria-expanded', String(open));
-      if (open) {
-        question.focus();
-        loadAuth()
-          .then(function (auth) {
-            state.auth = auth;
-            if (!auth.sonarApiUrl) {
-              log.textContent = 'Chat is not available on this site yet.';
-              send.disabled = true;
-            }
-          })
-          .catch(function () {
-            log.textContent = 'Chat could not start. Reload the page to try again.';
-            send.disabled = true;
-          });
+    function updatePlaceholder() {
+      if (state.mode === 'search') {
+        question.placeholder = 'Search the documentation…';
+      } else {
+        question.placeholder = state.conversationId ? 'Ask a follow-up…' : 'Ask a question…';
       }
     }
+    updatePlaceholder();
 
-    launcher.addEventListener('click', function () {
-      setOpen(panel.hidden);
-    });
-    close.addEventListener('click', function () {
-      setOpen(false);
-      launcher.focus();
-    });
+    /** The question box grows with its text, up to the height the stylesheet allows. */
+    function fit() {
+      question.style.height = 'auto';
+      question.style.height = question.scrollHeight + 'px';
+    }
 
-    form.addEventListener('submit', function (event) {
-      event.preventDefault();
-      var text = question.value.trim();
+    /** The panel starts below the header, which the banner above it pushes down until the page scrolls. */
+    var header = document.querySelector('.md-header');
+    function place() {
+      if (header && !panel.hidden) {
+        var top = Math.max(0, header.getBoundingClientRect().bottom);
+        document.documentElement.style.setProperty('--umccr-chat-top', top + 'px');
+      }
+    }
+    window.addEventListener('scroll', place, { passive: true });
+    window.addEventListener('resize', place);
+
+    function unavailable(message) {
+      log.textContent = '';
+      log.appendChild(element('p', 'umccr-chat__empty', message));
+      send.disabled = true;
+    }
+
+    /** Opens or closes the panel. Opening loads the token helper, once; it resolves to whether chat can be used. */
+    function setOpen(open) {
+      panel.hidden = !open;
+      document.documentElement.classList.toggle('umccr-chat-open', open);
+      launcher.setAttribute('aria-expanded', String(open));
+      if (!open) {
+        return Promise.resolve(false);
+      }
+      place();
+      question.focus();
+      return loadAuth()
+        .then(function (auth) {
+          state.auth = auth;
+          if (!auth.sonarApiUrl) {
+            unavailable('Chat is not available on this site yet.');
+          }
+          return Boolean(auth.sonarApiUrl);
+        })
+        .catch(function () {
+          unavailable('Chat could not start. Reload the page to try again.');
+          return false;
+        });
+    }
+
+    function setBusy(busy) {
+      state.busy = busy;
+      send.disabled = busy;
+      restart.disabled = busy;
+    }
+
+    function submit(text) {
       if (!text || state.busy || !state.auth || !state.auth.sonarApiUrl) {
         return;
       }
-      var mode = form.querySelector('input[name="umccr-chat-mode"]:checked').value;
+      if (empty.parentNode) {
+        empty.parentNode.removeChild(empty);
+      }
       var turn = element('div', 'umccr-chat__turn');
       turn.appendChild(element('p', 'umccr-chat__query', text));
       log.appendChild(turn);
       // The new question comes into view; from then on the log follows the answer only while the reader is at its end.
       log.scrollTop = log.scrollHeight;
       question.value = '';
-      state.busy = true;
-      send.disabled = true;
-      (mode === 'search' ? search : ask)(state, text, turn)
+      fit();
+      setBusy(true);
+      (state.mode === 'search' ? search : ask)(state, text, turn)
         .catch(function () {
           following(log, function () {
             turn.appendChild(element('p', 'umccr-chat__error', 'Chat is unavailable right now. Try again shortly.'));
           });
         })
         .then(function () {
-          state.busy = false;
-          send.disabled = false;
+          setBusy(false);
+          updatePlaceholder();
         });
+    }
+
+    launcher.addEventListener('click', function () {
+      setOpen(true);
     });
+    close.addEventListener('click', function () {
+      setOpen(false);
+      launcher.focus();
+    });
+    restart.addEventListener('click', function () {
+      state.conversationId = null;
+      log.textContent = '';
+      log.appendChild(empty);
+      updatePlaceholder();
+      question.focus();
+    });
+    panel.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape') {
+        setOpen(false);
+        launcher.focus();
+      }
+    });
+    document.addEventListener('keydown', function (event) {
+      if ((event.metaKey || event.ctrlKey) && !event.altKey && !event.shiftKey && /^k$/i.test(event.key || '')) {
+        event.preventDefault();
+        setOpen(panel.hidden);
+        if (panel.hidden) {
+          launcher.focus();
+        }
+      }
+    });
+
+    question.addEventListener('input', fit);
+    // Enter sends; Shift+Enter starts a new line.
+    question.addEventListener('keydown', function (event) {
+      if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
+        event.preventDefault();
+        submit(question.value.trim());
+      }
+    });
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();
+      submit(question.value.trim());
+    });
+
+    chat = {
+      /** Opens the panel and asks, or searches, `text`: across every site when allSites is true. */
+      start: function (text, mode, allSites) {
+        modes.set(mode);
+        if (allSites) {
+          scoped.checked = false;
+        }
+        setOpen(true).then(function (ready) {
+          if (ready && !state.busy) {
+            submit(text);
+          } else {
+            question.value = text;
+            fit();
+          }
+        });
+      },
+    };
 
     document.body.appendChild(launcher);
     document.body.appendChild(panel);
@@ -1265,8 +1663,10 @@
 
   function render() {
     renderAccount();
-    renderCatalogue();
     renderChat();
+    enhanceSearch();
+    renderCatalogue();
+    renderAsk();
   }
 
   // Outside a browser there is no page: the platform's tests load this file in Node to check the Markdown renderer,

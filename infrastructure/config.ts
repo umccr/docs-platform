@@ -81,7 +81,7 @@ export const DOCS_SESSION_LIFETIME_SECONDS = 8 * 60 * 60;
  *
  * Increase a stage's number to rotate its key: the deploy creates a new secret, builds it into the edge function
  * and deletes the old one. Every cookie signed with the old key stops working, and readers renew silently on their
- * next page load (see `docs/operating/runbooks.md`). Never change the secret's value by hand: the edge function keeps
+ * next page load (see `docs/site/runbook.md`). Never change the secret's value by hand: the edge function keeps
  * the key it was deployed with, so the session Lambda would sign cookies the edge rejects.
  */
 const DOCS_SESSION_KEY_GENERATION: Record<AppStage, number> = {

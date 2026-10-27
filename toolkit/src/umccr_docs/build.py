@@ -45,8 +45,18 @@ _PASSED_THROUGH = (
 _GITHUB_SLUGIFY = "__umccr_github_slugify__"
 _GITHUB_SLUGIFY_TAG = "!!python/object/apply:pymdownx.slugs.slugify {kwds: {case: lower}}"
 
+# A code block's header names its language the way a reader types it, and a shell block reads as a terminal. Plain
+# text gets no header. Keys are Pygments lexer names as pymdownx.highlight title-cases them; others show as named.
+_LOWER_CASE_LANGUAGES = "CSS Diff HTML INI JSON JavaScript Makefile Markdown Python SQL TOML TypeScript YAML"
+CODE_TITLES = {
+    "Text Only": "",
+    "Bash": "terminal",
+    "Bash Session": "terminal",
+    **{name: name.lower() for name in _LOWER_CASE_LANGUAGES.split()},
+}
+
 # One set of Markdown extensions for every site, so pages render the same everywhere and the Obsidian adapter can
-# rely on them (admonitions for callouts, md_in_html for the properties table, mark and tasklist for vault syntax).
+# rely on them (admonitions for callouts, md_in_html for the properties list, mark and tasklist for vault syntax).
 # pymdownx.snippets is deliberately absent: it can include arbitrary repository files into a page.
 MARKDOWN_EXTENSIONS: list[Any] = [
     "abbr",
@@ -56,9 +66,9 @@ MARKDOWN_EXTENSIONS: list[Any] = [
     "footnotes",
     "md_in_html",
     "tables",
-    {"toc": {"permalink": True, "slugify": _GITHUB_SLUGIFY}},
+    {"toc": {"permalink": True, "slugify": _GITHUB_SLUGIFY, "title": "On this page"}},
     "pymdownx.details",
-    "pymdownx.highlight",
+    {"pymdownx.highlight": {"auto_title": True, "auto_title_map": CODE_TITLES}},
     "pymdownx.inlinehilite",
     "pymdownx.keys",
     "pymdownx.mark",
@@ -71,6 +81,8 @@ THEME_FEATURES = [
     "content.code.copy",
     "navigation.indexes",
     "navigation.instant",
+    # Breadcrumbs: all documentation, the site, then the page's sections (theme/partials/path.html).
+    "navigation.path",
     "navigation.top",
     "navigation.tracking",
     "search.highlight",
@@ -105,6 +117,30 @@ THEME_STYLESHEET = "assets/umccr/umccr.css"
 THEME_SCRIPT = "assets/umccr/umccr.js"
 THEME_FILES = (THEME_LOGO, THEME_STYLESHEET, THEME_SCRIPT)
 
+# Every site is for signed-in UMCCR readers only, so every page says so unless the site words it differently.
+DEFAULT_CLASSIFICATION = "Internal: UMCCR staff only"
+
+# Octicons, which Material bundles: outline icons that match the theme's own.
+THEME_ICONS = {
+    "repo": "octicons/mark-github-16",
+    "search": "octicons/search-16",
+    "top": "octicons/arrow-up-16",
+    "admonition": {
+        "note": "octicons/info-16",
+        "abstract": "octicons/checklist-16",
+        "info": "octicons/info-16",
+        "tip": "octicons/light-bulb-16",
+        "success": "octicons/check-circle-16",
+        "question": "octicons/question-16",
+        "warning": "octicons/alert-16",
+        "failure": "octicons/x-circle-16",
+        "danger": "octicons/zap-16",
+        "bug": "octicons/bug-16",
+        "example": "octicons/beaker-16",
+        "quote": "octicons/quote-16",
+    },
+}
+
 
 def theme_dir() -> Path:
     return Path(str(resources.files("umccr_docs") / "theme"))
@@ -123,11 +159,12 @@ def _provenance(project: Project) -> dict[str, str]:
             ).stdout.strip()
         except (OSError, subprocess.CalledProcessError):
             commit = ""
+    now = datetime.datetime.now(datetime.UTC)
     return {
         "source": os.environ.get("UMCCR_DOCS_SOURCE_REPO", project.raw.get("repo_name", "") or ""),
         "source_url": project.repo_url or "",
         "commit": commit[:12],
-        "built": datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%d %H:%M UTC"),
+        "built": f"{now.day} {now:%b %Y %H:%M} UTC",
     }
 
 
@@ -140,6 +177,7 @@ def effective_config(project: Project, slug: str) -> dict[str, Any]:
     raw = project.raw
     config: dict[str, Any] = {key: raw[key] for key in _PASSED_THROUGH if key in raw}
     extra = {key: value for key, value in (raw.get("extra") or {}).items() if key != "platform"}
+    extra["classification"] = extra.get("classification") or DEFAULT_CLASSIFICATION
 
     plugins = ["search"]
     for plugin in raw.get("plugins") or []:
@@ -161,6 +199,7 @@ def effective_config(project: Project, slug: str) -> dict[str, Any]:
                 "font": False,
                 "logo": THEME_LOGO,
                 "favicon": THEME_LOGO,
+                "icon": THEME_ICONS,
                 "features": THEME_FEATURES,
                 "palette": [
                     {
@@ -168,14 +207,14 @@ def effective_config(project: Project, slug: str) -> dict[str, Any]:
                         "scheme": "default",
                         "primary": "custom",
                         "accent": "custom",
-                        "toggle": {"icon": "material/brightness-7", "name": "Switch to dark mode"},
+                        "toggle": {"icon": "octicons/sun-16", "name": "Switch to dark mode"},
                     },
                     {
                         "media": "(prefers-color-scheme: dark)",
                         "scheme": "slate",
                         "primary": "custom",
                         "accent": "custom",
-                        "toggle": {"icon": "material/brightness-4", "name": "Switch to light mode"},
+                        "toggle": {"icon": "octicons/moon-16", "name": "Switch to light mode"},
                     },
                 ],
             },

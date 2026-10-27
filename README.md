@@ -4,11 +4,10 @@ Everything behind [docs.umccr.org](https://docs.umccr.org), authenticated docume
 infrastructure and its pipelines, sign-in, the `umccr-docs` build toolkit, the shared theme with its chat panel,
 the conventions participating repositories follow, and the platform's own `/platform/` site.
 
-> **Status:** 2026-10-21. Hosting, sign-in and the dispatcher run in dev and prod, which pipeline 1 deploys, and
-> `/platform/` and the knowledgebase publish to both through the site pipeline. The chat panel answers in dev, where
-> OrcaSonar runs. `v0.1.1` puts back the theme's script, which `v0.1.0`'s package left out
-> ([write-up](docs/issues/2026-10-21-theme-script-missing-from-wheel.md)). See the
-> [implementation plan](docs/plans/implementation-plan.md), and [docs/deploy.md](docs/deploy.md) to deploy.
+> **Status:** 2026-10-28. Hosting, sign-in and the dispatcher run in dev and prod, which pipeline 1 deploys, and
+> `/platform/` and the knowledgebase publish to both through the site pipeline; the knowledgebase builds with
+> `v0.1.2`. The chat panel answers in dev, where OrcaSonar runs. [Project](docs/site/project.md) has where the
+> platform stands and what is still open, and [Deploying](docs/site/deploy.md) how to deploy it.
 
 ## How it fits together
 
@@ -27,15 +26,18 @@ indexes the documents each publish exports.
 | participating repositories | their Markdown and `mkdocs.yml` |
 
 See [ADR-0008](docs/design/adr/0008-infrastructure-in-docs-platform.md) for why the infrastructure lives here. The
-`/platform/` site that readers and site owners see is built from [app/site/](app/site/); the platform team's
-design records, plans, runbooks and deploy guide are in [docs/](docs/), read here and never published.
+`/platform/` site is built from [docs/site/](docs/site/index.md) with the root `mkdocs.yml`: the catalogue, the pages
+for readers and site owners, and the platform's own project pages: the [project](docs/site/project.md), the
+[tech stack](docs/site/tech.md), the [design](docs/site/design.md), [deploying](docs/site/deploy.md), the
+[runbook](docs/site/runbook.md) and the [changelog](docs/site/changelog.md). The design records, plans and issue
+write-ups elsewhere in [docs/](docs/README.md) are read here and never published.
 
 ## Pipelines
 
 | Pipeline | Starts on | Does |
 | --- | --- | --- |
-| `UMCCR-DocsInfrastructure` | a push to `main` under `bin/`, `infrastructure/` or `app/`, except `app/site/` | deploys `UMCCR-DocsHostingStack` to beta and, after approval, prod; its self-update deploys the dispatcher and the site pipeline |
-| `UMCCR-DocsSitesPipeline` | the dispatcher, once per release of a site; for `/platform/`, a push under `app/site/`, `toolkit/` or `requirements/build.txt` | builds the site, then publishes it to dev and prod with no approval, one release at a time |
+| `UMCCR-DocsInfrastructure` | a push to `main` under `bin/`, `infrastructure/` or `app/`, except Markdown | deploys `UMCCR-DocsHostingStack` to beta and, after approval, prod; its self-update deploys the dispatcher and the site pipeline |
+| `UMCCR-DocsSitesPipeline` | the dispatcher, once per release of a site; for `/platform/`, a push that changes `mkdocs.yml`, `docs/site/`, or the toolkit's package or engine pins | builds the site, then publishes it to dev and prod with no approval, one release at a time |
 
 ## Layout
 
@@ -46,25 +48,24 @@ infrastructure/     stacks and constructs
   config.ts         per-stage settings
   stage/            DocsHostingStack: bucket, CloudFront, edge function, session Lambda, publisher role
   toolchain/        pipeline 1, the dispatcher, the fetch build and pipeline 2 (UMCCR-DocsSitesPipeline)
-app/                code those stacks deploy, and the platform site
+app/                code those stacks deploy
   auth-web/         the /_auth/ sign-in page (Amplify) and token.js for the chat panel
   session/          the session Lambda
   edge/             the viewer-request CloudFront Function
   dispatcher/       the webhook dispatcher Lambda
   static/           public files: 404 page, robots.txt, favicon
-  site/             the /platform/ site, published by the site pipeline: mkdocs.yml, and docs/ with the catalogue,
-                    reading, onboarding, authoring and publishing pages
 test/               jest tests for all of the above, with cdk-nag
 toolkit/            the umccr-docs Python package (CLI, Obsidian adapter, export, publisher) and the theme
-requirements/       hash-pinned engine and tool versions
-templates/          mkdocs.yml templates for participating repositories
-examples/           synthetic sites CI builds on every change (plain Markdown and an Obsidian vault)
-docs/               the platform team's documents, read on GitHub and never published
-  deploy.md         deploying everything, step by step
-  design/           design pages and the design records (adr/)
+  requirements/     hash-pinned engine and tool versions
+  templates/        mkdocs.yml templates for participating repositories
+  examples/         synthetic sites CI builds on every change (plain Markdown and an Obsidian vault)
+docs/
+  site/             the /platform/ site, published by the site pipeline: the catalogue, the pages for readers and
+                    site owners, and the platform's project pages (project, tech, design, deploy, runbook, changelog)
+  design/           design pages and the design records (adr/), read on GitHub
   plans/            the proposal and the implementation plan
   issues/           write-ups of problems found and how they were resolved
-  operating/        how the platform runs, runbooks, onboarding a site, releasing
+mkdocs.yml          the /platform/ site's configuration
 scripts/            check-boundary.sh, the public-repository information-boundary check
 ```
 

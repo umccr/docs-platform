@@ -1,4 +1,4 @@
-"""The package version, which a release keeps equal to its tag (docs/operating/releasing.md)."""
+"""The package version, which a release keeps equal to its tag (docs/site/runbook.md)."""
 
 import tomllib
 from pathlib import Path

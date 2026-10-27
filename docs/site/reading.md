@@ -20,13 +20,15 @@ Cognito and revokes your refresh token. It does not sign you out of Google.
 ## Asking the docs
 
 The **Ask the docs** button, bottom right on every page, opens a chat panel provided by OrcaSonar, UMCCR's
-documentation search and answer service.
+documentation search and answer service; so do ⌘K on a Mac and Ctrl+K elsewhere. The search box at the top offers
+the same: above its results, ask the docs what you searched for; below them, search every site.
 
 - **Ask** answers a question from UMCCR documentation and lists the pages it used; check the sources, because
   answers can be wrong. A number in brackets, such as [2], is the source with that number and links to its page.
   Follow-up questions keep the conversation's context.
 - **Search** lists the best-matching passages, with links, without writing an answer.
 - **This site only** limits both to the site you are reading; clear it to search every site.
+- **+** starts a new conversation.
 
 Each reader has a daily allowance of answers, and the team shares a monthly budget. When either runs out, the panel
 says when to try again; Search usually keeps working.

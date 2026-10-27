@@ -33,7 +33,7 @@ const ACCEPTED_PIPELINE_RULES = [
   'AwsSolutions-S1',
   'AwsSolutions-CB4',
   // The webhook secret is shared with GitHub's organisation webhook settings, which nothing can update
-  // automatically; it rotates by hand (docs/operating/runbooks.md).
+  // automatically; it rotates by hand (docs/site/runbook.md).
   'AwsSolutions-SMG4',
 ];
 
@@ -179,7 +179,7 @@ describe('DocsInfrastructurePipeline', () => {
                   'pnpm-lock.yaml',
                   'tsconfig.json',
                 ],
-                Excludes: ['app/site/**', '**/*.md'],
+                Excludes: ['**/*.md'],
               },
             },
           ],
@@ -209,14 +209,15 @@ describe('trigger paths', () => {
   });
 
   test.each([
-    'app/site/mkdocs.yml',
-    'app/site/docs/index.md',
-    'docs/deploy.md',
+    'mkdocs.yml',
+    'docs/site/index.md',
+    'docs/site/deploy.md',
     'docs/design/adr/0008-infrastructure-in-docs-platform.md',
     'toolkit/src/umccr_docs/theme/assets/umccr/umccr.js',
-    'requirements/build.txt',
-    'examples/basic-site/mkdocs.yml',
-    'templates/mkdocs.yml',
+    'toolkit/requirements/build.txt',
+    'toolkit/examples/basic-site/mkdocs.yml',
+    'toolkit/templates/mkdocs.yml',
+    'app/README.md',
     'infrastructure/README.md',
     'README.md',
   ])('%s does not', (file) => {
@@ -328,7 +329,8 @@ describe('site publishing', () => {
     });
   });
 
-  test('stops with a reason, before pip, when the toolkit ref is missing or has no toolkit', () => {
+  // The build and publish projects' buildspecs, which both install the toolkit.
+  const toolkitBuildSpecs = (): string[] => {
     const specs = Object.values(template.findResources('AWS::CodeBuild::Project'))
       .map(
         (project) =>
@@ -337,12 +339,25 @@ describe('site publishing', () => {
       )
       .filter((spec) => spec.includes('TOOLKIT_DIR'));
     expect(specs.length).toBeGreaterThan(0);
-    for (const spec of specs) {
+    return specs;
+  };
+
+  test('stops with a reason, before pip, when the toolkit ref is missing or has no toolkit', () => {
+    for (const spec of toolkitBuildSpecs()) {
       for (const reason of ['has no ref', 'has no toolkit']) {
         const check = spec.indexOf(reason);
         expect(check).toBeGreaterThan(-1);
         expect(check).toBeLessThan(spec.indexOf('pip install --quiet --require-hashes'));
       }
+    }
+  });
+
+  test('installs the engine pins from the toolkit, or from the repository root at refs up to v0.1.2', () => {
+    for (const spec of toolkitBuildSpecs()) {
+      const toolkitPins = spec.indexOf('$TOOLKIT_DIR/toolkit/requirements/build.txt');
+      expect(toolkitPins).toBeGreaterThan(-1);
+      expect(spec.indexOf('$TOOLKIT_DIR/requirements/build.txt')).toBeGreaterThan(toolkitPins);
+      expect(spec).toMatch(/pip install --quiet --require-hashes --no-deps -r \\?"\$pins\\?"/);
     }
   });
 

@@ -16,7 +16,7 @@
       "test",
       "toolkit",
       "docs",
-      "examples",
+      "mkdocs.yml",
       "site",
       ".umccr-docs"
     ]

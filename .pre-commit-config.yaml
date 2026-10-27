@@ -21,7 +21,7 @@ repos:
     hooks:
       - id: detect-secrets
         args: ['--baseline', '.secrets.baseline']
-        exclude: ^(requirements/.*\.txt|pnpm-lock\.yaml)$
+        exclude: ^(toolkit/requirements/.*\.txt|pnpm-lock\.yaml)$
 
   - repo: local
     hooks:
@@ -30,8 +30,8 @@ repos:
         entry: scripts/check-boundary.sh
         language: system
         pass_filenames: false
-      # The virtualenv's ruff, pinned in requirements/dev.txt, as `make check` and CI use. A commit from an editor
-      # often runs without .venv/bin on its PATH.
+      # The virtualenv's ruff, pinned in toolkit/requirements/dev.txt, as `make check` and CI use. A commit from an
+      # editor often runs without .venv/bin on its PATH.
       - id: ruff
         name: ruff
         entry: .venv/bin/ruff check toolkit
@@ -50,11 +50,9 @@ repos:
         language: system
         pass_filenames: false
         files: ^(bin|infrastructure|app|test)/|^(eslint\.config\.mjs|tsconfig\.json)$
-        exclude: ^app/site/
       - id: prettier
         name: prettier (CDK app)
         entry: pnpm format:check
         language: system
         pass_filenames: false
         files: ^(bin|infrastructure|app|test)/
-        exclude: ^app/site/

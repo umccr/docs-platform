@@ -4,8 +4,7 @@ from pathlib import Path
 
 import pytest
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
-EXAMPLES = REPO_ROOT / "examples"
+EXAMPLES = Path(__file__).resolve().parents[1] / "examples"
 
 
 def write(root: Path, files: dict[str, str]) -> None:

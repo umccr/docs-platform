@@ -9,7 +9,7 @@ description = "Check, build and publish UMCCR documentation sites for docs.umccr
 readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"
-# The documentation engine and its extensions are pinned, with hashes, in ../requirements/build.txt.
+# The documentation engine and its extensions are pinned, with hashes, in requirements/build.txt.
 dependencies = [
   "PyYAML>=6.0",
   "boto3>=1.34",
