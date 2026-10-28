@@ -26,7 +26,8 @@ extra:
 
 Available on every site: admonitions (`!!! note`), collapsible blocks (`??? note`), content tabs, task lists,
 `==highlight==`, footnotes, definition lists, abbreviations, attribute lists, Markdown inside HTML blocks, code
-highlighting and heading permalinks.
+highlighting and heading permalinks. Bare URLs (`https://...`, `www....`) and email addresses are links, as on
+GitHub and in Obsidian.
 
 How a page looks follows from what it holds. Its first paragraph is the lead, set larger under the title. An
 `updated:` date in its front matter shows under the title, with a link to edit the page on GitHub; `hide: [meta]`
@@ -84,6 +85,7 @@ extra:
 | `[[note#Heading]]`, `[[#Heading]]` | links to the heading |
 | wikilinks in frontmatter, such as `domains: ["[[area]]"]` | links in the properties card and in tables |
 | ```` ```base ```` blocks | tables, computed from frontmatter when the site is built |
+| ```` ```tasks ```` blocks (the Tasks plugin) | lists of the vault's tasks, found when the site is built |
 | `> [!note] Title` callouts, including `-` and `+` folding | admonitions |
 | `%% comments %%` | removed |
 | `==highlight==`, `- [ ]` tasks | rendered |
@@ -100,9 +102,29 @@ using frontmatter properties and `file.name`, `file.folder` and `file.path`. `pr
 renames a column. Without a sort order, text sorts alphabetically. Tables reflect the vault when the site was
 built, so they update on the next publish.
 
+**Tasks.** A ```` ```tasks ```` block lists the vault's checkboxes that match it, as the Tasks plugin does: the same
+order and groups, each task's fields (`➕ 2026-10-01`, `📅 ...`, `✅ ...`; only the emoji in `short mode`) and a link to
+the note and heading it is under. The build supports:
+
+- filters: `done`, `not done`; `description`, `path`, `folder`, `filename` and `heading` with `includes`,
+  `does not include`, `regex matches` and `regex does not match`; `has` and `no` `created`, `start`, `scheduled`,
+  `due`, `done` and `cancelled` `date`; and those dates (`starts` for the start date) with `before`, `after`, `on`,
+  `on or before` and `on or after` a date: `2026-10-28`, `today`, `yesterday`, `tomorrow`, `14 days ago` or
+  `in 2 weeks`;
+- filters in parentheses joined by `AND`, `OR` or `XOR`, or negated by `NOT`, such as
+  `(heading includes Actions) OR (path includes Inbox/)`; to mix operators, add parentheses;
+- `sort by` status, priority, urgency, a date, description, path, filename or heading, and `group by` folder,
+  filename, path or heading, either with `reverse`; `limit`, `limit groups`, `short mode`, `full mode`, and `hide` and
+  `show` of the backlink, the task count and each field.
+
+Paths are from `docs_dir`, such as `Projects/alpha.md`, so keep `docs_dir` at the vault's root, the folder that holds
+`.obsidian/`. Like Bases tables, lists reflect the vault when the site was built, and `14 days ago` counts back from
+that day.
+
 **Not supported:** embeds (`![[...]]`), block references (`[[note#^block]]`), Dataview, `this` in Bases filters,
-formulas, and view types other than `table`. The build stops and names the note and line rather than publish
-something wrong.
+formulas, view types other than `table`, and in Tasks blocks, placeholders (`{{query.file.path}}`), `show tree`,
+`explain` and the filters, sorts and groups not listed above. The build stops and names the note and line rather
+than publish something wrong.
 
 ## Checking your work
 

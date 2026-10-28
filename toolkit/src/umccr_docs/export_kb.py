@@ -2,7 +2,8 @@
 Export a site's pages as documents for OrcaSonar's knowledge base.
 
 The export starts from the same preprocessed docs the site is built from, so documents always match the published
-pages: wikilinks resolved, Bases rendered as tables, callouts converted, the home note as `index.md`. On top of that:
+pages: wikilinks resolved, Bases rendered as tables and Tasks queries as lists, callouts converted, the home note as
+`index.md`. On top of that:
 
 - front matter is removed: the metadata file carries what retrieval needs;
 - links between pages become absolute docs.umccr.org URLs, so a passage quoted out of context still points somewhere;

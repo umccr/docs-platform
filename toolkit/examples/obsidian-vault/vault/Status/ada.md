@@ -23,3 +23,13 @@ views:
       - property: priority
         direction: DESC
 ```
+
+## My actions
+
+Open actions with Ada before the first colon.
+
+```tasks
+not done
+description regex matches /^[^:]*\bAda\b[^:]*:/
+group by filename
+```

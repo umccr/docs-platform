@@ -26,6 +26,14 @@ def test_example_vault(tmp_path):
     assert "An Obsidian comment" not in home
     assert '!!! tip "How this page works"' in home
 
+    # A Tasks block becomes a list of the vault's tasks, grouped by folder and then note.
+    assert "```tasks" not in home
+    assert '<div class="umccr-tasks-group" role="heading" aria-level="4">Inbox/</div>' in home
+    assert "- [ ] Grace: ==ship it== once [beta](Projects/beta.md) is ready\xa0" in home
+    assert "4 tasks." in home
+    ada = (out / "Status" / "ada.md").read_text()
+    assert "([alpha > Actions & Follow-up](../Projects/alpha.md#actions--follow-up){ .umccr-task-link })" in ada
+
     inbox = (out / "Inbox" / "alpha.md").read_text()
     assert "[alpha](../Projects/alpha.md)" in inbox, "prefer_folders sends a duplicate name to Projects/"
     assert "[Inbox/alpha](alpha.md)" in inbox
@@ -88,6 +96,11 @@ def test_unsupported_bases_syntax_is_a_problem(make_project):
     base = '```base\nfilters:\n  and:\n    - file.hasTag("x")\n```\n'
     problems = vault_problems(make_project, {"index.md": f"# Home\n\n{base}"})
     assert problems == ["index.md:3: Bases block: filter expression 'file.hasTag(\"x\")' is not supported"]
+
+
+def test_unsupported_tasks_syntax_is_a_problem(make_project):
+    problems = vault_problems(make_project, {"index.md": "# Home\n\n```tasks\nnot done\nshow tree\n```\n"})
+    assert problems == ["index.md:3: Tasks block: 'show tree' is not supported"]
 
 
 def test_links_leaving_the_repository_are_problems(make_project):

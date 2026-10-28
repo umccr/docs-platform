@@ -56,6 +56,8 @@ Plain text has no header.
 
 Inline `code`, a key combination, ++ctrl+k++, and ==highlighted text==.
 
+A bare URL is a link, as on GitHub: https://docs.umccr.org/platform/.
+
 ## Tables
 
 | Field    | Example      | Meaning                                |

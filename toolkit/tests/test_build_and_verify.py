@@ -34,7 +34,11 @@ def test_obsidian_example_builds_strictly(built):
     site = built("obsidian-vault", "example-vault")
     assert verify_site(site) == []
     assert (site / "Projects" / "alpha" / "index.html").is_file()
-    assert "Generated from note properties" in (site / "index.html").read_text()
+    home = (site / "index.html").read_text()
+    assert "Generated from note properties" in home
+    assert '<a href="Projects/alpha/">alpha</a></div>' in home, "a Tasks list's note label links to the page"
+    beta = (site / "Projects" / "beta" / "index.html").read_text()
+    assert '<a href="https://github.com/umccr/docs-platform">' in beta, "a bare URL is a link"
 
 
 def test_the_platform_config_is_not_overridable():
