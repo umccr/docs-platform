@@ -130,7 +130,8 @@ Steps 1 to 4 run with toolchain credentials.
    aws s3api head-object --bucket "$SOURCE_BUCKET" --key "sources/<slug>/<commit>.zip" --query LastModified
    ```
 
-2. Take the site's next release number:
+2. Take the site's next release number. A number taken but never used is fine, as release numbers only need to
+   rise:
 
    ```sh
    TABLE=$(aws cloudformation describe-stack-resources --stack-name DocsInfrastructurePipeline \
@@ -306,31 +307,124 @@ until its registry entry moves to it, so sites move deliberately, one at a time 
 Infrastructure changes are separate: a merge to `main` under `bin/`, `infrastructure/` or `app/` starts the
 infrastructure pipeline, which deploys to beta and then waits for approval before prod.
 
-1. Make sure `main` is green, and that the platform site on docs.dev.umccr.org and the example builds look right.
-   CI's site builds install the toolkit from its wheel, as the site pipeline does. `make install` installs it
-   editable, which reads the theme from the source tree, so a local build cannot show a file the package leaves out
-   ([2026-10-21](../issues/2026-10-21-theme-script-missing-from-wheel.md)).
-2. Update the [changelog](changelog.md) and the toolkit's version (`toolkit/pyproject.toml`,
-   `toolkit/src/umccr_docs/__init__.py`), and merge.
-3. Tag the merge commit and push the tag:
+A release goes out in one pull request, which sets the version and moves the sites to it, and a tag on its merge.
+The commands run with toolchain credentials (`bastion-admin`) unless a step says otherwise.
 
-   ```sh
-   git tag -s v0.2.0 -m "v0.2.0"
-   git push origin v0.2.0
-   ```
+### 1. Prepare the release
 
-   `-s` signs the tag; without a signing key, `-a` makes an annotated tag instead.
+Make sure `main` is green, and that the platform site on docs.dev.umccr.org and the example builds look right. CI's
+site builds install the toolkit from its wheel, as the site pipeline does. `make install` installs it editable, which
+reads the theme from the source tree, so a local build cannot show a file the package leaves out
+([2026-10-21](../issues/2026-10-21-theme-script-missing-from-wheel.md)).
 
-4. Move sites to the new tag: change their `toolkitRef` in the registry (`DOCS_TOOLKIT_REF` for every site that uses
-   the default) and merge. The infrastructure pipeline updates the dispatcher; each site builds with the new version
-   on its next push.
-5. Rebuild the sites that should not wait for their next push, such as after a fix: start a release by hand for
-   each, with `TOOLKIT_REF` set to the tag ([Start a release by hand](#start-a-release-by-hand)). A merge that
-   changes the toolkit's package already starts a `/platform/` release built with that commit. Then check each site
-   in dev and prod.
+On a branch off `main`, such as `release/v0.2.0`, change:
 
-Steps 2 and 4 can be one merge, as for `v0.1.0` and `v0.1.1`: then tag that merge straight away, since the sites'
-releases stop at Build ("has no ref") until the tag exists. Re-run any that stopped once it does.
+| File | Change |
+| --- | --- |
+| `toolkit/pyproject.toml`, `toolkit/src/umccr_docs/__init__.py` | the version, `0.2.0`; `tests/test_version.py` checks that they agree |
+| `toolkit/uv.lock` | the version in the `umccr-docs` package entry |
+| the [changelog](changelog.md) | `## Unreleased` becomes `## v0.2.0`, opening with what the release does and "tag the commit that merges it to `main`. The registry moves every site but `/platform/` to it." |
+| `infrastructure/sites.ts` | `DOCS_TOOLKIT_REF` to `v0.2.0`, and the `toolkitRef` of any site that pins its own |
+| `README.md`, [Deploying](deploy.md), [Project](project.md) | the version the sites build with, in the status lines and the site table, and a row in the project's timeline |
+
+Run `make check`, `make test` and `make sites`, then open the pull request. Moving the sites can also wait for a later
+merge: leave `infrastructure/sites.ts` alone here, and change it once the tag exists.
+
+### 2. Merge and tag
+
+Tag the merge commit as soon as it is on `main`. Only the platform owners can create `v*` tags
+([repository settings](#repository-settings)).
+
+```sh
+git switch main && git pull --ff-only     # HEAD is the merge commit
+git tag -s v0.2.0 -m "v0.2.0"             # -a instead of -s without a signing key
+git push origin v0.2.0
+```
+
+Until the tag exists, a release on it stops at Build (`docs-platform has no ref v0.2.0`). Start those again once it does
+([Re-run or force a release](#re-run-or-force-a-release)).
+
+### 3. Deploy
+
+The merge starts two pipelines:
+
+- `UMCCR-DocsInfrastructure` (pipeline 1), because `infrastructure/sites.ts` changed. Its self-update gives the
+  dispatcher the new `toolkitRef`; then it deploys beta and waits at `PromoteToProd`. Approve once beta has deployed.
+- a `/platform/` release, because the toolkit's package changed. It builds with the merge commit itself and publishes
+  to dev, then prod, without an approval.
+
+```sh
+aws codepipeline get-pipeline-state --name UMCCR-DocsInfrastructure \
+  --query 'stageStates[].[stageName, latestExecution.status]' --output table
+aws codepipeline list-pipeline-executions --pipeline-name UMCCR-DocsSitesPipeline --max-items 5 \
+  --query 'pipelineExecutionSummaries[].[pipelineExecutionId, status, startTime]' --output table
+```
+
+Once the self-update is done, each moved site builds with the tag on its next push under its docs paths.
+
+### 4. Rebuild the sites that should not wait
+
+[Start a release by hand](#start-a-release-by-hand) for each, from its live release's source object, with
+`TOOLKIT_REF` set to the tag. The pipeline's history has every site's live release, so toolchain credentials are
+enough to find it. This lists the recent successful runs, newest first, one per line: commit, release, slug and
+toolkit.
+
+```sh
+for id in $(aws codepipeline list-pipeline-executions --pipeline-name UMCCR-DocsSitesPipeline --max-items 20 \
+    --query 'pipelineExecutionSummaries[?status==`Succeeded`].pipelineExecutionId' --output text); do
+  aws codepipeline get-pipeline-execution --pipeline-name UMCCR-DocsSitesPipeline --pipeline-execution-id "$id" \
+    --query 'pipelineExecution.variables[?contains([`SLUG`, `COMMIT`, `RELEASE`, `TOOLKIT_REF`], name)].resolvedValue' \
+    --output text
+done
+```
+
+For `/management-knowledgebase/` on `v0.2.0`, the variables were:
+
+```json
+{
+  "name": "UMCCR-DocsSitesPipeline",
+  "variables": [
+    { "name": "SLUG", "value": "management-knowledgebase" },
+    { "name": "REPO", "value": "umccr/management-knowledgebase" },
+    { "name": "COMMIT", "value": "<the live release's commit>" },
+    { "name": "RELEASE", "value": "<the next number, from step 2 of starting a release by hand>" },
+    { "name": "CONFIG_PATH", "value": "mkdocs.yml" },
+    { "name": "TOOLKIT_REF", "value": "v0.2.0" },
+    { "name": "STAGES", "value": "beta,prod" }
+  ],
+  "sourceRevisions": [
+    {
+      "actionName": "Source",
+      "revisionType": "S3_OBJECT_KEY",
+      "revisionValue": "sources/management-knowledgebase/<the live release's commit>.zip"
+    }
+  ]
+}
+```
+
+Replace every `<…>` before starting: a placeholder left in fails at Source, publishing nothing. To check a site in dev
+before prod, start it with `STAGES` `beta` first: its prod step logs `<slug> does not publish to prod` and stops. Then
+take another release number and start it with `beta,prod`.
+
+### 5. Check
+
+In dev, then prod, for each site that moved: the release's changes, as the [changelog](changelog.md) lists them, and
+the pages, navigation, search and chat panel as before; in a vault, the properties and the Bases tables too. Each
+stage's `sites/<slug>/_publish.json` shows the new release; read it with that stage's credentials
+([Start a release by hand](#start-a-release-by-hand), step 5).
+
+### A merge that changes `/platform/`'s own registry entry
+
+The dispatcher learns a changed registry entry only from pipeline 1's self-update, so the merge's own `/platform/`
+release still uses the old one. When the merge moves the site's `configPath` or docs paths, as the layout change did on
+2026-10-28, that release fails at Build and the live site stays as it was. Once the self-update is done:
+
+1. Read the failed run's variables ([Start a release by hand](#start-a-release-by-hand), step 1). It has the merge
+   commit, and its source object is already in the source bucket.
+2. Start a release by hand with those variables, a new release number, the new `CONFIG_PATH`, and `COMMIT` and
+   `TOOLKIT_REF` both the merge commit.
+
+Retrying the failed run does not work: the self-update changed the pipeline, and a retry keeps the old variables.
 
 ### Versioning
 
