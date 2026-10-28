@@ -4,15 +4,16 @@ All notable changes to the docs platform: the infrastructure, the `umccr-docs` t
 toolkit and theme changes up when their registry entry's `toolkitRef` moves to a release; see
 [releasing the toolkit and theme](runbook.md#release-the-toolkit-and-theme).
 
-## Unreleased
+## v0.2.0
 
-The repository's layout, and the platform's own pages on `/platform/`. The toolkit and theme build sites as `v0.1.2`
-does, so no site needs to move for this.
+A new look for every site, and the repository's new layout: tag the commit that merges it to `main`. The registry
+moves every site but `/platform/` to it. It is a minor release because every site changes: the theme, the banner on
+by default, and a vault note's properties, which change markup in the documents exported to OrcaSonar too.
 
-Merging it fails that merge's own `/platform/` release at Build: until pipeline 1's self-update deploys the new
-registry, the dispatcher still builds the site from `app/site/mkdocs.yml`. The live site stays as it was. Once the
-self-update is done, [start a release by hand](runbook.md#start-a-release-by-hand) with `CONFIG_PATH` `mkdocs.yml`,
-or merge any change under `docs/site/`.
+The repository's layout, and the platform's own pages on `/platform/`, which has built this way since the layout
+merged. That merge failed its own `/platform/` release at Build: until pipeline 1's self-update deployed the new
+registry, the dispatcher still built the site from `app/site/mkdocs.yml`, and the live site stayed as it was. The
+release was then [started by hand](runbook.md#start-a-release-by-hand) with `CONFIG_PATH` `mkdocs.yml`.
 
 - Layout: the `/platform/` site moved from `app/site/` to `docs/site/`, with its `mkdocs.yml` at the repository root,
   and `examples/`, `templates/` and `requirements/` moved into `toolkit/`. Participating repositories copy their
@@ -29,8 +30,7 @@ or merge any change under `docs/site/`.
 - Pipeline 1 no longer excludes `app/site/**` from its trigger: nothing under `app/` is published by the site pipeline
   any more.
 
-A new look for the theme. `/platform/` shows it once it merges; other sites, once the registry moves them to the
-next release.
+A new look for the theme, which `/platform/` has shown since the layout merged.
 
 - Header: the UMCCR Docs name, the site's name, search, the colour scheme, the repository and the account menu. The
   classification banner is on every site, "Internal: UMCCR staff only" unless `extra.classification` words it
