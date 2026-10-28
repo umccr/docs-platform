@@ -6,7 +6,7 @@ the conventions participating repositories follow, and the platform's own `/plat
 
 > **Status:** 2026-10-28. Hosting, sign-in and the dispatcher run in dev and prod, which pipeline 1 deploys, and
 > `/platform/` and the knowledgebase publish to both through the site pipeline; the knowledgebase builds with
-> `v0.1.2`. The chat panel answers in dev, where OrcaSonar runs. [Project](docs/site/project.md) has where the
+> `v0.2.0`. The chat panel answers in dev, where OrcaSonar runs. [Project](docs/site/project.md) has where the
 > platform stands and what is still open, and [Deploying](docs/site/deploy.md) how to deploy it.
 
 ## How it fits together

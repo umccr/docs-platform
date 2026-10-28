@@ -67,7 +67,7 @@ export const SELF_TOOLKIT_REF = 'self';
  * The toolkit every other site builds with: a docs-platform release tag. Push the tag before, or straight after, the
  * merge that moves this to it: until the tag exists, those sites' releases stop at Build (docs/site/runbook.md).
  */
-export const DOCS_TOOLKIT_REF = 'v0.1.2';
+export const DOCS_TOOLKIT_REF = 'v0.2.0';
 
 const PLATFORM_REPO = 'umccr/docs-platform';
 

@@ -77,9 +77,10 @@ Both pipelines run in the toolchain account: `UMCCR-DocsInfrastructure` deploys 
 | 2026-10-20 | `main` protected by a ruleset; the site pipeline runs one release at a time. |
 | 2026-10-21 | Merged to `main` and tagged `v0.1.0`; the stg stage removed; prod's hosting stack deployed once its `umccr.org` records and certificate were in place; `/platform/` and the knowledgebase published to dev and prod through the site pipeline. `v0.1.1` put the theme's script back in the toolkit's package. |
 | 2026-10-27 | `v0.1.2`: a wikilink to a missing note warns instead of stopping a site from publishing. |
+| 2026-10-28 | The repository's new layout, and `/platform/` publishes the platform's own pages. `v0.2.0`: a new look for every site, from the classification banner and the catalogue to the chat panel docked beside the page. |
 
 Today `UMCCR-DocsHostingStack` runs in dev and prod, deployed by pipeline 1, and both sites publish to both through
-the site pipeline; the knowledgebase builds with `v0.1.2`. The chat panel answers in dev, where OrcaSonar runs.
+the site pipeline; the knowledgebase builds with `v0.2.0`. The chat panel answers in dev, where OrcaSonar runs.
 OrcaSonar's own prod deploy is tracked in its repository.
 
 ## Open items
