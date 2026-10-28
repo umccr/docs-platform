@@ -3,7 +3,7 @@ Copy a project's docs into a build directory, turning source-specific syntax int
 
 Both source formats get the same treatment for links that leave `docs_dir` (for example to the repository's
 README): they point at the file in the source repository instead of failing the build. Obsidian vaults also get
-wikilinks, Bases tables, callouts, comments and the properties list; see `umccr_docs.obsidian`.
+wikilinks, Bases tables, Tasks lists, callouts, comments and the properties list; see `umccr_docs.obsidian`.
 """
 
 import os
@@ -21,6 +21,7 @@ from umccr_docs.obsidian.bases import render_bases
 from umccr_docs.obsidian.callouts import convert_callouts
 from umccr_docs.obsidian.links import rewrite_wikilinks
 from umccr_docs.obsidian.properties import insert_properties
+from umccr_docs.obsidian.tasks import Task, find_tasks, render_tasks
 from umccr_docs.obsidian.vault import Note, Vault
 
 _OBSIDIAN_COMMENT = re.compile(r"%%.*?%%", re.DOTALL)
@@ -124,6 +125,8 @@ def preprocess(project: Project, out_dir: Path, *, strict: bool = True) -> list[
         )
         problems.extend(frontmatter_problems)
     notes = {PurePosixPath(note.source): note for note in vault.notes} if vault else {}
+    # Every Tasks block queries the whole vault's tasks: find them once.
+    tasks = find_tasks(vault) if vault else []
 
     if out_dir.exists():
         shutil.rmtree(out_dir)
@@ -143,7 +146,7 @@ def preprocess(project: Project, out_dir: Path, *, strict: bool = True) -> list[
         frontmatter, body = split_frontmatter(text)
         if obsidian and vault is not None:
             note = notes[PurePosixPath(relative.as_posix())]
-            body = _obsidian_body(body, note, vault, project, problems, warnings, text)
+            body = _obsidian_body(body, note, vault, tasks, project, problems, warnings, text)
         body = rewriter.rewrite(body, relative, problems)
         target_path.write_text(frontmatter + body, encoding="utf-8")
 
@@ -154,11 +157,19 @@ def preprocess(project: Project, out_dir: Path, *, strict: bool = True) -> list[
 
 
 def _obsidian_body(
-    body: str, note: Note, vault: Vault, project: Project, problems: list[str], warnings: list[str], text: str
+    body: str,
+    note: Note,
+    vault: Vault,
+    tasks: list[Task],
+    project: Project,
+    problems: list[str],
+    warnings: list[str],
+    text: str,
 ) -> str:
     settings = project.platform
     body = map_prose(body, lambda part: _OBSIDIAN_COMMENT.sub("", part))
     body = render_bases(body, note, vault, settings.obsidian.sort_orders, problems, warnings, text)
+    body = render_tasks(body, note, vault, tasks, problems, text)
     body = convert_callouts(body)
     body = rewrite_wikilinks(body, note, vault, problems, warnings, text)
     return insert_properties(body, note, settings.properties, vault, problems, warnings)

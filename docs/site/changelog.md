@@ -4,6 +4,21 @@ All notable changes to the docs platform: the infrastructure, the `umccr-docs` t
 toolkit and theme changes up when their registry entry's `toolkitRef` moves to a release; see
 [releasing the toolkit and theme](runbook.md#release-the-toolkit-and-theme).
 
+## Unreleased
+
+Links for bare URLs on every site, and a vault's Tasks queries as lists, for `v0.2.1`. `/management-knowledgebase/`
+shows them once its `toolkitRef` moves to that release.
+
+- Bare URLs and email addresses in Markdown are links, as GitHub and Obsidian show them. A vault note's
+  `- GitHub: https://github.com/...` line used to publish as plain text.
+- A vault's ```` ```tasks ```` blocks, queries for the Obsidian Tasks plugin, become lists of the matching tasks when
+  the site is built: in the plugin's order and groups, each task with its dates and a link to the note and heading it
+  is under. On `/management-knowledgebase/`, that is the front page's open, unassigned and stale actions and each
+  person's own. A query outside the supported subset ([authoring](authoring.md#obsidian-vaults)) fails the build with
+  its note and line, as an unsupported Bases block does. The documents exported to OrcaSonar carry the lists too.
+- The theme styles the lists: group labels sized as headings that stay out of "On this page", and each task's dates
+  and link quieter than the task.
+
 ## v0.2.0
 
 A new look for every site, and the repository's new layout: tag the commit that merges it to `main`. The registry

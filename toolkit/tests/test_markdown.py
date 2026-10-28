@@ -54,6 +54,13 @@ def test_code_is_what_the_engine_renders_as_code(text, code):
     assert toolkit_says_code(text) is code
 
 
+def test_bare_urls_are_links_outside_code():
+    # As GitHub and Obsidian show them; a vault's `- GitHub: https://...` lines used to publish as plain text.
+    html = markdown_renderer()("- GitHub: https://github.com/umccr/hub.\n- Not in code: `https://example.org`\n")
+    assert '<a href="https://github.com/umccr/hub">https://github.com/umccr/hub</a>.' in html, "the full stop is text"
+    assert "<code>https://example.org</code>" in html
+
+
 def test_segments_keep_every_character():
     text = "- item\n\n    content\n\nPara\n\n    code\n\n!!! note\n\n    ```\n    x\n    ```\n"
     assert "".join(segment.text for segment in segments(text)) == text

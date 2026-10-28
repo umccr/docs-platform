@@ -13,3 +13,7 @@ updated: 2026-09-20
 # Beta
 
 The follow-on to [[alpha]].
+
+## Related
+
+- GitHub: https://github.com/umccr/docs-platform

@@ -16,6 +16,7 @@ class Note:
     source: PurePosixPath  # relative to docs_dir, as in the vault
     output: PurePosixPath  # relative to the built docs_dir (the home note becomes index.md)
     frontmatter: dict[str, Any] = field(default_factory=dict, hash=False, compare=False)
+    text: str = field(default="", hash=False, compare=False, repr=False)  # the whole file, for its tasks
 
     @property
     def name(self) -> str:
@@ -70,7 +71,7 @@ class Vault:
         outputs: dict[Path, Path],
         prefer_folders: tuple[str, ...] = (),
     ) -> tuple["Vault", list[str]]:
-        """Read every note's frontmatter. Returns the vault and any frontmatter problems."""
+        """Read every note and its frontmatter. Returns the vault and any frontmatter problems."""
         notes, problems = [], []
         for relative in markdown_files:
             text = (docs_dir / relative).read_text(encoding="utf-8", errors="replace")
@@ -84,6 +85,7 @@ class Vault:
                     source=PurePosixPath(relative.as_posix()),
                     output=PurePosixPath(outputs[relative].as_posix()),
                     frontmatter=frontmatter,
+                    text=text,
                 )
             )
         return cls(notes, prefer_folders), problems

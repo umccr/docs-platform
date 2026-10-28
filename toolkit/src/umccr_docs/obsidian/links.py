@@ -17,26 +17,33 @@ def _parse(inner: str) -> tuple[str, str | None, str | None]:
     return target.strip(), (heading.strip() or None), (label.strip() or None)
 
 
-def _escape_label(label: str) -> str:
+def escape_label(label: str) -> str:
+    """Text as a link label, or as text that no later pass reads as a link: `[[x]]` -> `\\[\\[x\\]\\]`."""
     return label.replace("\\", "\\\\").replace("[", "\\[").replace("]", "\\]")
 
 
-def wikilink_to_markdown(inner: str, from_note: Note, vault: Vault) -> str:
-    """`[[target#heading|label]]` as a Markdown link. Raises LinkError or ValueError."""
+def wikilink_to_markdown(inner: str, from_note: Note, vault: Vault, page: Note | None = None) -> str:
+    """
+    `[[target#heading|label]]`, written in `from_note`, as a Markdown link. It is resolved from `from_note` and points
+    from `page`, which is `from_note` unless the link is shown on another page, as a Tasks list shows a task's
+    description. Raises LinkError or ValueError.
+    """
+    page = page or from_note
     target, heading, label = _parse(inner)
     if heading is not None and heading.startswith("^"):
         raise ValueError(f"[[{inner}]]: block references are not supported")
 
     if target:
-        note = vault.resolve(target, from_note)
-        url = Vault.relative_url(from_note, note)
+        url = Vault.relative_url(page, vault.resolve(target, from_note))
+    elif page != from_note:
+        url = Vault.relative_url(page, from_note)  # [[#Heading]] in a note shown on another page
     else:
         url = ""  # [[#Heading]] links within the same note
     if heading:
         url = f"{url}#{heading_anchor(heading)}"
 
     shown = label or (f"{target} > {heading}" if target and heading else target or heading or "")
-    return f"[{_escape_label(shown)}]({url})"
+    return f"[{escape_label(shown)}]({url})"
 
 
 def _missing(error: Exception) -> bool:
@@ -102,7 +109,7 @@ def format_value(value: Any, from_note: Note, vault: Vault, problems: list[str],
             if _missing(error):
                 warnings.append(f"{from_note.path}: frontmatter {error}")
                 # Escaped, so the wikilink pass that runs after the Bases tables leaves it alone.
-                return _escape_label(match.group(0))
+                return escape_label(match.group(0))
             problems.append(f"{from_note.path}: frontmatter {error}")
             return match.group("inner")
 

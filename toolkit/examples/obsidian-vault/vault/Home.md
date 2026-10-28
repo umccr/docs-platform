@@ -49,4 +49,17 @@ views:
       - status
 ```
 
+## Open actions
+
+A Tasks plugin query, also run when the site was built: open checkboxes under an `Actions & Follow-up` heading or
+in an Inbox note.
+
+```tasks
+not done
+(heading includes Actions & Follow-up) OR (path includes Inbox/)
+group by folder
+group by filename
+short mode
+```
+
 %% An Obsidian comment: never published. %%

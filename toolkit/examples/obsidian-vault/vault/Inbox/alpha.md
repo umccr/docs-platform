@@ -8,3 +8,5 @@ status: promoted
 
 Promoted to a project. A plain [[alpha]] link resolves to the project, because `prefer_folders` lists
 `Projects`; this note is reachable as [[Inbox/alpha]].
+
+- [ ] Grace: archive this note once the project starts ➕ 2026-09-18

@@ -1373,7 +1373,8 @@ body {
 }
 
 /* ------------------------------------------------------------------------------------------------------------------
- * Vault pages: the properties card (obsidian/properties.py) and the note under a Bases table. */
+ * Vault pages: the properties card (obsidian/properties.py), Tasks lists (obsidian/tasks.py), and the note under a
+ * Bases table or a Tasks list. */
 
 .md-typeset .umccr-properties {
   display: grid;
@@ -1500,6 +1501,36 @@ body {
   .md-typeset .umccr-properties {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+
+/* A Tasks list's group labels, sized as the h4 and h5 they stand for, which stay out of "On this page". */
+.md-typeset .umccr-tasks-group {
+  margin: 1.6em 0 0.5em;
+  color: var(--umccr-fg);
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.md-typeset .umccr-tasks-group:not([aria-level='4']) {
+  margin-top: 0.9em;
+  font-size: 0.65rem;
+}
+
+.md-typeset .umccr-tasks-group + ul {
+  margin-top: 0.5em;
+}
+
+/* A task's dates and other fields, and the link to the note it is in: there, but quieter than the task. */
+.md-typeset .umccr-task-field {
+  color: var(--umccr-fg-muted);
+  font-size: 0.9em;
+  white-space: nowrap;
+}
+
+.md-typeset .umccr-task-link {
+  color: var(--umccr-fg-muted);
+  font-size: 0.9em;
+  text-decoration: none;
 }
 
 .umccr-base-note {

@@ -57,6 +57,7 @@ CODE_TITLES = {
 
 # One set of Markdown extensions for every site, so pages render the same everywhere and the Obsidian adapter can
 # rely on them (admonitions for callouts, md_in_html for the properties list, mark and tasklist for vault syntax).
+# magiclink links bare URLs (`https://...`, `www....`) and email addresses, as GitHub and Obsidian do.
 # pymdownx.snippets is deliberately absent: it can include arbitrary repository files into a page.
 MARKDOWN_EXTENSIONS: list[Any] = [
     "abbr",
@@ -71,6 +72,7 @@ MARKDOWN_EXTENSIONS: list[Any] = [
     {"pymdownx.highlight": {"auto_title": True, "auto_title_map": CODE_TITLES}},
     "pymdownx.inlinehilite",
     "pymdownx.keys",
+    "pymdownx.magiclink",
     "pymdownx.mark",
     "pymdownx.superfences",
     {"pymdownx.tabbed": {"alternate_style": True}},
