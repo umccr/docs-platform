@@ -6,8 +6,8 @@ toolkit and theme changes up when their registry entry's `toolkitRef` moves to a
 
 ## Unreleased
 
-Links for bare URLs on every site, and a vault's Tasks queries as lists. Both change how existing pages render, so
-release them as a minor version; `/management-knowledgebase/` shows them once its `toolkitRef` moves to that release.
+Links for bare URLs on every site, and a vault's Tasks queries as lists, for `v0.2.1`. `/management-knowledgebase/`
+shows them once its `toolkitRef` moves to that release.
 
 - Bare URLs and email addresses in Markdown are links, as GitHub and Obsidian show them. A vault note's
   `- GitHub: https://github.com/...` line used to publish as plain text.
