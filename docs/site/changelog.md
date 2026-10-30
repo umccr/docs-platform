@@ -4,6 +4,12 @@ All notable changes to the docs platform: the infrastructure, the `umccr-docs` t
 toolkit and theme changes up when their registry entry's `toolkitRef` moves to a release; see
 [releasing the toolkit and theme](runbook.md#release-the-toolkit-and-theme).
 
+## Unreleased
+
+- A front page published from a home note (`extra.platform.home`) links "Edit this page" to the note, such as the
+  knowledgebase's `Home.md`. It used to link to `index.md`, the name the page is built under, which is not in the
+  repository.
+
 ## v0.2.1
 
 Links for bare URLs on every site, and a vault's Tasks queries as lists. The tag is on the merge of that change

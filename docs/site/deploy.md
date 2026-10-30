@@ -479,7 +479,7 @@ under **Settings → GitHub Apps → AWS Connector for GitHub → Configure**:
 
 - `umccr/docs-platform`, for pipeline 1 and the `/platform/` site;
 - `umccr/management-knowledgebase`, and each site repository registered later;
-- `umccr/orcasonar`, for its pipelines.
+- `umccr/orcasonar`, for its pipelines and the `/orcasonar/` site.
 
 ## Step 6: First releases
 
@@ -490,6 +490,7 @@ A release starts when a push to a registered site's branch changes one of its `d
 | ---------------------------- | --------------------------------------- | ---------------------------------------------------------------------------------------------------------- | -------------------------------- |
 | `/platform/`                 | `umccr/docs-platform` `main`            | `mkdocs.yml`, `docs/site/**`, `toolkit/src/**`, `toolkit/pyproject.toml`, `toolkit/requirements/build.txt` | the toolkit at the pushed commit |
 | `/management-knowledgebase/` | `umccr/management-knowledgebase` `main` | `PlatformServices/**`, `mkdocs.yml`                                                                        | `DOCS_TOOLKIT_REF`, `v0.2.1`     |
+| `/orcasonar/`                | `umccr/orcasonar` `main`                | `docs/**`, `mkdocs.yml`                                                                                    | `DOCS_TOOLKIT_REF`, `v0.2.1`     |
 
 The webhook exists before this repository is merged, so the merge itself starts the first `/platform/` release: it
 is a push under `docs/site/` and `toolkit/`. The knowledgebase's first release starts with its next push under its

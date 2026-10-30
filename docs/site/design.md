@@ -73,6 +73,7 @@ catalogue, built from `docs/site/`.
 | -------------------------- | -------------------------------- | --------------------------------- |
 | `platform`                 | `umccr/docs-platform`            | the pushed commit                 |
 | `management-knowledgebase` | `umccr/management-knowledgebase` | `DOCS_TOOLKIT_REF`, a release tag |
+| `orcasonar`                | `umccr/orcasonar`                | `DOCS_TOOLKIT_REF`, a release tag |
 
 ## Publishing
 

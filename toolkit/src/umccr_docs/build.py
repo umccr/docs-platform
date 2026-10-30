@@ -11,6 +11,7 @@ from collections.abc import Callable
 from importlib import resources
 from pathlib import Path
 from typing import Any
+from urllib.parse import quote
 
 import markdown
 import yaml
@@ -170,6 +171,14 @@ def _provenance(project: Project) -> dict[str, str]:
     }
 
 
+def _home_source(project: Project) -> str:
+    """The home note's path in docs_dir, as a URL path, when one is published as index.md; otherwise empty."""
+    home = project.platform.home
+    if not home or Path(home) == Path("index.md"):
+        return ""
+    return quote(Path(home).as_posix())
+
+
 def effective_config(project: Project, slug: str) -> dict[str, Any]:
     """
     The configuration the engine builds with, written into the work directory next to `docs/` (the preprocessed
@@ -229,7 +238,8 @@ def effective_config(project: Project, slug: str) -> dict[str, Any]:
                 # The logo goes to the catalogue, not this site's home.
                 "homepage": "/platform/",
                 "generator": False,
-                "umccr": {"slug": slug, **_provenance(project)},
+                # The home note is built as index.md: the theme points its edit link back at the note.
+                "umccr": {"slug": slug, "home": _home_source(project), **_provenance(project)},
             },
         }
     )
