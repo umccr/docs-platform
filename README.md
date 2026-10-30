@@ -4,9 +4,9 @@ Everything behind [docs.umccr.org](https://docs.umccr.org), authenticated docume
 infrastructure and its pipelines, sign-in, the `umccr-docs` build toolkit, the shared theme with its chat panel,
 the conventions participating repositories follow, and the platform's own `/platform/` site.
 
-> **Status:** 2026-10-28. Hosting, sign-in and the dispatcher run in dev and prod, which pipeline 1 deploys, and
+> **Status:** 2026-10-30. Hosting, sign-in and the dispatcher run in dev and prod, which pipeline 1 deploys, and
 > `/platform/` and the knowledgebase publish to both through the site pipeline; the knowledgebase builds with
-> `v0.2.0`. The chat panel answers in dev, where OrcaSonar runs. [Project](docs/site/project.md) has where the
+> `v0.2.1`. The chat panel answers in dev, where OrcaSonar runs. [Project](docs/site/project.md) has where the
 > platform stands and what is still open, and [Deploying](docs/site/deploy.md) how to deploy it.
 
 ## How it fits together

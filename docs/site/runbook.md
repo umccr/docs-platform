@@ -110,6 +110,10 @@ its next push; or a release whose run cannot be retried. A publish is skipped wh
 run needs a new release number, taken from the site's counter so that the dispatcher's next release is newer still.
 Steps 1 to 4 run with toolchain credentials.
 
+A release started with another `TOOLKIT_REF` lasts only until the site's next push, which builds with the registry's
+`toolkitRef`. Move the registry first, and wait for the infrastructure pipeline to update the dispatcher; otherwise
+the next push puts the site back on the old toolkit, as happened to `/management-knowledgebase/` with `v0.2.1`.
+
 1. Read the variables of the release to start from (the live one, or the last good one). The site's live
    `_publish.json`, in a stage's content bucket under `sites/<slug>/`, gives its `release` and `commit`; the run is
    the one with that `RELEASE` in the pipeline's execution history:

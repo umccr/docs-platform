@@ -489,7 +489,7 @@ A release starts when a push to a registered site's branch changes one of its `d
 | Site                         | Repository and branch                   | Paths that publish it                                                                                      | Builds with                      |
 | ---------------------------- | --------------------------------------- | ---------------------------------------------------------------------------------------------------------- | -------------------------------- |
 | `/platform/`                 | `umccr/docs-platform` `main`            | `mkdocs.yml`, `docs/site/**`, `toolkit/src/**`, `toolkit/pyproject.toml`, `toolkit/requirements/build.txt` | the toolkit at the pushed commit |
-| `/management-knowledgebase/` | `umccr/management-knowledgebase` `main` | `PlatformServices/**`, `mkdocs.yml`                                                                        | `DOCS_TOOLKIT_REF`, `v0.2.0`     |
+| `/management-knowledgebase/` | `umccr/management-knowledgebase` `main` | `PlatformServices/**`, `mkdocs.yml`                                                                        | `DOCS_TOOLKIT_REF`, `v0.2.1`     |
 
 The webhook exists before this repository is merged, so the merge itself starts the first `/platform/` release: it
 is a push under `docs/site/` and `toolkit/`. The knowledgebase's first release starts with its next push under its
