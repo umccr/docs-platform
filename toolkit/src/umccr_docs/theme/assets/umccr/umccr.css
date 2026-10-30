@@ -12,7 +12,6 @@
   --umccr-bg: #ffffff;
   --umccr-bg-subtle: #f8fafc;
   --umccr-bg-muted: #f1f5f9;
-  --umccr-banner-bg: #eef2f7;
   --umccr-border: #e2e8f0;
   --umccr-border-strong: #cbd5e1;
   --umccr-fg: #0f172a;
@@ -69,7 +68,6 @@
   --umccr-bg: #0b1120;
   --umccr-bg-subtle: #0f172a;
   --umccr-bg-muted: #1e293b;
-  --umccr-banner-bg: #111a2e;
   --umccr-border: #1e293b;
   --umccr-border-strong: #334155;
   --umccr-fg: #f1f5f9;
@@ -151,29 +149,6 @@
 
 body {
   background-color: var(--umccr-bg);
-}
-
-/* ------------------------------------------------------------------------------------------------------------------
- * Classification banner (extra.classification) */
-
-.md-banner {
-  border-bottom: 1px solid var(--umccr-border);
-  background-color: var(--umccr-banner-bg);
-  color: var(--umccr-fg-muted);
-}
-
-.md-banner__inner {
-  max-width: none;
-  margin: 0.25rem auto;
-}
-
-.umccr-classification {
-  margin: 0;
-  font-size: 0.55rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-align: center;
-  text-transform: uppercase;
 }
 
 /* ------------------------------------------------------------------------------------------------------------------
@@ -673,10 +648,18 @@ body {
   max-width: 80rem;
 }
 
-/* The page fills the window down to the footer, and the rules with it. */
+/* The page fills the window down to the footer, and the rules with it.
+
+   "On this page" marks a heading once it is within the header's height, plus 0.8 × how far the grid starts below the
+   top of main, of the top of the window (Material's table of contents), and a link to a heading scrolls it to 3.4rem
+   below the top. Here the grid starts at the top of main, so a heading a link went to stayed below that line and the
+   section before it stayed marked. Main starts 1.5rem higher, under the header, and its padding keeps the grid where
+   it was: the line is 1.2rem below the header, as in Material's own layout, and nothing on the page moves. */
 .md-main {
   display: flex;
   flex-direction: column;
+  margin-top: -1.5rem;
+  padding-top: 1.5rem;
 }
 
 .md-main__inner {
@@ -1008,7 +991,7 @@ body {
   border-radius: 0.15rem;
 }
 
-/* The date and edit link under the title (theme/partials/content.html). */
+/* The date and the GitHub link under the title (theme/partials/content.html). */
 .md-typeset .umccr-page-meta {
   display: flex;
   flex-wrap: wrap;
@@ -1033,6 +1016,32 @@ body {
 
 .md-typeset .umccr-page-meta a:hover {
   color: var(--umccr-fg);
+}
+
+/* The page's file on GitHub: the repository's icon, as in the header. */
+.md-typeset .umccr-page-meta a.umccr-page-meta__source {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.md-typeset .umccr-page-meta__source svg {
+  width: 0.8rem;
+  height: 0.8rem;
+  fill: currentcolor;
+}
+
+/* Diagrams: Material draws each ```mermaid block into div.mermaid, fitted to the page. A click on one that had to shrink
+   shows it at full size and another fits it again (umccr.js): at full size it starts at the left edge, as any line too
+   long for the page does, and scrolls sideways. One narrower than the page is centred. */
+.md-typeset div.mermaid {
+  overflow-x: auto;
+  text-align: center;
+}
+
+.md-typeset div.mermaid.umccr-diagram-full {
+  --umccr-diagram-full: 1;
+  --umccr-diagram-cursor: zoom-out;
 }
 
 /* ------------------------------------------------------------------------------------------------------------------

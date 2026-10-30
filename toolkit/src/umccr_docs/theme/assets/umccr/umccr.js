@@ -1,6 +1,6 @@
 /*
- * The only script on docs.umccr.org pages besides the theme's own. Projects cannot add scripts: every site shares
- * one origin, and the sign-in page keeps Amplify's tokens in that origin's storage.
+ * The only script on docs.umccr.org pages besides the theme's own, and the Mermaid runtime it loads. Projects cannot
+ * add scripts: every site shares one origin, and the sign-in page keeps Amplify's tokens in that origin's storage.
  *
  * 1. Account menu: shows who is signed in, read from the ID token Amplify stored at sign-in (the same
  *    CognitoIdentityServiceProvider.* keys the portal apps use). Display only; the edge enforces the session.
@@ -13,6 +13,8 @@
  *    Cognito ID token, not the docs session cookie. Answers are Markdown, which the panel builds into elements
  *    itself, and titles and snippets are text: nothing OrcaSonar returns is ever parsed as HTML. ⌘K or Ctrl+K opens
  *    and closes it.
+ * 5. Diagrams: Material draws each ```mermaid block with the theme's own copy of Mermaid, which loads on the first
+ *    page that has one. See installMermaid.
  */
 (function () {
   'use strict';
@@ -1522,7 +1524,7 @@
       question.style.height = question.scrollHeight + 'px';
     }
 
-    /** The panel starts below the header, which the banner above it pushes down until the page scrolls. */
+    /** The panel starts below the header. */
     var header = document.querySelector('.md-header');
     function place() {
       if (header && !panel.hidden) {
@@ -1661,6 +1663,148 @@
     document.body.appendChild(panel);
   }
 
+  // What the build refuses in a page (docs/site/authoring.md, "Not allowed"): elements that run or embed code, event
+  // handler attributes, and script URLs.
+  var UNSAFE_ELEMENT = /^(script|iframe|frame|frameset|object|embed|base)$/i;
+  var URL_ATTRIBUTE = /(^|:)(href|src|action|formaction)$/i;
+  var SCRIPT_URL = /^(javascript|vbscript):/i;
+
+  /** Why a diagram's SVG could run code if it were shown, or '' if it could not. */
+  function unsafeDiagram(svg) {
+    // A document parsed this way is inert: nothing in it runs or loads.
+    var elements = new DOMParser().parseFromString(svg, 'text/html').getElementsByTagName('*');
+    for (var i = 0; i < elements.length; i++) {
+      var element = elements[i];
+      if (UNSAFE_ELEMENT.test(element.localName)) {
+        return 'a <' + element.localName + '> element';
+      }
+      for (var j = 0; j < element.attributes.length; j++) {
+        var name = element.attributes[j].name;
+        // Browsers ignore whitespace and control characters in a URL's scheme.
+        var value = element.attributes[j].value.replace(/[\u0000-\u0020]+/g, '');
+        if (/^on/i.test(name)) {
+          return 'an event handler, ' + name;
+        }
+        if (URL_ATTRIBUTE.test(name) && SCRIPT_URL.test(value)) {
+          return 'a script URL in ' + name;
+        }
+      }
+    }
+    return '';
+  }
+
+  // Material's diagram CSS predates two names in Mermaid 11's sequence diagrams, which then kept Mermaid's own grey
+  // and purple: lifelines (.actor-line) and arrowheads (markers named <diagram>-arrowhead and -crosshead). Mermaid
+  // scopes these to the diagram as it does Material's, and they come after its own rules, so they win.
+  var DIAGRAM_CSS =
+    '.actor-line{stroke:var(--md-mermaid-sequence-actor-line-color)}' +
+    '[id$="-arrowhead"] path{fill:var(--md-mermaid-sequence-message-line-color);stroke:none}' +
+    '[id$="-crosshead"] path{stroke:var(--md-mermaid-sequence-message-line-color)}';
+
+  /**
+   * Mermaid fits a diagram to the page, and writes its full width as the SVG's max-width. A diagram wider than the page
+   * gets that width as its minimum too, but only while the stylesheet sets --umccr-diagram-full to 1: a click shows it
+   * at full size, scrolling sideways, and another fits it again (umccr.css). Only the opening tag's style changes, with
+   * the number read from it.
+   */
+  function zoomable(svg) {
+    var page = document.querySelector('.md-content .md-typeset');
+    var room = page ? page.clientWidth : Infinity;
+    return svg.replace(/^(<svg\b[^>]*?\bstyle="max-width: )([\d.]+)(px;)/, function (tag, start, width, end) {
+      if (Number(width) <= room) {
+        return tag;
+      }
+      return (
+        start + width + end +
+        ' min-width: calc(var(--umccr-diagram-full, 0) * ' + width + 'px);' +
+        ' cursor: var(--umccr-diagram-cursor, zoom-in);'
+      );
+    });
+  }
+
+  /**
+   * Material draws a ```mermaid block (build.py) with the Mermaid runtime it finds as the global `mermaid`, or else
+   * one it loads from unpkg.com, which the pages' Content Security Policy blocks. This stands in for that global: the
+   * theme's copy, assets/umccr/mermaid/mermaid.min.js, loads on the first page with a diagram, with Mermaid's own
+   * sanitising on (securityLevel 'strict'); and a diagram whose SVG still holds anything the build refuses in a page
+   * stays as its text. A diagram that does not parse stays as its text too. Mermaid's own global is replaced by this
+   * one as soon as it loads, so every diagram comes through here.
+   */
+  function installMermaid(script) {
+    if (!script || !script.src) {
+      return;
+    }
+    var source = new URL('mermaid/mermaid.min.js', script.src).href;
+    var options = {};
+    var runtime = null;
+    var standIn;
+
+    function load() {
+      if (!runtime) {
+        runtime = new Promise(function (resolve, reject) {
+          var tag = document.createElement('script');
+          tag.src = source;
+          tag.onload = function () {
+            var loaded = window.mermaid;
+            window.mermaid = standIn;
+            if (!loaded || loaded === standIn || typeof loaded.render !== 'function') {
+              reject(new Error('Mermaid did not load from ' + source));
+              return;
+            }
+            loaded.initialize(
+              Object.assign({}, options, { securityLevel: 'strict', suppressErrorRendering: true })
+            );
+            resolve(loaded);
+          };
+          tag.onerror = function () {
+            reject(new Error('Mermaid did not load from ' + source));
+          };
+          document.head.appendChild(tag);
+        });
+        // The next page with a diagram tries again.
+        runtime.catch(function () {
+          runtime = null;
+        });
+      }
+      return runtime;
+    }
+
+    standIn = {
+      /** Material sets its options once, before the first diagram: startOnLoad off, and its theme's CSS. */
+      initialize: function (settings) {
+        options = Object.assign({}, settings);
+        options.themeCSS = (options.themeCSS || '') + DIAGRAM_CSS;
+      },
+      render: function (id, text) {
+        return load()
+          .then(function (mermaid) {
+            return mermaid.render(id, text);
+          })
+          .then(function (result) {
+            var svg = zoomable(result.svg);
+            var problem = unsafeDiagram(svg);
+            if (problem) {
+              throw new Error('its SVG has ' + problem);
+            }
+            return { svg: svg };
+          })
+          .catch(function (error) {
+            console.warn('A Mermaid diagram was not drawn:', error);
+            throw error;
+          });
+      },
+    };
+    window.mermaid = standIn;
+
+    // Events from inside a diagram reach the page as events on its div.mermaid.
+    document.addEventListener('click', function (event) {
+      var diagram = event.target instanceof Element && event.target.closest('.md-typeset div.mermaid');
+      if (diagram) {
+        diagram.classList.toggle('umccr-diagram-full');
+      }
+    });
+  }
+
   function render() {
     renderAccount();
     renderChat();
@@ -1683,6 +1827,9 @@
     }
     return;
   }
+
+  // Before Material draws the first page, on DOMContentLoaded; while this script runs, it knows its own URL.
+  installMermaid(document.currentScript);
 
   // Material's instant navigation swaps pages without a full load and announces each one on document$.
   if (window.document$ && typeof window.document$.subscribe === 'function') {

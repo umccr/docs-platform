@@ -4,14 +4,17 @@ repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:
+      # The theme's copy of Mermaid, a 3.6 MB bundle, stays byte for byte as the mermaid package on npm ships it
+      # (docs/site/runbook.md, "Update pinned dependencies").
       - id: check-added-large-files
+        exclude: ^toolkit/src/umccr_docs/theme/assets/umccr/mermaid/
       - id: check-yaml
         args: ['--unsafe'] # mkdocs.yml may hold tags the contract then rejects with a clearer message
       # Design pages exported from the design documents stay byte for byte as exported.
       - id: end-of-file-fixer
-        exclude: ^docs/design/(?!adr/)
+        exclude: ^(docs/design/(?!adr/)|toolkit/src/umccr_docs/theme/assets/umccr/mermaid/)
       - id: trailing-whitespace
-        exclude: ^docs/design/(?!adr/)
+        exclude: ^(docs/design/(?!adr/)|toolkit/src/umccr_docs/theme/assets/umccr/mermaid/)
       - id: detect-private-key
       - id: detect-aws-credentials
         args: ['--allow-missing-credentials']

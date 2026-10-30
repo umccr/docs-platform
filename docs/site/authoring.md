@@ -17,7 +17,6 @@ Optional settings under `extra`:
 
 ```yaml
 extra:
-  classification: 'Internal: UMCCR staff only'   # the banner on every page; this text is the default
   platform:
     source_format: markdown   # or obsidian
 ```
@@ -26,14 +25,20 @@ extra:
 
 Available on every site: admonitions (`!!! note`), collapsible blocks (`??? note`), content tabs, task lists,
 `==highlight==`, footnotes, definition lists, abbreviations, attribute lists, Markdown inside HTML blocks, code
-highlighting and heading permalinks. Bare URLs (`https://...`, `www....`) and email addresses are links, as on
-GitHub and in Obsidian.
+highlighting, heading permalinks and Mermaid diagrams. Bare URLs (`https://...`, `www....`) and email addresses are
+links, as on GitHub and in Obsidian.
 
-How a page looks follows from what it holds. Its first paragraph is the lead, set larger under the title. An
-`updated:` date in its front matter shows under the title, with a link to edit the page on GitHub; `hide: [meta]`
-leaves that line out. A code block's header names its language, `terminal` for shell, and `title="mkdocs.yml"`
+How a page looks follows from what it holds. Its first paragraph is the lead, set larger under the title. Under the
+title, a GitHub icon opens the page's file in your repository (from `repo_url` and `edit_uri`), after the `updated:`
+date from its front matter if it has one; `hide: [meta]` leaves that line out. A code block's header names its language, `terminal` for shell, and `title="mkdocs.yml"`
 names a file instead. The basic example in this repository, `toolkit/examples/basic-site/`, has a Components page
 with every element; `umccr-docs serve` in that folder previews it.
+
+A ```` ```mermaid ```` code block is drawn as a diagram when the page opens, with Mermaid 11 in its strict security
+mode: no `click` actions, and markup in labels is sanitised. A diagram fits the page; a click on one that had to
+shrink shows it at full size, scrolling sideways, and another click fits it again. A diagram that does not parse
+shows as its text, and the browser's console says why. Diagrams are drawn in the reader's browser, so neither
+`umccr-docs check` nor the strict build checks them: preview them with `umccr-docs serve`.
 
 Links between pages are relative paths to `.md` files, as in any MkDocs site. A link that leaves `docs_dir`, such
 as `../README.md`, is rewritten to the file in your repository on GitHub, so it keeps working. Images must be inside

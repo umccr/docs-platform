@@ -58,6 +58,25 @@ Inline `code`, a key combination, ++ctrl+k++, and ==highlighted text==.
 
 A bare URL is a link, as on GitHub: https://docs.umccr.org/platform/.
 
+## Diagrams
+
+A `mermaid` code block is drawn as a diagram, fitted to the page. A click on one that had to shrink shows it at full
+size.
+
+```mermaid
+flowchart LR
+    push["Push to main"] --> dispatcher["Dispatcher"] --> pipeline[("Site pipeline")]
+    pipeline --> dev["docs.dev.umccr.org"] --> prod["docs.umccr.org"]
+```
+
+```mermaid
+sequenceDiagram
+    participant Reader
+    participant Site as docs.umccr.org
+    Reader->>Site: GET /example-basic/
+    Site-->>Reader: the page, then its diagrams
+```
+
 ## Tables
 
 | Field    | Example      | Meaning                                |

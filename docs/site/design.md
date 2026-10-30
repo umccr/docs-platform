@@ -223,6 +223,7 @@ In prod, set `DOCS_CANONICAL_HOST` to `docs.umccr.org` in `config.ts` once the `
 | The session code at the edge is custom | small, and covered by tests that execute the generated function and check a Lambda-minted cookie end to end |
 | The session key is part of the edge function's code | readable only inside the stage account, by principals that can generally read the bucket anyway; one config change rotates it (ADR-0002) |
 | Amplify tokens are readable by any script on the origin | no project scripts; one platform script; strict CSP |
+| Mermaid draws a diagram from a page's text in the reader's browser, after the build's checks | Mermaid's strict security mode sanitises labels; the theme shows no diagram whose drawing holds script, an event handler or a script URL; the theme's own copy of Mermaid, pinned and loaded only on a page with a diagram |
 | The function URL for the webhook is public | signature checked before anything is parsed; unregistered pushes stop at a lookup; the slug comes from the registry. Kept for now (2026-10-15); [ADR-0009](../design/adr/0009-dispatch-from-github-actions.md) proposes removing it |
 | A push event lists too few files (capped or force pushes) | the dispatcher publishes when it cannot tell, rather than miss a release |
 | Releases finish out of order | each publish compares its release number with the live marker |
