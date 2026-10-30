@@ -41,6 +41,30 @@ def test_obsidian_example_builds_strictly(built):
     assert '<a href="https://github.com/umccr/docs-platform">' in beta, "a bare URL is a link"
 
 
+def test_the_home_notes_edit_link_names_the_note(make_project, tmp_path):
+    # The home note is built as index.md, which is not in the repository.
+    root = make_project(
+        {
+            "mkdocs.yml": """
+                site_name: Example
+                site_url: https://docs.umccr.org/example/
+                repo_url: https://github.com/umccr/example
+                edit_uri: edit/main/docs/
+                docs_dir: docs
+                extra:
+                  platform:
+                    home: project.md
+            """,
+            "docs/project.md": "# Project\n\nWhere to start.\n",
+            "docs/guide.md": "# Guide\n\nHow to use it.\n",
+        }
+    )
+    site = build(load_project(root / "mkdocs.yml"), "example", tmp_path / "site")
+    edit = 'href="https://github.com/umccr/example/edit/main/docs/{}" rel="edit"'
+    assert edit.format("project.md") in (site / "index.html").read_text()
+    assert edit.format("guide.md") in (site / "guide" / "index.html").read_text()
+
+
 def test_the_platform_config_is_not_overridable():
     project = load_project(EXAMPLES / "basic-site" / "mkdocs.yml")
     config = effective_config(project, "example-basic")

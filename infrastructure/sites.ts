@@ -129,11 +129,28 @@ export const MANAGEMENT_KNOWLEDGEBASE_SITE: DocsSite = {
   description: 'Platform Services projects, decisions, priorities and working conventions.',
 };
 
+/** OrcaSonar's own pages, its `docs/` folder beside the code: a code-only push publishes nothing. */
+export const ORCASONAR_SITE: DocsSite = {
+  slug: 'orcasonar',
+  repo: 'umccr/orcasonar',
+  branch: 'main',
+  configPath: 'mkdocs.yml',
+  docsPaths: ['docs/**', 'mkdocs.yml'],
+  toolkitRef: DOCS_TOOLKIT_REF,
+  stages: [AppStage.BETA, AppStage.PROD],
+  title: 'OrcaSonar',
+  description: 'The service behind the chat panel: its design, API, deployment and operation.',
+};
+
 /**
  * Every registered site. **Append new sites at the end**: the order drives the route table and the catalogue, and
  * reordering produces a meaningless template diff.
  */
-export const DOCS_SITES: DocsSite[] = [PLATFORM_SITE, MANAGEMENT_KNOWLEDGEBASE_SITE];
+export const DOCS_SITES: DocsSite[] = [
+  PLATFORM_SITE,
+  MANAGEMENT_KNOWLEDGEBASE_SITE,
+  ORCASONAR_SITE,
+];
 
 /**
  * Throw if the registry is unusable: an invalid, reserved or duplicate slug, a malformed repository, branch or path, a

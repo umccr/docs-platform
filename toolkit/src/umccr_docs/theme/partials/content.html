@@ -6,20 +6,27 @@
 
   Zensical renders this too, with MiniJinja, which has no string methods: the line goes in with `replace`, after the
   title's permalink, which only the title has. Variables start with umccr_, as the partials included here see them.
+
+  A home note (`extra.platform.home`) is built as index.md, so the engine's edit link for the home page names
+  index.md; it goes to the note instead.
 -#}
 {% include "partials/tags.html" %}
 {% include "partials/actions.html" %}
+{% set umccr_edit_url = page.edit_url %}
+{% if umccr_edit_url and page.is_homepage and config.extra.umccr.home %}
+  {% set umccr_edit_url = umccr_edit_url | replace("index.md", config.extra.umccr.home) %}
+{% endif %}
 {% set umccr_hide = page.meta.hide if page.meta and page.meta.hide else [] %}
 {% set umccr_updated = page.meta.updated if page.meta and page.meta.updated else "" %}
 {% if umccr_updated and umccr_updated is not string %}
   {% set umccr_updated = umccr_updated.day ~ " " ~ umccr_updated.strftime("%b %Y") %}
 {% endif %}
-{% set umccr_show_meta = (umccr_updated or page.edit_url) and "meta" not in umccr_hide %}
+{% set umccr_show_meta = (umccr_updated or umccr_edit_url) and "meta" not in umccr_hide %}
 {% set umccr_show_meta = umccr_show_meta and "umccr-properties" not in page.content %}
 {% set umccr_meta %}
   <p class="umccr-page-meta">
     {%- if umccr_updated %}<span>Updated {{ umccr_updated }}</span>{% endif -%}
-    {%- if page.edit_url %}<a href="{{ page.edit_url }}" rel="edit">Edit this page</a>{% endif -%}
+    {%- if umccr_edit_url %}<a href="{{ umccr_edit_url }}" rel="edit">Edit this page</a>{% endif -%}
   </p>
 {% endset %}
 {% set umccr_title = page.toc | first %}

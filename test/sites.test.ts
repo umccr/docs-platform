@@ -5,6 +5,7 @@ import { catalogueFor } from '../infrastructure/stage/hosting-stack';
 import {
   dispatchRegistry,
   DOCS_SITES,
+  DOCS_TOOLKIT_REF,
   DocsSite,
   getDocsSites,
   MAX_SLUG_LENGTH,
@@ -30,8 +31,8 @@ describe('registry', () => {
   });
 
   test.each([
-    [AppStage.BETA, ['platform', 'management-knowledgebase']],
-    [AppStage.PROD, ['platform', 'management-knowledgebase']],
+    [AppStage.BETA, ['platform', 'management-knowledgebase', 'orcasonar']],
+    [AppStage.PROD, ['platform', 'management-knowledgebase', 'orcasonar']],
   ])('publishes the expected sites to %s', (appStage, slugs) => {
     expect(getDocsSites(appStage).map((entry) => entry.slug)).toEqual(slugs);
   });
@@ -43,6 +44,23 @@ describe('registry', () => {
       branch: 'main',
       docsPaths: ['PlatformServices/**', 'mkdocs.yml'],
     });
+  });
+
+  test('publishes OrcaSonar from its docs folder, and not on pushes that change only its code', () => {
+    const orcasonar = DOCS_SITES.find((entry) => entry.slug === 'orcasonar')!;
+    expect(orcasonar).toMatchObject({
+      repo: 'umccr/orcasonar',
+      branch: 'main',
+      configPath: 'mkdocs.yml',
+      toolkitRef: DOCS_TOOLKIT_REF,
+    });
+
+    const publishes = (file: string) => touchesDocs([file], orcasonar.docsPaths);
+    expect(publishes('docs/runbook.md')).toBe(true);
+    expect(publishes('mkdocs.yml')).toBe(true);
+    expect(publishes('README.md')).toBe(false);
+    expect(publishes('app/schema/openapi.yaml')).toBe(false);
+    expect(publishes('infrastructure/stage/stateless-stack.ts')).toBe(false);
   });
 
   test('builds the platform site from docs/site with the toolkit at the pushed commit', () => {
@@ -183,6 +201,7 @@ describe('catalogue', () => {
     expect(catalogue.sites.map((entry) => entry.url)).toEqual([
       '/platform/',
       '/management-knowledgebase/',
+      '/orcasonar/',
     ]);
     expect(JSON.stringify(catalogue)).not.toContain('umccr/');
   });
