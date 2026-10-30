@@ -4,10 +4,16 @@ All notable changes to the docs platform: the infrastructure, the `umccr-docs` t
 toolkit and theme changes up when their registry entry's `toolkitRef` moves to a release; see
 [releasing the toolkit and theme](runbook.md#release-the-toolkit-and-theme).
 
-## Unreleased
+## v0.2.1
 
-Links for bare URLs on every site, and a vault's Tasks queries as lists, for `v0.2.1`. `/management-knowledgebase/`
-shows them once its `toolkitRef` moves to that release.
+Links for bare URLs on every site, and a vault's Tasks queries as lists. The tag is on the merge of that change
+(`99b6aad`), so the package there still reads `0.2.0`; the release that moves the registry to `v0.2.1` brings the
+version up to match. The registry moves every site but `/platform/` to it.
+
+The tag was pushed before the registry moved. A release of `/management-knowledgebase/` started by hand with
+`v0.2.1` (release 42) published the lists, and the site's next push (release 43, 2026-10-29) built with the
+registry's `v0.2.0` again and replaced it. A hand-started release with another toolkit lasts until the next push;
+the [runbook](runbook.md#start-a-release-by-hand) now says so.
 
 - Bare URLs and email addresses in Markdown are links, as GitHub and Obsidian show them. A vault note's
   `- GitHub: https://github.com/...` line used to publish as plain text.
