@@ -13,6 +13,3 @@ nav:
       - guide/getting-started.md
       - guide/writing.md
       - guide/components.md
-
-extra:
-  classification: 'Example: synthetic content'

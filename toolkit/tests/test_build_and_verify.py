@@ -3,7 +3,7 @@ import shutil
 import pytest
 from conftest import EXAMPLES
 
-from umccr_docs.build import THEME_FILES, THEME_SCRIPT, build, effective_config
+from umccr_docs.build import THEME_FILES, THEME_SCRIPT, build, effective_config, write_config
 from umccr_docs.config import load_project
 from umccr_docs.verify import verify_site
 
@@ -26,8 +26,10 @@ def test_basic_example_builds_strictly_and_passes_verification(built):
     assert verify_site(site) == []
     home = (site / "index.html").read_text()
     assert "assets/umccr/umccr.js" in home, "the platform script is on every page"
-    assert "Example: synthetic content" in home, "the classification banner renders"
+    assert 'class="md-banner"' not in home, "pages carry no banner: every reader has signed in"
     assert "umccr-provenance" in home, "the footer shows where the page came from"
+    components = (site / "guide" / "components" / "index.html").read_text()
+    assert components.count('<pre class="mermaid"><code>') == 2, "a mermaid block keeps its text for the theme to draw"
 
 
 def test_obsidian_example_builds_strictly(built):
@@ -41,8 +43,8 @@ def test_obsidian_example_builds_strictly(built):
     assert '<a href="https://github.com/umccr/docs-platform">' in beta, "a bare URL is a link"
 
 
-def test_the_home_notes_edit_link_names_the_note(make_project, tmp_path):
-    # The home note is built as index.md, which is not in the repository.
+def test_each_page_links_its_file_on_github(make_project, tmp_path):
+    # GitHub's file view, not its editor; the home note is built as index.md, which is not in the repository.
     root = make_project(
         {
             "mkdocs.yml": """
@@ -60,9 +62,19 @@ def test_the_home_notes_edit_link_names_the_note(make_project, tmp_path):
         }
     )
     site = build(load_project(root / "mkdocs.yml"), "example", tmp_path / "site")
-    edit = 'href="https://github.com/umccr/example/edit/main/docs/{}" rel="edit"'
-    assert edit.format("project.md") in (site / "index.html").read_text()
-    assert edit.format("guide.md") in (site / "guide" / "index.html").read_text()
+    link = 'href="https://github.com/umccr/example/blob/main/docs/{}" class="umccr-page-meta__source"'
+    home, guide = (site / "index.html").read_text(), (site / "guide" / "index.html").read_text()
+    assert link.format("project.md") in home
+    assert link.format("guide.md") in guide
+    assert "Edit this page" not in home + guide
+
+
+def test_the_written_config_names_python_objects_with_tags(tmp_path):
+    project = load_project(EXAMPLES / "basic-site" / "mkdocs.yml")
+    text = write_config(effective_config(project, "example-basic"), tmp_path / "mkdocs.yml").read_text()
+    assert "format: !!python/name:pymdownx.superfences.fence_code_format" in text
+    assert "slugify: !!python/object/apply:pymdownx.slugs.slugify" in text
+    assert "__umccr_" not in text
 
 
 def test_the_platform_config_is_not_overridable():
@@ -73,6 +85,8 @@ def test_the_platform_config_is_not_overridable():
     assert config["extra_javascript"] == ["assets/umccr/umccr.js"]
     assert config["extra"]["homepage"] == "/platform/"
     assert "platform" not in config["extra"]
+    assert "classification" not in config["extra"]
+    assert config["edit_uri"] == "blob/main/toolkit/examples/basic-site/docs/", "pages link their file, not the editor"
     assert config["use_directory_urls"] is True
     assert not any("snippets" in str(extension) for extension in config["markdown_extensions"])
 

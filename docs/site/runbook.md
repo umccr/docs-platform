@@ -471,5 +471,11 @@ object, with `TOOLKIT_REF` set to the previous tag. Re-running an existing relea
   with the command at the top of the file. The hashes change with it.
 - CDK app: `pnpm update`, then `pnpm test` and a template diff before merging.
 - Actions: every third-party action is pinned to a full commit SHA with its version in a comment. Update both.
+- Mermaid: the theme's copy, `toolkit/src/umccr_docs/theme/assets/umccr/mermaid/`, is the `mermaid` package's
+  `dist/mermaid.min.js` and `LICENSE`, byte for byte. Take the newest release of the major version Material for
+  MkDocs loads (Material 9.7.7 asks for `mermaid@11`) that is at least two weeks old. Check the tarball's SHA-512
+  against `dist.integrity` from `https://registry.npmjs.org/mermaid/<version>` before copying the two files in (the
+  licence as `LICENSE.txt`). Then check a page with each kind of diagram the sites use, in dev, in both colour schemes,
+  and update the version in [Tech stack](tech.md#the-stack).
 - The build engine decision and the MkDocs 1.x pin are recorded in
   [ADR-0003](../design/adr/0003-build-engine.md).
