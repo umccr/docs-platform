@@ -4,10 +4,12 @@ All notable changes to the docs platform: the infrastructure, the `umccr-docs` t
 toolkit and theme changes up when their registry entry's `toolkitRef` moves to a release; see
 [releasing the toolkit and theme](runbook.md#release-the-toolkit-and-theme).
 
-## Unreleased
+## v0.3.0
 
-A new look for every site's pages, and diagrams: a minor release. A site that sets `extra.classification` can remove
-it, as nothing shows it any more; no other site needs a change.
+A new look for every site's pages, and diagrams: tag the commit that merges it to `main`. The registry moves every site
+but `/platform/` to it, which has built this way since the change merged (#12). It is a minor release because every
+site changes: the banner goes, the edit link becomes a GitHub link, and ```` ```mermaid ```` blocks become diagrams. A
+site that sets `extra.classification` can remove it, as nothing shows it any more; no other site needs a change.
 
 - Under each page's title, a GitHub icon opens the page's file in its repository, in place of the "Edit this page"
   link to GitHub's editor. A site's `edit_uri` (`edit/main/docs/`) stays as it is: the build points it at GitHub's
@@ -25,6 +27,9 @@ it, as nothing shows it any more; no other site needs a change.
   drawing holds script, an event handler or a script URL. A diagram fits the page, and a click on one that had to
   shrink shows it at full size. One that does not parse shows as its text. On `/orcasonar/`, the Design page's seven
   diagrams. The documents exported to OrcaSonar keep the block's text.
+- The dispatcher matches docs paths with minimatch 11, past a denial of service from a crafted pattern
+  (GHSA-g3hv-75wg-m249) that its own patterns never reached. jest's glob and minimatch are held at their patched
+  versions too, and the CDK app is linted with ESLint 10.
 
 ## v0.2.1
 
