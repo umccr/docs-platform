@@ -15,12 +15,12 @@ fits together, in [Design](design.md).
 | Runtimes | Node.js 22 or later for the CDK app and CI (`.nvmrc`); Node.js 24 on arm64 for the Lambdas; `cloudfront-js-2.0` for the edge function |
 | Package manager | pnpm `10.34.5` through Corepack |
 | Sign-in page | Amplify `^6.22.1`, bundled by esbuild `^0.28.2` when the app is synthesized |
-| Lambdas | the session Lambda checks tokens with `aws-jwt-verify` `^5.2.1`; the dispatcher matches docs paths with `minimatch` `^10.2.6`. AWS SDK v3: `client-secrets-manager` in both, `client-dynamodb` and `client-codebuild` in the dispatcher |
+| Lambdas | the session Lambda checks tokens with `aws-jwt-verify` `^5.2.1`; the dispatcher matches docs paths with `minimatch` `^11.0.4`. AWS SDK v3: `client-secrets-manager` in both, `client-dynamodb` and `client-codebuild` in the dispatcher |
 | Toolkit | Python 3.12 (3.11 or later), packaged with Hatchling; PyYAML and boto3 |
 | Documentation engine | Material for MkDocs `9.7.7` on MkDocs `1.6.1`, hash-pinned in `toolkit/requirements/build.txt`; Zensical `0.0.66` for the engine bake-off ([ADR-0003](../design/adr/0003-build-engine.md)) |
 | Diagrams | Mermaid `11.17.2`: the npm package's `dist/mermaid.min.js`, in the theme at `assets/umccr/mermaid/`, which Material's own diagram support draws with |
 | Tests | jest `^30.5.1` with ts-jest for the CDK app and the code it deploys; pytest `9.1.1` for the toolkit |
-| Lint and format | ESLint `^9.39.5` with typescript-eslint and Prettier `^3.9.6` for the CDK app; ruff `0.16.9` for the toolkit |
+| Lint and format | ESLint `^10.14.0` with typescript-eslint and Prettier `^3.9.6` for the CDK app; ruff `0.16.9` for the toolkit |
 | Repository checks | pre-commit; detect-secrets `1.5.0`; actionlint and zizmor `1.30.1` for the workflows; `scripts/check-boundary.sh` |
 
 The CDK app's versions are the ranges in `package.json`, and `pnpm-lock.yaml` pins what is installed. The toolkit's
