@@ -18,6 +18,7 @@ fits together, in [Design](design.md).
 | Lambdas | the session Lambda checks tokens with `aws-jwt-verify` `^5.2.1`; the dispatcher matches docs paths with `minimatch` `^10.2.6`. AWS SDK v3: `client-secrets-manager` in both, `client-dynamodb` and `client-codebuild` in the dispatcher |
 | Toolkit | Python 3.12 (3.11 or later), packaged with Hatchling; PyYAML and boto3 |
 | Documentation engine | Material for MkDocs `9.7.7` on MkDocs `1.6.1`, hash-pinned in `toolkit/requirements/build.txt`; Zensical `0.0.66` for the engine bake-off ([ADR-0003](../design/adr/0003-build-engine.md)) |
+| Diagrams | Mermaid `11.17.2`: the npm package's `dist/mermaid.min.js`, in the theme at `assets/umccr/mermaid/`, which Material's own diagram support draws with |
 | Tests | jest `^30.5.1` with ts-jest for the CDK app and the code it deploys; pytest `9.1.1` for the toolkit |
 | Lint and format | ESLint `^9.39.5` with typescript-eslint and Prettier `^3.9.6` for the CDK app; ruff `0.16.9` for the toolkit |
 | Repository checks | pre-commit; detect-secrets `1.5.0`; actionlint and zizmor `1.30.1` for the workflows; `scripts/check-boundary.sh` |
@@ -100,7 +101,8 @@ To run a toolkit command yourself, use `.venv/bin/umccr-docs`, or `source .venv/
   pre-commit hook; reviewers enforce the rest ([SECURITY.md](../../SECURITY.md)).
 - **Everything is pinned.** Python dependencies by hash (`toolkit/requirements/*.txt`, regenerated with `uv pip compile`
   from the `.in` files), npm packages by `pnpm-lock.yaml`, every third-party action by full commit SHA with its
-  version in a comment, and each site's toolkit by release tag or commit, never a branch.
+  version in a comment, the theme's copy of Mermaid by version, and each site's toolkit by release tag or commit, never
+  a branch.
 - **Changes reach `main` through pull requests.** Review there is the only gate before prod for the toolkit, the theme
   and `/platform/`, which publishes from each merge with no approval.
 - **Nothing is named for OrcaBus.** The pipelines and the hosting stack are `UMCCR-Docs…`, tagged
@@ -123,6 +125,7 @@ To run a toolkit command yourself, use `.venv/bin/umccr-docs`, or `source .venv/
 | OrcaSonar's stateful stack or ingest bucket name | `ORCASONAR_INGEST_BUCKET_NAME_PREFIX` in `infrastructure/config.ts` |
 | where the toolkit keeps its engine pins | `INSTALL_TOOLKIT` in `infrastructure/toolchain/sites-pipeline.ts`, which must still install every ref a site or a rollback may name |
 | the theme's script, `umccr.js` | keep the `.gitignore` exception and `artifacts` in `toolkit/pyproject.toml`, or the wheel leaves it out |
+| the theme's copy of Mermaid | the version in [Tech stack](#the-stack) and the changelog; its folder stays excluded from the large-file and whitespace hooks in `.pre-commit-config.yaml`, which would rewrite it ([Update pinned dependencies](runbook.md#update-pinned-dependencies)) |
 | pipeline 1's trigger paths | the literal lists in `test/pipeline-stack.test.ts`; CodePipeline takes at most 8 patterns in each |
 | the session key | `DOCS_SESSION_KEY_GENERATION` in `infrastructure/config.ts`, never the secret's value ([Rotate the session key](runbook.md#rotate-the-session-key)) |
 

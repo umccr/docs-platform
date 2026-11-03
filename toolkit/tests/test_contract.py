@@ -186,7 +186,7 @@ def test_extra_keys_that_add_scripts_are_rejected(make_project, key):
     ("extra", "where"),
     [
         ("site_description: '<script>alert(1)</script>'", "site_description"),
-        ("extra:\n  classification: '<img src=x onerror=alert(1)>'", "extra.classification"),
+        ("extra:\n  team: '<img src=x onerror=alert(1)>'", "extra.team"),
         ("nav:\n  - '<img src=x onerror=alert(1)>': index.md", "nav[0].<img src=x onerror=alert(1)>"),
     ],
 )
@@ -209,6 +209,8 @@ def test_a_copyright_link_passes(make_project):
         '!!! example\n\n    ```html\n    <img src="x" onerror="handle()">\n    ```\n',
         "1. Add the tag:\n\n    ```html\n    <script src=app.js></script>\n    ```\n",
         "- A list item\n\n        <iframe src=x></iframe>\n",
+        # A diagram's text, which the theme draws in the browser.
+        '```mermaid\nflowchart LR\n    a["A<br/>label"] --> b\n```\n',
     ],
 )
 def test_code_samples_in_any_container_pass(make_project, page):

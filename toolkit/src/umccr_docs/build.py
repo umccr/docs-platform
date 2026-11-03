@@ -16,6 +16,7 @@ from urllib.parse import quote
 import markdown
 import yaml
 from pymdownx.slugs import slugify
+from pymdownx.superfences import fence_code_format
 
 from umccr_docs.config import ENGINES, Project
 from umccr_docs.errors import DocsError
@@ -40,11 +41,20 @@ _PASSED_THROUGH = (
     "extra_css",
 )
 
+# Python objects in the engine's configuration. YAML needs a Python tag for each, which safe_dump cannot write, so the
+# config carries a placeholder, write_config() swaps the tag in, and markdown_renderer() uses the object itself.
 # Heading anchors follow GitHub's rule (`Pages & views` -> `#pages--views`), so tables of contents written in a
-# repository or by an editor keep working on the site. YAML needs a Python tag for this, which safe_dump cannot
-# write, so the config carries this placeholder and write_config() swaps the tag in.
+# repository or by an editor keep working on the site.
 _GITHUB_SLUGIFY = "__umccr_github_slugify__"
-_GITHUB_SLUGIFY_TAG = "!!python/object/apply:pymdownx.slugs.slugify {kwds: {case: lower}}"
+# A ```mermaid block keeps its text, in <pre class="mermaid">, for the theme to draw as a diagram in the browser.
+_FENCE_CODE_FORMAT = "__umccr_fence_code_format__"
+_PYTHON_OBJECTS: dict[str, tuple[str, Any]] = {
+    _GITHUB_SLUGIFY: (
+        "!!python/object/apply:pymdownx.slugs.slugify {kwds: {case: lower}}",
+        slugify(case="lower"),
+    ),
+    _FENCE_CODE_FORMAT: ("!!python/name:pymdownx.superfences.fence_code_format", fence_code_format),
+}
 
 # A code block's header names its language the way a reader types it, and a shell block reads as a terminal. Plain
 # text gets no header. Keys are Pygments lexer names as pymdownx.highlight title-cases them; others show as named.
@@ -59,6 +69,7 @@ CODE_TITLES = {
 # One set of Markdown extensions for every site, so pages render the same everywhere and the Obsidian adapter can
 # rely on them (admonitions for callouts, md_in_html for the properties list, mark and tasklist for vault syntax).
 # magiclink links bare URLs (`https://...`, `www....`) and email addresses, as GitHub and Obsidian do.
+# superfences leaves a ```mermaid block as its text, which the theme draws as a diagram (umccr.js).
 # pymdownx.snippets is deliberately absent: it can include arbitrary repository files into a page.
 MARKDOWN_EXTENSIONS: list[Any] = [
     "abbr",
@@ -75,7 +86,11 @@ MARKDOWN_EXTENSIONS: list[Any] = [
     "pymdownx.keys",
     "pymdownx.magiclink",
     "pymdownx.mark",
-    "pymdownx.superfences",
+    {
+        "pymdownx.superfences": {
+            "custom_fences": [{"name": "mermaid", "class": "mermaid", "format": _FENCE_CODE_FORMAT}],
+        }
+    },
     {"pymdownx.tabbed": {"alternate_style": True}},
     {"pymdownx.tasklist": {"custom_checkbox": True}},
 ]
@@ -107,21 +122,29 @@ def markdown_renderer() -> Callable[[str], str]:
             continue
         ((name, config),) = extension.items()
         names.append(name)
-        configs[name] = {
-            key: slugify(case="lower") if value == _GITHUB_SLUGIFY else value for key, value in config.items()
-        }
+        configs[name] = _with_python_objects(config)
     renderer = markdown.Markdown(extensions=names, extension_configs=configs)
     return lambda text: renderer.reset().convert(text)
 
 
-# The theme's own files, which every page links. `verify-site` refuses a site without one of them.
+def _with_python_objects(value: Any) -> Any:
+    """`value` with each placeholder in it replaced by the Python object it stands for."""
+    if isinstance(value, dict):
+        return {key: _with_python_objects(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_with_python_objects(item) for item in value]
+    if isinstance(value, str) and value in _PYTHON_OBJECTS:
+        return _PYTHON_OBJECTS[value][1]
+    return value
+
+
+# The theme's own files: every page links the first three, and the theme's script loads the Mermaid runtime on a page
+# with a diagram. `verify-site` refuses a site without one of them.
 THEME_LOGO = "assets/umccr/logo.svg"
 THEME_STYLESHEET = "assets/umccr/umccr.css"
 THEME_SCRIPT = "assets/umccr/umccr.js"
-THEME_FILES = (THEME_LOGO, THEME_STYLESHEET, THEME_SCRIPT)
-
-# Every site is for signed-in UMCCR readers only, so every page says so unless the site words it differently.
-DEFAULT_CLASSIFICATION = "Internal: UMCCR staff only"
+THEME_MERMAID = "assets/umccr/mermaid/mermaid.min.js"
+THEME_FILES = (THEME_LOGO, THEME_STYLESHEET, THEME_SCRIPT, THEME_MERMAID)
 
 # Octicons, which Material bundles: outline icons that match the theme's own.
 THEME_ICONS = {
@@ -187,8 +210,13 @@ def effective_config(project: Project, slug: str) -> dict[str, Any]:
     """
     raw = project.raw
     config: dict[str, Any] = {key: raw[key] for key in _PASSED_THROUGH if key in raw}
+    # The theme links each page to its file on GitHub, not to GitHub's editor: `edit/<branch>/...` reads as
+    # `blob/<branch>/...`, so sites keep the `edit_uri` the templates give them.
+    for key in ("edit_uri", "edit_uri_template"):
+        value = config.get(key)
+        if isinstance(value, str) and value.startswith("edit/"):
+            config[key] = "blob/" + value.removeprefix("edit/")
     extra = {key: value for key, value in (raw.get("extra") or {}).items() if key != "platform"}
-    extra["classification"] = extra.get("classification") or DEFAULT_CLASSIFICATION
 
     plugins = ["search"]
     for plugin in raw.get("plugins") or []:
@@ -238,7 +266,7 @@ def effective_config(project: Project, slug: str) -> dict[str, Any]:
                 # The logo goes to the catalogue, not this site's home.
                 "homepage": "/platform/",
                 "generator": False,
-                # The home note is built as index.md: the theme points its edit link back at the note.
+                # The home note is built as index.md: the theme points its GitHub link back at the note.
                 "umccr": {"slug": slug, "home": _home_source(project), **_provenance(project)},
             },
         }
@@ -249,7 +277,9 @@ def effective_config(project: Project, slug: str) -> dict[str, Any]:
 def write_config(config: dict[str, Any], path: Path) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     text = yaml.safe_dump(config, sort_keys=False, allow_unicode=True)
-    path.write_text(text.replace(_GITHUB_SLUGIFY, _GITHUB_SLUGIFY_TAG), encoding="utf-8")
+    for placeholder, (tag, _) in _PYTHON_OBJECTS.items():
+        text = text.replace(placeholder, tag)
+    path.write_text(text, encoding="utf-8")
     return path
 
 

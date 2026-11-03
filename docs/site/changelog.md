@@ -6,9 +6,25 @@ toolkit and theme changes up when their registry entry's `toolkitRef` moves to a
 
 ## Unreleased
 
-- A front page published from a home note (`extra.platform.home`) links "Edit this page" to the note, such as the
-  knowledgebase's `Home.md`. It used to link to `index.md`, the name the page is built under, which is not in the
-  repository.
+A new look for every site's pages, and diagrams: a minor release. A site that sets `extra.classification` can remove
+it, as nothing shows it any more; no other site needs a change.
+
+- Under each page's title, a GitHub icon opens the page's file in its repository, in place of the "Edit this page"
+  link to GitHub's editor. A site's `edit_uri` (`edit/main/docs/`) stays as it is: the build points it at GitHub's
+  file view. A front page published from a home note (`extra.platform.home`), such as the knowledgebase's `Home.md`,
+  links to the note; it used to link to `index.md`, the name the page is built under, which is not in the repository.
+- No classification banner. Every page used to open with "Internal: UMCCR staff only", but only signed-in UMCCR staff
+  reach a page, so it told them nothing. `extra.classification` is ignored
+  ([ADR-0005](../design/adr/0005-reader-policy.md), amended).
+- "On this page" marks the section a reader's link went to. It used to mark the section before: the theme starts the
+  page right under the header, and Material decides where the reader is from a gap above the page that the theme
+  had taken away. Nothing on the page moves.
+- Mermaid diagrams. A ```` ```mermaid ```` block is drawn as a diagram, by Material with the theme's own copy of
+  Mermaid `11.17.2`: the pages' Content Security Policy blocks the copy Material would load from unpkg.com, and pages
+  without a diagram never load it. Mermaid runs in its strict security mode, and the theme shows no diagram whose
+  drawing holds script, an event handler or a script URL. A diagram fits the page, and a click on one that had to
+  shrink shows it at full size. One that does not parse shows as its text. On `/orcasonar/`, the Design page's seven
+  diagrams. The documents exported to OrcaSonar keep the block's text.
 
 ## v0.2.1
 
