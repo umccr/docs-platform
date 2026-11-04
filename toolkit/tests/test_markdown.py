@@ -107,3 +107,14 @@ def test_rewrites_inline_links_images_and_reference_definitions():
 def test_rewrite_links_leaves_code_alone():
     text = "```md\n[guide]: guide.md\n[x](x.md)\n```\n\n    [guide]: guide.md\n\n`[x](x.md)`\n"
     assert rewrite_links(text, lambda url, kind: "changed") == text
+
+
+def test_rewrites_links_whose_label_is_code():
+    text = "Run [`make check`](../Makefile), [`a[0]`](a.md) and [the `b` page](b.md).\n"
+    rewritten = rewrite_links(text, lambda url, kind: f"/new/{url}")
+    assert rewritten == "Run [`make check`](/new/../Makefile), [`a[0]`](/new/a.md) and [the `b` page](/new/b.md).\n"
+
+
+def test_a_link_after_code_that_opens_a_bracket_is_rewritten():
+    text = "`[x` and [y](y.md), and [z](`z.md`)\n"
+    assert rewrite_links(text, lambda url, kind: f"/new/{url}") == "`[x` and [y](/new/y.md), and [z](`z.md`)\n"

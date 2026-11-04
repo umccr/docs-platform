@@ -197,13 +197,6 @@ def rewrite_links(text: str, destination: Callable[[str, str], str | None]) -> s
         # A destination with a space in it is one destination only between angle brackets.
         return f"<{url}>" if re.search(r"\s", url) else url
 
-    def inline(match: re.Match[str]) -> str:
-        kind = "image" if match.group("bang") else "link"
-        new = destination(match.group("url").strip("<>"), kind)
-        if new is None:
-            return match.group(0)
-        return f"{match.group('bang')}[{match.group('label')}]({written(new)}{match.group('title') or ''})"
-
     def prose(part: str) -> str:
         code_spans = [match.span() for match in _INLINE_CODE.finditer(part)]
 
@@ -214,7 +207,29 @@ def rewrite_links(text: str, destination: Callable[[str, str], str | None]) -> s
             return match.group(0) if new is None else match.group("lead") + written(new)
 
         part = _REFERENCE.sub(reference, part)
-        return map_outside_inline_code(part, lambda text: _INLINE_LINK.sub(inline, text))
+        # Links are found with inline code blanked out, and read from `part`: a label can be code, as in
+        # [`make check`](Makefile), but a link written inside code is not one.
+        masked = _INLINE_CODE.sub(lambda match: re.sub(r"[^\n]", " ", match.group(0)), part)
+
+        def inline(match: re.Match[str]) -> str:
+            def original(group: str | int = 0) -> str:
+                start, end = match.span(group)
+                return part[start:end] if start >= 0 else ""
+
+            if original("url") != match.group("url"):
+                return original()  # the destination is code
+            kind = "image" if match.group("bang") else "link"
+            new = destination(original("url").strip("<>"), kind)
+            if new is None:
+                return original()
+            return f"{match.group('bang')}[{original('label')}]({written(new)}{original('title')})"
+
+        pieces: list[str] = []
+        position = 0
+        for match in _INLINE_LINK.finditer(masked):
+            pieces += [part[position : match.start()], inline(match)]
+            position = match.end()
+        return "".join(pieces) + part[position:]
 
     return "".join(segment.text if segment.code else prose(segment.text) for segment in segments(text))
 
