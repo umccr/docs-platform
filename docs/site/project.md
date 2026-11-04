@@ -79,11 +79,11 @@ Both pipelines run in the toolchain account: `UMCCR-DocsInfrastructure` deploys 
 | 2026-10-27 | `v0.1.2`: a wikilink to a missing note warns instead of stopping a site from publishing. |
 | 2026-10-28 | The repository's new layout, and `/platform/` publishes the platform's own pages. `v0.2.0`: a new look for every site, from the classification banner and the catalogue to the chat panel docked beside the page. |
 | 2026-10-30 | `v0.2.1`: bare URLs are links on every site, and the knowledgebase's Tasks queries publish as task lists. OrcaSonar's own pages registered as `/orcasonar/`. |
-| 2026-11-04 | `v0.3.0`: a GitHub link under each page's title instead of "Edit this page", no classification banner, "On this page" marks the section a link went to, and Mermaid diagrams. |
+| 2026-11-04 | `v0.3.0`: a GitHub link under each page's title instead of "Edit this page", no classification banner, "On this page" marks the section a link went to, and Mermaid diagrams. `v0.3.1`: links labelled with code are rewritten like any other, so the knowledgebase publishes again. |
 
 Today `UMCCR-DocsHostingStack` runs in dev and prod, deployed by pipeline 1, and `/platform/`, the knowledgebase and
 `/orcasonar/` (the `docs/` folder of OrcaSonar's repository) publish to both through the site pipeline; the
-knowledgebase and `/orcasonar/` build with `v0.3.0`. The chat panel answers in dev, where OrcaSonar runs. OrcaSonar's
+knowledgebase and `/orcasonar/` build with `v0.3.1`. The chat panel answers in dev, where OrcaSonar runs. OrcaSonar's
 own prod deploy is tracked in its repository.
 
 ## Open items
