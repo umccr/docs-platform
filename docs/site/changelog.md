@@ -4,6 +4,16 @@ All notable changes to the docs platform: the infrastructure, the `umccr-docs` t
 toolkit and theme changes up when their registry entry's `toolkitRef` moves to a release; see
 [releasing the toolkit and theme](runbook.md#release-the-toolkit-and-theme).
 
+## Unreleased
+
+A fix to links: a patch release. No site needs a change.
+
+- A link whose label is code, such as ``[`make check`](../Makefile)``, is rewritten like any other. One that left
+  `docs_dir` used to be kept as it was, so the strict build stopped on a page that doesn't exist; it now points at
+  the file in the site's repository on GitHub. The knowledgebase's releases had stopped on one since 2026-10-31. A
+  link to a page inside `docs_dir` stays a link to the page on the site, and one to the home note reaches it, as
+  other links do.
+
 ## v0.3.0
 
 A new look for every site's pages, and diagrams: tag the commit that merges it to `main`. The registry moves every site

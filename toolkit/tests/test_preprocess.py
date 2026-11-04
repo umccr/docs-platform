@@ -136,6 +136,28 @@ def test_markdown_sites_only_get_link_rewriting(make_project):
     assert "(https://github.com/umccr/plain/blob/main/README.md)" in text
 
 
+def test_links_labelled_with_code_are_rewritten_like_others(make_project):
+    root = make_project(
+        {
+            "mkdocs.yml": OBSIDIAN_CONFIG.replace(
+                "    source_format: obsidian\n", "    source_format: obsidian\n    home: Home.md\n"
+            ),
+            "Makefile": "check:\n",
+            "vault/Home.md": "# Home\n",
+            "vault/Guides/Usage.md": "# Usage\n",
+            "vault/Guides/Setup.md": (
+                "# Setup\n\n- [`make check`](../../Makefile)\n- [`Usage`](Usage.md)\n- [`Home`](../Home.md)\n"
+            ),
+        }
+    )
+    out = root / "out"
+    assert preprocess(load_project(root / "mkdocs.yml"), out) == []
+    text = (out / "Guides/Setup.md").read_text()
+    assert "[`make check`](https://github.com/umccr/test-vault/blob/main/Makefile)" in text, "it leaves docs_dir"
+    assert "[`Usage`](Usage.md)" in text, "a page in docs_dir stays a link to the page"
+    assert "[`Home`](../index.md)" in text, "the home note is published as index.md"
+
+
 def test_links_to_the_repository_are_percent_encoded(make_project):
     root = make_project(
         {

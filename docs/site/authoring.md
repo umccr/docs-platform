@@ -41,8 +41,8 @@ shows as its text, and the browser's console says why. Diagrams are drawn in the
 `umccr-docs check` nor the strict build checks them: preview them with `umccr-docs serve`.
 
 Links between pages are relative paths to `.md` files, as in any MkDocs site. A link that leaves `docs_dir`, such
-as `../README.md`, is rewritten to the file in your repository on GitHub, so it keeps working. Images must be inside
-`docs_dir`.
+as `../README.md`, is rewritten to the file in your repository on GitHub, so it keeps working, whatever its label:
+``[`make check`](../Makefile)`` too. Images must be inside `docs_dir`.
 
 Only files git would commit are built: anything your `.gitignore` excludes never reaches the site, and neither do
 dotfiles or dot-directories.
