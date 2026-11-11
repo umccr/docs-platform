@@ -56,6 +56,7 @@ and hold `assets/umccr/umccr.js`.
 
 ## Follow-ups
 
-- [Releasing](../site/runbook.md#release-the-toolkit-and-theme): local builds cannot show a file the package
-  leaves out; CI's site builds can.
+- [Setting up](https://github.com/umccr/docs-toolkit/blob/main/CONTRIBUTING.md#set-up), in umccr/docs-toolkit
+  since [ADR-0010](../design/adr/0010-toolkit-repository.md): local builds cannot show a file the package leaves
+  out; CI's site builds can.
 - [Deploying](../site/deploy.md#troubleshooting): a troubleshooting entry for pages without the theme's script.

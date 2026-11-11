@@ -45,7 +45,8 @@ The platform team builds and runs docs.umccr.org from
 - [Tech stack](tech.md): what it is built with, how the repository is laid out, and the conventions for changing it.
 - [Design](design.md): how publishing, sign-in and the chat fit together, and the decisions behind them.
 - [Deploying](deploy.md): every deploy step, from the Terraform to the first releases.
-- [Runbook](runbook.md): releases, keys, readers, registering and removing sites, and releasing the toolkit.
+- [Runbook](runbook.md): releases, keys, readers, registering and removing sites, and moving sites to a toolkit
+  release.
 - [Changelog](changelog.md): what changed in each release.
 
 </div>

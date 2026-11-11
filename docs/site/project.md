@@ -8,8 +8,9 @@ conventions for changing it, and [Design](design.md) how it fits together and th
 
 docs.umccr.org is authenticated documentation for UMCCR staff. Each site is written and reviewed in its own
 repository, and published at `https://docs.umccr.org/<slug>/` when it changes. Everything in between belongs to this
-repository, `umccr/docs-platform`: the build toolkit and theme, sign-in, hosting, the site registry and both
-pipelines. `/` redirects to `/platform/`, this site, whose front page is the [catalogue](index.md) of every site.
+repository, `umccr/docs-platform`: sign-in, hosting, the site registry and both pipelines; and to
+[umccr/docs-toolkit](https://github.com/umccr/docs-toolkit), the build toolkit and the theme. `/` redirects to
+`/platform/`, this site, whose front page is the [catalogue](index.md) of every site.
 
 Readers sign in with their UMCCR Google Workspace account, as in the UMCCR portal apps, and every request is checked
 before anything is served. A chat panel on every page answers questions from the published documentation, with links
@@ -28,7 +29,8 @@ to its sources, through [OrcaSonar](https://github.com/umccr/orcasonar), a separ
 
 | Repository | Owns |
 | --- | --- |
-| `umccr/docs-platform` (this one) | hosting, sign-in, the site registry, the dispatcher and both pipelines; the toolkit, theme and conventions; the `/platform/` site |
+| `umccr/docs-platform` (this one) | hosting, sign-in, the site registry, the dispatcher and both pipelines; the conventions; the `/platform/` site |
+| `umccr/docs-toolkit` | the `umccr-docs` toolkit and the theme, released as git tags that the registry pins ([ADR-0010](../design/adr/0010-toolkit-repository.md)) |
 | `umccr/infrastructure` | the `docs-app` Cognito client and the docs certificate (Terraform) |
 | `umccr/orcasonar` | the chat API, its knowledge base and the bucket documents are exported to |
 | participating repositories | their Markdown and `mkdocs.yml` |
@@ -51,8 +53,8 @@ Every change keeps to these. [Design](design.md) has the reasons.
    as `docs-publisher`, narrowed to the release's own site.
 5. **The live site only moves forward.** A release that fails leaves the site as it was, and an older release never
    replaces a newer one.
-6. **A merge here changes no other site.** Every site but `/platform/` builds with a toolkit release tag that the
-   registry pins, and moves to a new one deliberately.
+6. **A merge here changes no other site.** Every site builds with a toolkit release tag that the registry pins, and
+   moves to a new one deliberately; a release in `umccr/docs-toolkit` changes no site until then.
 7. **One pipeline for every site.** Adding a site adds a registry entry, never a pipeline, role or secret.
 8. **This repository is public.** It holds generic platform code and documentation only: no account IDs, ARNs, bucket
    names, credentials or private content ([SECURITY.md](../../SECURITY.md)).
@@ -68,7 +70,7 @@ Both pipelines run in the toolchain account: `UMCCR-DocsInfrastructure` deploys 
 `UMCCR-DocsSitesPipeline` publishes the sites. The stg account has run no docs stage since 2026-10-21.
 [Design](design.md#hostnames) has how the hosts are wired.
 
-## Where it stands, on 2026-11-04
+## Where it stands, on 2026-11-11
 
 | Date | Milestone |
 | --- | --- |
@@ -80,11 +82,12 @@ Both pipelines run in the toolchain account: `UMCCR-DocsInfrastructure` deploys 
 | 2026-10-28 | The repository's new layout, and `/platform/` publishes the platform's own pages. `v0.2.0`: a new look for every site, from the classification banner and the catalogue to the chat panel docked beside the page. |
 | 2026-10-30 | `v0.2.1`: bare URLs are links on every site, and the knowledgebase's Tasks queries publish as task lists. OrcaSonar's own pages registered as `/orcasonar/`. |
 | 2026-11-04 | `v0.3.0`: a GitHub link under each page's title instead of "Edit this page", no classification banner, "On this page" marks the section a link went to, and Mermaid diagrams. `v0.3.1`: links labelled with code are rewritten like any other, so the knowledgebase publishes again. |
+| 2026-11-11 | The toolkit and theme move to their own repository, `umccr/docs-toolkit`, with their history and their tags from `v0.2.0` ([ADR-0010](../design/adr/0010-toolkit-repository.md)); every site, `/platform/` too, builds with `v0.3.1` from there. |
 
 Today `UMCCR-DocsHostingStack` runs in dev and prod, deployed by pipeline 1, and `/platform/`, the knowledgebase and
-`/orcasonar/` (the `docs/` folder of OrcaSonar's repository) publish to both through the site pipeline; the
-knowledgebase and `/orcasonar/` build with `v0.3.1`. The chat panel answers in dev, where OrcaSonar runs. OrcaSonar's
-own prod deploy is tracked in its repository.
+`/orcasonar/` (the `docs/` folder of OrcaSonar's repository) publish to both through the site pipeline, and all three
+build with `v0.3.1` of umccr/docs-toolkit. The chat panel answers in dev, where OrcaSonar runs. OrcaSonar's own prod
+deploy is tracked in its repository.
 
 ## Open items
 
@@ -93,12 +96,13 @@ own prod deploy is tracked in its repository.
 | The build engine: Material for MkDocs on MkDocs 1.6, or Zensical, after a side-by-side comparison in beta. | [ADR-0003](../design/adr/0003-build-engine.md) |
 | Prod's canonical host: `DOCS_CANONICAL_HOST` set to `docs.umccr.org`, so the other prod host redirects to it. | `infrastructure/config.ts`; [Deploying](deploy.md#step-8-prod), step 3 |
 | Whether sites ask the dispatcher through GitHub OIDC instead of the public function URL; proposed and deferred on 2026-10-15. | [ADR-0009](../design/adr/0009-dispatch-from-github-actions.md) |
+| `umccr/docs-toolkit`'s rulesets and release immutability, and immutable releases for the tags it carried over, `v0.2.0` to `v0.3.1`. | [its repository settings](https://github.com/umccr/docs-toolkit/blob/main/CONTRIBUTING.md#repository-settings) |
 | The `ci` checks required on `main`, and the `v*` tags protected. | [Repository settings](runbook.md#repository-settings) |
 | The owners' team named in `.github/CODEOWNERS`, and their review required on `main`. | `.github/CODEOWNERS` |
 | `umccr/infrastructure`'s docs branch merged; it is already applied to dev and prod. | `umccr/infrastructure` |
 | A private security review, an accessibility check and an operational readiness review, and a check that a personal Google account cannot sign in to prod. | the [implementation plan](../plans/implementation-plan.md#production) |
 | Secret scanning, push protection and Dependabot for this repository. | the repository's settings |
-| `v1.0.0`, once the engine is decided, the first users' feedback is in, and a team outside the platform team depends on the contract. | [Versioning](runbook.md#versioning) |
+| `v1.0.0`, once the engine is decided, the first users' feedback is in, and a team outside the platform team depends on the contract. | [Versioning](https://github.com/umccr/docs-toolkit/blob/main/CONTRIBUTING.md#versioning), in umccr/docs-toolkit |
 
 The [implementation plan](../plans/implementation-plan.md#6-rollout) tracks the rollout item by item.
 
@@ -109,8 +113,8 @@ The [implementation plan](../plans/implementation-plan.md#6-rollout) tracks the 
 | site, slug | one documentation site, served at `/<slug>/`. The slug is also its prefix in the docs bucket and in OrcaSonar's ingest bucket, and never changes once published |
 | registry | `DOCS_SITES` in `infrastructure/sites.ts`: each site's repository, branch, `mkdocs.yml`, docs paths, toolkit ref and stages. The dispatcher's routes, the edge function's slug table and the catalogue all come from it |
 | docs paths | the globs whose changes publish a site; a push that changes none of them starts nothing |
-| toolkit, theme | `umccr-docs`, the Python package in `toolkit/` that checks, builds, verifies, exports and publishes a site, and the theme it ships |
-| toolkit ref | the docs-platform release tag or commit a site builds with; `self` for `/platform/`, which builds with its own commit |
+| toolkit, theme | `umccr-docs`, the Python package in `umccr/docs-toolkit` that checks, builds, verifies, exports and publishes a site, and the theme it ships |
+| toolkit ref | the `umccr/docs-toolkit` release tag or commit a site builds with: `DOCS_TOOLKIT_REF` unless the site pins its own |
 | contract | what a site's `mkdocs.yml` and Markdown may contain; see [Authoring](authoring.md) |
 | release | one build and publish of one site, numbered per site; an older release never replaces a newer one |
 | dispatcher | the Lambda the organisation webhook sends every push to; it starts a release for a push that changes a registered site |
@@ -130,9 +134,10 @@ The [implementation plan](../plans/implementation-plan.md#6-rollout) tracks the 
 | [Tech stack](tech.md) | what the platform is built with, the repository's layout and commands, and the conventions for changing it |
 | [Design](design.md) | how publishing, sign-in and the chat fit together, the decisions and the risks |
 | [Deploying](deploy.md) | every deploy step, the verification checklist and troubleshooting |
-| [Runbook](runbook.md) | releases, keys, readers, registering and removing sites, and releasing the toolkit |
+| [Runbook](runbook.md) | releases, keys, readers, registering and removing sites, and moving sites to a toolkit release |
 | [Changelog](changelog.md) | what changed in each release |
 | [Publishing contract](publishing.md) | what the platform guarantees site owners |
 | [README](../../README.md) | the repository on GitHub |
+| [umccr/docs-toolkit](https://github.com/umccr/docs-toolkit) | the toolkit and theme: their code, tests, changelog and releases |
 | [Design records](../design/adr/README.md) | each decision, with its reasons |
 | [Issues](../issues/README.md) | write-ups of problems found, and how they were resolved |

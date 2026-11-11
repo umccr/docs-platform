@@ -213,10 +213,8 @@ describe('trigger paths', () => {
     'docs/site/index.md',
     'docs/site/deploy.md',
     'docs/design/adr/0008-infrastructure-in-docs-platform.md',
-    'toolkit/src/umccr_docs/theme/assets/umccr/umccr.js',
-    'toolkit/requirements/build.txt',
-    'toolkit/examples/basic-site/mkdocs.yml',
-    'toolkit/templates/mkdocs.yml',
+    'requirements/dev.txt',
+    'scripts/check-boundary.sh',
     'app/README.md',
     'infrastructure/README.md',
     'README.md',
@@ -342,9 +340,9 @@ describe('site publishing', () => {
     return specs;
   };
 
-  test('stops with a reason, before pip, when the toolkit ref is missing or has no toolkit', () => {
+  test('stops with a reason, before pip, when the toolkit ref is missing or has no engine pins', () => {
     for (const spec of toolkitBuildSpecs()) {
-      for (const reason of ['has no ref', 'has no toolkit']) {
+      for (const reason of ['has no ref', 'has no engine pins']) {
         const check = spec.indexOf(reason);
         expect(check).toBeGreaterThan(-1);
         expect(check).toBeLessThan(spec.indexOf('pip install --quiet --require-hashes'));
@@ -352,12 +350,16 @@ describe('site publishing', () => {
     }
   });
 
-  test('installs the engine pins from the toolkit, or from the repository root at refs up to v0.1.2', () => {
+  test('installs the toolkit from a clone of umccr/docs-toolkit, its engine pinned by hash from the same ref', () => {
     for (const spec of toolkitBuildSpecs()) {
-      const toolkitPins = spec.indexOf('$TOOLKIT_DIR/toolkit/requirements/build.txt');
-      expect(toolkitPins).toBeGreaterThan(-1);
-      expect(spec.indexOf('$TOOLKIT_DIR/requirements/build.txt')).toBeGreaterThan(toolkitPins);
-      expect(spec).toMatch(/pip install --quiet --require-hashes --no-deps -r \\?"\$pins\\?"/);
+      expect(spec).toContain('git clone --quiet https://github.com/umccr/docs-toolkit.git');
+      expect(spec).toMatch(
+        /pip install --quiet --require-hashes --no-deps -r \\?"\$TOOLKIT_DIR\/requirements\/build\.txt\\?"/
+      );
+      expect(spec).toMatch(/pip install --quiet --no-deps \\?"\$TOOLKIT_DIR\\?"/);
+      // The toolkit is at the clone's root; nothing installs from docs-platform any more.
+      expect(spec).not.toContain('$TOOLKIT_DIR/toolkit');
+      expect(spec).not.toContain('umccr/docs-platform.git');
     }
   });
 

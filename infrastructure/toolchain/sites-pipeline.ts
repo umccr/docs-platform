@@ -51,31 +51,26 @@ export const DOCS_SITES_PIPELINE_VARIABLES = {
   COMMIT: 'the pushed commit',
   RELEASE: "the site's release number; a publish skips if a newer release is live",
   CONFIG_PATH: "path of the site's mkdocs.yml",
-  TOOLKIT_REF: 'docs-platform git ref whose toolkit builds and publishes the site',
+  TOOLKIT_REF: 'docs-toolkit git ref whose toolkit builds and publishes the site',
   STAGES: 'comma-separated stages the site publishes to (beta, prod)',
 } as const;
 
-const TOOLKIT_REPOSITORY = 'https://github.com/umccr/docs-platform.git';
+const TOOLKIT_REPOSITORY = 'https://github.com/umccr/docs-toolkit.git';
 
 /**
- * Install the toolkit at `TOOLKIT_REF`, with the engine pinned by hash from the same ref. docs-platform is public, so
- * the clone needs no credentials.
+ * Install the toolkit at `TOOLKIT_REF`, with the engine pinned by hash from the same ref. docs-toolkit is public, so
+ * the clone needs no credentials. Its tags from `v0.2.0` hold what `toolkit/` held at the same tags here (ADR-0010);
+ * `v0.1.x`, with its pins outside `toolkit/`, did not move. `make toolkit` installs the same for `make install` and CI.
  */
 const INSTALL_TOOLKIT = [
   `git clone --quiet ${TOOLKIT_REPOSITORY} "$TOOLKIT_DIR"`,
   // A ref that does not exist, such as a release tag the registry names before the tag is pushed.
-  'git -C "$TOOLKIT_DIR" checkout --quiet "$TOOLKIT_REF" || { echo "docs-platform has no ref $TOOLKIT_REF: push the tag, or point the site toolkitRef at a ref that exists"; exit 1; }',
-  [
-    // The engine's pins are in the toolkit's folder. Refs up to v0.1.2 keep them at the repository root, and a site's
-    // toolkitRef, or a rollback, may still name one of those.
-    'pins="$TOOLKIT_DIR/toolkit/requirements/build.txt"',
-    '[ -f "$pins" ] || pins="$TOOLKIT_DIR/requirements/build.txt"',
-    // A ref without the toolkit, such as main before this repository was first merged, otherwise fails in pip with a
-    // missing file. Say what to do instead.
-    'test -f "$pins" || { echo "docs-platform at $TOOLKIT_REF has no toolkit: merge it to main, or point the site toolkitRef at a ref that has one"; exit 1; }',
-    'python -m pip install --quiet --require-hashes --no-deps -r "$pins"',
-  ].join('\n'),
-  'python -m pip install --quiet --no-deps "$TOOLKIT_DIR/toolkit"',
+  'git -C "$TOOLKIT_DIR" checkout --quiet "$TOOLKIT_REF" || { echo "docs-toolkit has no ref $TOOLKIT_REF: push the tag, or point the site toolkitRef at a ref that exists"; exit 1; }',
+  // A ref without the engine's pins, such as a commit from before v0.2.0, otherwise fails in pip with a missing file.
+  // Say what to do instead.
+  'test -f "$TOOLKIT_DIR/requirements/build.txt" || { echo "docs-toolkit at $TOOLKIT_REF has no engine pins (requirements/build.txt): point the site toolkitRef at a release from v0.2.0"; exit 1; }',
+  'python -m pip install --quiet --require-hashes --no-deps -r "$TOOLKIT_DIR/requirements/build.txt"',
+  'python -m pip install --quiet --no-deps "$TOOLKIT_DIR"',
 ];
 
 const PYTHON_VERSION = '3.12';
@@ -221,7 +216,7 @@ export class DocsSitesPipeline extends Construct {
       timeout: Duration.minutes(30),
       buildSpec: BuildSpec.fromObject({
         version: '0.2',
-        env: { shell: 'bash', variables: { TOOLKIT_DIR: '/tmp/docs-platform' } },
+        env: { shell: 'bash', variables: { TOOLKIT_DIR: '/tmp/docs-toolkit' } },
         phases: {
           install: {
             'runtime-versions': { python: PYTHON_VERSION },
@@ -267,7 +262,7 @@ export class DocsSitesPipeline extends Construct {
       timeout: Duration.minutes(30),
       buildSpec: BuildSpec.fromObject({
         version: '0.2',
-        env: { shell: 'bash', variables: { TOOLKIT_DIR: '/tmp/docs-platform' } },
+        env: { shell: 'bash', variables: { TOOLKIT_DIR: '/tmp/docs-toolkit' } },
         phases: {
           install: {
             'runtime-versions': { python: PYTHON_VERSION },

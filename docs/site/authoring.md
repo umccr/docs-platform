@@ -31,7 +31,7 @@ links, as on GitHub and in Obsidian.
 How a page looks follows from what it holds. Its first paragraph is the lead, set larger under the title. Under the
 title, a GitHub icon opens the page's file in your repository (from `repo_url` and `edit_uri`), after the `updated:`
 date from its front matter if it has one; `hide: [meta]` leaves that line out. A code block's header names its language, `terminal` for shell, and `title="mkdocs.yml"`
-names a file instead. The basic example in this repository, `toolkit/examples/basic-site/`, has a Components page
+names a file instead. The toolkit's basic example, `examples/basic-site/` in umccr/docs-toolkit, has a Components page
 with every element; `umccr-docs serve` in that folder previews it.
 
 A ```` ```mermaid ```` code block is drawn as a diagram when the page opens, with Mermaid 11 in its strict security

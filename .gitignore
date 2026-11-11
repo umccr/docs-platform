@@ -1,18 +1,12 @@
 # Build output: never commit a generated site (see docs/site/publishing.md). docs/site/ itself is the platform
-# site's source; the site/ it builds into is still ignored.
+# site's source; the site/ it builds into is still ignored. `make sites` builds into build/.
 site/
 !/docs/site/
 .umccr-docs/
-
-# Python
-__pycache__/
-*.py[cod]
-*.egg-info/
-.venv/
-.pytest_cache/
-.ruff_cache/
-dist/
 build/
+
+# The virtualenv with the repository's tools and the toolkit
+.venv/
 
 # Local state and credentials
 .env
@@ -27,8 +21,7 @@ node_modules/
 cdk.out/
 .cdk.staging
 *.d.ts
-# Compiled JS is never committed. Exceptions: config files, the hand-written edge function, and the theme's script.
+# Compiled JS is never committed. Exceptions: config files and the hand-written edge function.
 *.js
 !jest.config.js
 !app/**/*.js
-!toolkit/src/umccr_docs/theme/**/*.js

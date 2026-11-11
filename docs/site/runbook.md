@@ -1,10 +1,10 @@
 # Runbook
 
-Operational procedures for `docs.<stage>.umccr.org`, and for releasing the toolkit and theme. The session key and the
-site registry are code in this repository, so changing either is a pull request that `DocsInfrastructurePipeline`
-deploys: beta, then prod after approval. Content changes are S3 operations with admin credentials for the stage
-account; releases are runs of `UMCCR-DocsSitesPipeline` in the toolchain account. Deploying the platform itself is in
-[Deploying](deploy.md), and how its pieces fit together in [Design](design.md).
+Operational procedures for `docs.<stage>.umccr.org`, and for moving sites to a release of the toolkit and theme. The
+session key and the site registry are code in this repository, so changing either is a pull request that
+`DocsInfrastructurePipeline` deploys: beta, then prod after approval. Content changes are S3 operations with admin
+credentials for the stage account; releases are runs of `UMCCR-DocsSitesPipeline` in the toolchain account.
+Deploying the platform itself is in [Deploying](deploy.md), and how its pieces fit together in [Design](design.md).
 
 This page is `docs/site/runbook.md` in [umccr/docs-platform](https://github.com/umccr/docs-platform), so it can be
 read on GitHub when docs.umccr.org itself is down.
@@ -147,9 +147,8 @@ the next push puts the site back on the old toolkit, as happened to `/management
    ```
 
 3. Write `start.json` with those variables, the new `RELEASE`, and `TOOLKIT_REF` changed if the rebuild needs
-   another toolkit. A release tag must be on GitHub already, or the run stops at Build ("has no ref"); `/platform/`
-   builds with its own commit, so its `TOOLKIT_REF` stays equal to `COMMIT`. JSON, not CLI shorthand, because `STAGES`
-   holds a comma:
+   another toolkit. `TOOLKIT_REF` is a tag or full commit of umccr/docs-toolkit, which must be on GitHub already, or
+   the run stops at Build ("has no ref"). JSON, not CLI shorthand, because `STAGES` holds a comma:
 
    ```json
    {
@@ -301,61 +300,45 @@ and they hold no content.
 3. The alarms `DocsSessionUnavailableAlarm` (sign-ins refused as unavailable), `DocsSessionErrorsAlarm` and
    `DocsSessionThrottlesAlarm` track the session Lambda.
 
-## Release the toolkit and theme
+## Move sites to a toolkit release
 
-The site registry pins the toolkit, theme and engine version each site builds with: `toolkitRef` in
-[`infrastructure/sites.ts`](https://github.com/umccr/docs-platform/blob/main/infrastructure/sites.ts). A release of this repository therefore changes no site
-until its registry entry moves to it, so sites move deliberately, one at a time or together. The platform's own site,
-`/platform/`, builds with the toolkit at the pushed commit, so a theme or toolkit change shows there first.
+The site registry pins the release of the toolkit, theme and engine each site builds with: `toolkitRef` in
+[`infrastructure/sites.ts`](https://github.com/umccr/docs-platform/blob/main/infrastructure/sites.ts), which is
+`DOCS_TOOLKIT_REF` for every site that pins no release of its own, `/platform/` included. Releases are made in
+[umccr/docs-toolkit](https://github.com/umccr/docs-toolkit): a tag, and the immutable GitHub release its release
+workflow makes ([its release steps](https://github.com/umccr/docs-toolkit/blob/main/CONTRIBUTING.md#release)). A
+release there changes no site until its registry entry moves to it, so sites move deliberately, one at a time or
+together.
 
 Infrastructure changes are separate: a merge to `main` under `bin/`, `infrastructure/` or `app/` starts the
 infrastructure pipeline, which deploys to beta and then waits for approval before prod.
 
-A release goes out in one pull request, which sets the version and moves the sites to it, and a tag on its merge.
-The commands run with toolchain credentials (`bastion-admin`) unless a step says otherwise.
+A move is one pull request here, once the release is out. The commands run with toolchain credentials
+(`bastion-admin`) unless a step says otherwise.
 
-### 1. Prepare the release
+### 1. Prepare the move
 
-Make sure `main` is green, and that the platform site on docs.dev.umccr.org and the example builds look right. CI's
-site builds install the toolkit from its wheel, as the site pipeline does. `make install` installs it editable, which
-reads the theme from the source tree, so a local build cannot show a file the package leaves out
-([2026-10-21](../issues/2026-10-21-theme-script-missing-from-wheel.md)).
-
-On a branch off `main`, such as `release/v0.2.0`, change:
+Check that the release's tag and its GitHub release are in umccr/docs-toolkit: until the tag exists, every release
+on it stops at Build (`docs-toolkit has no ref v0.4.0`), and CI cannot build `/platform/`. On a branch off `main`,
+such as `toolkit/v0.4.0`, change:
 
 | File | Change |
 | --- | --- |
-| `toolkit/pyproject.toml`, `toolkit/src/umccr_docs/__init__.py` | the version, `0.2.0`; `tests/test_version.py` checks that they agree |
-| `toolkit/uv.lock` | the version in the `umccr-docs` package entry |
-| the [changelog](changelog.md) | `## Unreleased` becomes `## v0.2.0`, opening with what the release does and "tag the commit that merges it to `main`. The registry moves every site but `/platform/` to it." |
-| `infrastructure/sites.ts` | `DOCS_TOOLKIT_REF` to `v0.2.0`, and the `toolkitRef` of any site that pins its own |
+| `infrastructure/sites.ts` | `DOCS_TOOLKIT_REF` to `v0.4.0`, and the `toolkitRef` of any site that pins its own |
+| the [changelog](changelog.md) | an entry, under the date it merges: the release the sites move to, what it changes for them, and a link to its notes |
 | `README.md`, [Deploying](deploy.md), [Project](project.md) | the version the sites build with, in the status lines and the site table, and a row in the project's timeline |
 
-Run `make check`, `make test` and `make sites`, then open the pull request. Moving the sites can also wait for a later
-merge: leave `infrastructure/sites.ts` alone here, and change it once the tag exists.
+Run `make toolkit`, then `make check`, `make test` and `make sites`: `/platform/` builds with the new release, as CI
+then builds it. Open the pull request.
 
-### 2. Merge and tag
-
-Tag the merge commit as soon as it is on `main`. Only the platform owners can create `v*` tags
-([repository settings](#repository-settings)).
-
-```sh
-git switch main && git pull --ff-only     # HEAD is the merge commit
-git tag -s v0.2.0 -m "v0.2.0"             # -a instead of -s without a signing key
-git push origin v0.2.0
-```
-
-Until the tag exists, a release on it stops at Build (`docs-platform has no ref v0.2.0`). Start those again once it does
-([Re-run or force a release](#re-run-or-force-a-release)).
-
-### 3. Deploy
+### 2. Deploy
 
 The merge starts two pipelines:
 
 - `UMCCR-DocsInfrastructure` (pipeline 1), because `infrastructure/sites.ts` changed. Its self-update gives the
   dispatcher the new `toolkitRef`; then it deploys beta and waits at `PromoteToProd`. Approve once beta has deployed.
-- a `/platform/` release, because the toolkit's package changed. It builds with the merge commit itself and publishes
-  to dev, then prod, without an approval.
+- a `/platform/` release, because its pages changed. The dispatcher has not had the self-update yet, so it builds
+  with the release the sites move from. Rebuild it once the self-update is done (step 3).
 
 ```sh
 aws codepipeline get-pipeline-state --name UMCCR-DocsInfrastructure \
@@ -366,12 +349,12 @@ aws codepipeline list-pipeline-executions --pipeline-name UMCCR-DocsSitesPipelin
 
 Once the self-update is done, each moved site builds with the tag on its next push under its docs paths.
 
-### 4. Rebuild the sites that should not wait
+### 3. Rebuild the sites that should not wait
 
-[Start a release by hand](#start-a-release-by-hand) for each, from its live release's source object, with
-`TOOLKIT_REF` set to the tag. The pipeline's history has every site's live release, so toolchain credentials are
-enough to find it. This lists the recent successful runs, newest first, one per line: commit, release, slug and
-toolkit.
+[Start a release by hand](#start-a-release-by-hand) for each, `/platform/` among them, from its live release's
+source object, with `TOOLKIT_REF` set to the tag. The pipeline's history has every site's live release, so
+toolchain credentials are enough to find it. This lists the recent successful runs, newest first, one per line:
+commit, release, slug and toolkit.
 
 ```sh
 for id in $(aws codepipeline list-pipeline-executions --pipeline-name UMCCR-DocsSitesPipeline --max-items 20 \
@@ -410,9 +393,9 @@ Replace every `<…>` before starting: a placeholder left in fails at Source, pu
 before prod, start it with `STAGES` `beta` first: its prod step logs `<slug> does not publish to prod` and stops. Then
 take another release number and start it with `beta,prod`.
 
-### 5. Check
+### 4. Check
 
-In dev, then prod, for each site that moved: the release's changes, as the [changelog](changelog.md) lists them, and
+In dev, then prod, for each site that moved: the release's changes, as its notes in umccr/docs-toolkit list them, and
 the pages, navigation, search and chat panel as before; in a vault, the properties and the Bases tables too. Each
 stage's `sites/<slug>/_publish.json` shows the new release; read it with that stage's credentials
 ([Start a release by hand](#start-a-release-by-hand), step 5).
@@ -421,38 +404,39 @@ stage's `sites/<slug>/_publish.json` shows the new release; read it with that st
 
 The dispatcher learns a changed registry entry only from pipeline 1's self-update, so the merge's own `/platform/`
 release still uses the old one. When the merge moves the site's `configPath` or docs paths, as the layout change did on
-2026-10-28, that release fails at Build and the live site stays as it was. Once the self-update is done:
+2026-10-28, or its toolkit, as the move to umccr/docs-toolkit did, that release fails at Build and the live site stays
+as it was. Once the self-update is done:
 
 1. Read the failed run's variables ([Start a release by hand](#start-a-release-by-hand), step 1). It has the merge
    commit, and its source object is already in the source bucket.
-2. Start a release by hand with those variables, a new release number, the new `CONFIG_PATH`, and `COMMIT` and
-   `TOOLKIT_REF` both the merge commit.
+2. Start a release by hand with those variables, a new release number, the new `CONFIG_PATH`, `COMMIT` the merge
+   commit, and `TOOLKIT_REF` the registry's `DOCS_TOOLKIT_REF`.
 
 Retrying the failed run does not work: the self-update changed the pipeline, and a retry keeps the old variables.
 
 ### Versioning
 
-- Releases are semantic versions, `vMAJOR.MINOR.PATCH`. The toolkit's package version (`toolkit/pyproject.toml` and
-  `umccr_docs.__version__`) is the same as the tag.
-- Until `v1.0.0` the platform is in initial development, `0.y.z`: the authoring contract and the engine
-  ([ADR-0003](../design/adr/0003-build-engine.md)) can still change. A change that could break an existing site,
-  such as a contract rule, a removed extension or an engine change, takes the next minor version (`v0.2.0`) and a
-  migration note; fixes and compatible additions take the next patch (`v0.1.1`).
-- `v1.0.0` comes once the engine is decided, the first users' feedback is in, and a team outside the platform team
-  depends on the contract with a site of its own. From then on, a breaking change needs a new major version.
-- A registry `toolkitRef` is a release tag or a full commit SHA, never a branch; the registry refuses anything else.
+- Toolkit releases are semantic versions, `vMAJOR.MINOR.PATCH`; umccr/docs-toolkit's
+  [versioning](https://github.com/umccr/docs-toolkit/blob/main/CONTRIBUTING.md#versioning) says which change takes
+  which, and when `v1.0.0` comes.
+- A registry `toolkitRef` is a release tag or a full commit SHA of umccr/docs-toolkit, never a branch; the registry
+  refuses anything else.
+- This repository's tags, `v0.1.0` to `v0.3.1`, are the toolkit releases from before it moved
+  ([ADR-0010](../design/adr/0010-toolkit-repository.md)), and stay as they were.
 
 ### Repository settings
 
-Review on `main` is the only gate before prod for the toolkit, the theme and `/platform/`: the site pipeline
-publishes `/platform/` from each merge with no approval, and the other sites build with tags cut from `main`. An
-organisation owner sets these under **Settings → Rules → Rulesets**:
+Review on `main` is the only gate before prod for `/platform/` and for the registry: the site pipeline publishes
+`/platform/` from each merge with no approval, and a merge that moves `toolkitRef` moves sites to another toolkit
+release. umccr/docs-toolkit has
+[settings of its own](https://github.com/umccr/docs-toolkit/blob/main/CONTRIBUTING.md#repository-settings).
+An organisation owner sets these under **Settings → Rules → Rulesets**:
 
-- **`main`**: require a pull request with one approval, and the `ci` checks to pass ("Toolkit tests and lint",
-  "Strict builds of the examples and the platform site", "CDK app tests, lint and synth", "Workflows, secrets and
-  information boundary"); block force pushes and deletion.
-- **`v*` tags**: only the platform owners may create them, and nobody may update or delete one: a moved tag would
-  change how sites build without a registry change.
+- **`main`**: require a pull request with one approval, and the `ci` checks to pass ("Strict build of the platform
+  site", "CDK app tests, lint and synth", "Workflows, secrets and information boundary"); block force pushes and
+  deletion.
+- **`v*` tags**: only the platform owners may create them, and nobody may update or delete one. New toolkit releases
+  are tagged in umccr/docs-toolkit; the tags here are the releases from before it moved.
 - **Code owners**, later: once the owners' team is named in [`.github/CODEOWNERS`](https://github.com/umccr/docs-platform/blob/main/.github/CODEOWNERS), which
   holds a placeholder for now, require their review on `main` too.
 
@@ -467,15 +451,11 @@ object, with `TOOLKIT_REF` set to the previous tag. Re-running an existing relea
 
 ### Update pinned dependencies
 
-- Engine and toolkit runtime: edit `toolkit/requirements/build.in` and regenerate `toolkit/requirements/build.txt`
-  with the command at the top of the file. The hashes change with it.
 - CDK app: `pnpm update`, then `pnpm test` and a template diff before merging.
+- The repository's tools: edit `requirements/dev.in` and regenerate `requirements/dev.txt` with the command at the
+  top of the file. The hashes change with it.
 - Actions: every third-party action is pinned to a full commit SHA with its version in a comment. Update both.
-- Mermaid: the theme's copy, `toolkit/src/umccr_docs/theme/assets/umccr/mermaid/`, is the `mermaid` package's
-  `dist/mermaid.min.js` and `LICENSE`, byte for byte. Take the newest release of the major version Material for
-  MkDocs loads (Material 9.7.7 asks for `mermaid@11`) that is at least two weeks old. Check the tarball's SHA-512
-  against `dist.integrity` from `https://registry.npmjs.org/mermaid/<version>` before copying the two files in (the
-  licence as `LICENSE.txt`). Then check a page with each kind of diagram the sites use, in dev, in both colour schemes,
-  and update the version in [Tech stack](tech.md#the-stack).
-- The build engine decision and the MkDocs 1.x pin are recorded in
+- The engine, the toolkit's own dependencies and the theme's copy of Mermaid are pinned in umccr/docs-toolkit
+  ([its steps](https://github.com/umccr/docs-toolkit/blob/main/CONTRIBUTING.md#update-pinned-dependencies)), and
+  reach the sites with a release. The build engine decision and the MkDocs 1.x pin are recorded in
   [ADR-0003](../design/adr/0003-build-engine.md).

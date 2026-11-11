@@ -16,7 +16,7 @@ files=()
 while IFS= read -r file; do
   [[ -f "$file" ]] && files+=("$file")
 done < <(git ls-files --cached --others --exclude-standard |
-  grep -v -E '^(toolkit/requirements/[^/]+\.txt|scripts/check-boundary\.sh|pnpm-lock\.yaml)$')
+  grep -v -E '^(requirements/[^/]+\.txt|scripts/check-boundary\.sh|pnpm-lock\.yaml)$')
 
 status=0
 

@@ -3,7 +3,7 @@
   "packageManager": "pnpm@10.34.5",
   "version": "0.1.0",
   "private": true,
-  "description": "docs.umccr.org: infrastructure, pipelines, sign-in and the publishing toolkit",
+  "description": "docs.umccr.org: infrastructure, pipelines, sign-in and the site registry",
   "engines": {
     "node": ">=22"
   },
