@@ -1,8 +1,34 @@
 # Changelog
 
-All notable changes to the docs platform: the infrastructure, the `umccr-docs` toolkit and the theme. Sites pick
-toolkit and theme changes up when their registry entry's `toolkitRef` moves to a release; see
-[releasing the toolkit and theme](runbook.md#release-the-toolkit-and-theme).
+All notable changes to the docs platform: the infrastructure, the site registry, and the release of the toolkit and
+theme the sites build with. Sites pick a toolkit release up when their registry entry's `toolkitRef` moves to it; see
+[moving sites to a toolkit release](runbook.md#move-sites-to-a-toolkit-release).
+
+The `umccr-docs` toolkit and its theme were released from this repository up to `v0.3.1`, and those releases are
+below. They are released in [umccr/docs-toolkit](https://github.com/umccr/docs-toolkit) since, with their own
+[changelog](https://github.com/umccr/docs-toolkit/blob/main/CHANGELOG.md); entries here are under the date they
+merged, and `## Unreleased` holds what has not.
+
+## Unreleased
+
+The toolkit and theme move to their own repository, [umccr/docs-toolkit](https://github.com/umccr/docs-toolkit),
+with their history and their tags from `v0.2.0` ([ADR-0010](../design/adr/0010-toolkit-repository.md)). Nothing
+changes for readers or site owners: every site, `/platform/` included, builds with `v0.3.1`, which holds the same
+files there as it did here. Rename this heading to the date it merges.
+
+- The site pipeline clones `umccr/docs-toolkit` at a site's `toolkitRef`. Its tags from `v0.2.0` are this
+  repository's, file for file; `v0.1.x`, which no site uses, stays here only.
+- `/platform/` builds with `DOCS_TOOLKIT_REF` like every other site, no longer with its own commit's toolkit (`self`,
+  which the registry now refuses), and publishes on changes to `mkdocs.yml` and `docs/site/` only. The merge's own
+  `/platform/` release stops at Build, and is started again by hand once pipeline 1's self-update is done
+  ([runbook](runbook.md#a-merge-that-changes-platforms-own-registry-entry)).
+- `make install` and CI install the toolkit at `DOCS_TOOLKIT_REF` from umccr/docs-toolkit, as the site pipeline
+  does, and `make toolkit TOOLKIT_REF=<ref>` installs another release or commit. The repository's own tools,
+  actionlint, zizmor and detect-secrets, are pinned in `requirements/dev.txt`.
+- CI's checks are now "Strict build of the platform site", "CDK app tests, lint and synth" and "Workflows, secrets
+  and information boundary": `main`'s ruleset needs the first in place of "Toolkit tests and lint" and "Strict builds
+  of the examples and the platform site" ([repository settings](runbook.md#repository-settings)).
+- The toolkit's tests, the theme script's among them, its examples and its templates are in umccr/docs-toolkit.
 
 ## v0.3.1
 

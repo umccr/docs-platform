@@ -38,9 +38,8 @@ export interface DocsSite {
   readonly docsPaths: string[];
 
   /**
-   * Git ref of `umccr/docs-platform` whose toolkit and theme build the site: a release tag such as `v1.2.0`, or a full
-   * commit SHA. Never a branch, whose next merge would change how the site builds without a registry change. `self`
-   * builds with the toolkit at the pushed commit, for this repository's own site only.
+   * Git ref of `umccr/docs-toolkit` whose toolkit and theme build the site: a release tag such as `v1.2.0`, or a full
+   * commit SHA. Never a branch, whose next merge would change how the site builds without a registry change.
    */
   readonly toolkitRef: string;
 
@@ -60,12 +59,10 @@ export const SITE_PUBLISH_STAGES: readonly AppStage[] = [AppStage.BETA, AppStage
 /** Keeps URLs and S3 keys short, and the edge function's route table well within CloudFront's 10 KB limit. */
 export const MAX_SLUG_LENGTH = 49;
 
-/** Toolkit ref that means "the pushed commit": only `umccr/docs-platform` itself may use it. */
-export const SELF_TOOLKIT_REF = 'self';
-
 /**
- * The toolkit every other site builds with: a docs-platform release tag. Push the tag before, or straight after, the
- * merge that moves this to it: until the tag exists, those sites' releases stop at Build (docs/site/runbook.md).
+ * The toolkit every site builds with: a release tag of `umccr/docs-toolkit`. Release it there before the merge that
+ * moves this to it: until the tag exists, the sites' releases stop at Build (docs/site/runbook.md). Keep it on one
+ * line, as it is: the Makefile reads it from there, for `make install` and CI.
  */
 export const DOCS_TOOLKIT_REF = 'v0.3.1';
 
@@ -94,22 +91,16 @@ export const RESERVED_SLUGS = ['sites'];
 /**
  * The docs platform's own site, in `docs/site/` with its `mkdocs.yml` at the repository root: the catalogue, onboarding
  * and conventions, and the platform's project pages (design, deploying, the runbook). `/` redirects here. It builds
- * with the toolkit at the same commit, so a theme or toolkit change shows on this site first. The rest of `docs/`
- * (design records, plans, issue write-ups) is not part of it, and neither are the toolkit's examples and templates.
+ * with {@link DOCS_TOOLKIT_REF}, like every other site. The rest of `docs/` (design records, plans, issue write-ups) is
+ * not part of it.
  */
 export const PLATFORM_SITE: DocsSite = {
   slug: 'platform',
   repo: PLATFORM_REPO,
   branch: 'main',
   configPath: 'mkdocs.yml',
-  docsPaths: [
-    'mkdocs.yml',
-    'docs/site/**',
-    'toolkit/src/**',
-    'toolkit/pyproject.toml',
-    'toolkit/requirements/build.txt',
-  ],
-  toolkitRef: SELF_TOOLKIT_REF,
+  docsPaths: ['mkdocs.yml', 'docs/site/**'],
+  toolkitRef: DOCS_TOOLKIT_REF,
   stages: [AppStage.BETA, AppStage.PROD],
   title: 'UMCCR docs platform',
   description:
@@ -201,13 +192,7 @@ export const validateDocsSites = (sites: DocsSite[]): void => {
         `Docs site '${site.slug}' needs docs paths: relative globs, without '..' segments`
       );
     }
-    if (site.toolkitRef === SELF_TOOLKIT_REF) {
-      if (site.repo !== PLATFORM_REPO) {
-        throw new Error(
-          `Docs site '${site.slug}' cannot use toolkit ref '${SELF_TOOLKIT_REF}': only ${PLATFORM_REPO} can`
-        );
-      }
-    } else if (!TOOLKIT_REF_PATTERN.test(site.toolkitRef)) {
+    if (!TOOLKIT_REF_PATTERN.test(site.toolkitRef)) {
       throw new Error(
         `Docs site '${site.slug}' has toolkit ref '${site.toolkitRef}'; use a release tag such as v1.2.0 ` +
           'or a full commit SHA, never a branch'

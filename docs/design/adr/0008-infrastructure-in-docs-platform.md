@@ -1,6 +1,7 @@
 # 0008: Infrastructure in docs-platform
 
-**Status:** accepted, 2026-10-12. Supersedes the hosting part of [0001](0001-repository-split.md).
+**Status:** accepted, 2026-10-12. Supersedes the hosting part of [0001](0001-repository-split.md). Superseded in
+part by [0010](0010-toolkit-repository.md), 2026-11-11: the toolkit and theme are in `umccr/docs-toolkit`.
 
 ## Context
 

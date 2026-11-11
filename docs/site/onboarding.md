@@ -13,16 +13,18 @@ The slug is the site's path. It is permanent, so choose it with care:
 
 ## 2. Add the configuration
 
-Copy a template from this repository's
-[`toolkit/templates/`](https://github.com/umccr/docs-platform/tree/main/toolkit/templates) into your repository:
+Copy a template from the toolkit's
+[`templates/`](https://github.com/umccr/docs-toolkit/tree/main/templates) into your repository:
 `mkdocs.yml` at the repository root, from `mkdocs.yml`, or `mkdocs-obsidian.yml` for an Obsidian vault. Set
 `site_name`, `site_url` (`https://docs.umccr.org/<slug>/`), `repo_url` and `docs_dir`.
 
-Preview locally the way the site pipeline builds:
+Preview locally the way the site pipeline builds, with the release your site will build with: `DOCS_TOOLKIT_REF`
+in [`infrastructure/sites.ts`](https://github.com/umccr/docs-platform/blob/main/infrastructure/sites.ts).
 
 ```sh
-pip install --require-hashes --no-deps -r <docs-platform>/toolkit/requirements/build.txt
-pip install --no-deps <docs-platform>/toolkit
+git clone --branch <release> https://github.com/umccr/docs-toolkit.git <docs-toolkit>
+pip install --require-hashes --no-deps -r <docs-toolkit>/requirements/build.txt
+pip install --no-deps <docs-toolkit>
 umccr-docs serve
 ```
 
@@ -40,7 +42,7 @@ repository. The entry names:
 | `repo`, `branch` | `umccr/my-service`, `main` | pushes to this branch publish the site |
 | `configPath` | `mkdocs.yml` | where your configuration is |
 | `docsPaths` | `docs/**`, `mkdocs.yml` | a push that changes none of these publishes nothing |
-| `toolkitRef` | a release tag | the toolkit and theme version your site builds with |
+| `toolkitRef` | `DOCS_TOOLKIT_REF`, a release tag | the release of the toolkit and theme, from umccr/docs-toolkit, your site builds with |
 | `stages` | dev and prod | where it is published |
 
 When the pull request merges, the infrastructure pipeline adds your site to the routing table, the catalogue and

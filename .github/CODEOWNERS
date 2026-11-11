@@ -1,10 +1,11 @@
-# Platform owners must review changes to what builds and publishes every site.
+# Platform owners must review changes to what builds and publishes every site: here, the registry, which pins the
+# toolkit release every site builds with, and the pipelines. The toolkit itself is in umccr/docs-toolkit.
 #
 # TODO(platform owners): replace the placeholder team below with the docs platform owners' GitHub team, then
 # require code-owner review on main. Until then these rules are inactive (the lines are commented out).
 #
 # *                             @umccr/<docs-platform-owners>
 # /.github/                     @umccr/<docs-platform-owners>
-# /toolkit/src/umccr_docs/      @umccr/<docs-platform-owners>
-# /toolkit/requirements/        @umccr/<docs-platform-owners>
+# /infrastructure/sites.ts      @umccr/<docs-platform-owners>
+# /infrastructure/toolchain/    @umccr/<docs-platform-owners>
 # /scripts/                     @umccr/<docs-platform-owners>

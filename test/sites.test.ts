@@ -1,3 +1,5 @@
+import * as fs from 'fs';
+import * as path from 'path';
 import { describe, expect, test } from '@jest/globals';
 import { touchesDocs } from '../app/dispatcher/dispatch';
 import { AppStage } from '../infrastructure/stages';
@@ -63,29 +65,34 @@ describe('registry', () => {
     expect(publishes('infrastructure/stage/stateless-stack.ts')).toBe(false);
   });
 
-  test('builds the platform site from docs/site with the toolkit at the pushed commit', () => {
+  test('builds the platform site from docs/site with the toolkit release every site builds with', () => {
     const platform = DOCS_SITES.find((entry) => entry.slug === 'platform')!;
     expect(platform).toMatchObject({
       repo: 'umccr/docs-platform',
       configPath: 'mkdocs.yml',
-      toolkitRef: 'self',
+      toolkitRef: DOCS_TOOLKIT_REF,
     });
 
-    // The site's pages and configuration, the toolkit, the theme and the engine's pins publish it; the rest of docs/,
-    // the toolkit's examples and templates, and the CDK app never do.
+    // Its pages and configuration publish it; the rest of docs/, the repository's tools and the CDK app never do.
     const publishes = (file: string) => touchesDocs([file], platform.docsPaths);
     expect(publishes('docs/site/onboarding.md')).toBe(true);
     expect(publishes('docs/site/runbook.md')).toBe(true);
     expect(publishes('mkdocs.yml')).toBe(true);
-    expect(publishes('toolkit/src/umccr_docs/theme/assets/umccr/umccr.css')).toBe(true);
-    expect(publishes('toolkit/pyproject.toml')).toBe(true);
-    expect(publishes('toolkit/requirements/build.txt')).toBe(true);
     expect(publishes('docs/design/adr/0008-infrastructure-in-docs-platform.md')).toBe(false);
     expect(publishes('docs/plans/implementation-plan.md')).toBe(false);
-    expect(publishes('toolkit/examples/basic-site/mkdocs.yml')).toBe(false);
-    expect(publishes('toolkit/templates/mkdocs.yml')).toBe(false);
-    expect(publishes('toolkit/requirements/dev.txt')).toBe(false);
+    expect(publishes('requirements/dev.txt')).toBe(false);
+    expect(publishes('scripts/check-boundary.sh')).toBe(false);
     expect(publishes('app/session/index.ts')).toBe(false);
+  });
+
+  test('names DOCS_TOOLKIT_REF on the one line the Makefile reads it from', () => {
+    const registry = fs.readFileSync(
+      path.join(__dirname, '..', 'infrastructure', 'sites.ts'),
+      'utf8'
+    );
+    expect(registry.split('\n')).toContain(
+      `export const DOCS_TOOLKIT_REF = '${DOCS_TOOLKIT_REF}';`
+    );
   });
 });
 
@@ -148,11 +155,10 @@ describe('validation', () => {
     expect(() => validateDocsSites([site({ configPath: '/mkdocs.yml' })])).toThrow(/config path/);
   });
 
-  test("lets only docs-platform build with its own commit's toolkit", () => {
-    expect(() => validateDocsSites([site({ toolkitRef: 'self' })])).toThrow(/self/);
+  test("refuses 'self', which built docs-platform's own site with its commit's toolkit until ADR-0010", () => {
     expect(() =>
       validateDocsSites([site({ repo: 'umccr/docs-platform', toolkitRef: 'self' })])
-    ).not.toThrow();
+    ).toThrow(/toolkit ref 'self'/);
   });
 
   test.each(['', 'v1 .0', '../v1', 'main', 'feat/docs', 'v1.2', 'a1b2c3d'])(

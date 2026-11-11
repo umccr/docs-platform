@@ -1,26 +1,30 @@
 # UMCCR Docs Platform
 
 Everything behind [docs.umccr.org](https://docs.umccr.org), authenticated documentation for UMCCR staff: the
-infrastructure and its pipelines, sign-in, the `umccr-docs` build toolkit, the shared theme with its chat panel,
-the conventions participating repositories follow, and the platform's own `/platform/` site.
+infrastructure and its pipelines, sign-in, the site registry, the conventions participating repositories follow,
+and the platform's own `/platform/` site. The `umccr-docs` build toolkit and the theme every site shares, with its
+chat panel, are in [umccr/docs-toolkit](https://github.com/umccr/docs-toolkit).
 
-> **Status:** 2026-11-04. Hosting, sign-in and the dispatcher run in dev and prod, which pipeline 1 deploys, and
-> `/platform/`, the knowledgebase and `/orcasonar/` publish to both through the site pipeline; the knowledgebase and
-> `/orcasonar/` build with `v0.3.1`. The chat panel answers in dev, where OrcaSonar runs. [Project](docs/site/project.md) has where the
-> platform stands and what is still open, and [Deploying](docs/site/deploy.md) how to deploy it.
+> **Status:** 2026-11-11. Hosting, sign-in and the dispatcher run in dev and prod, which pipeline 1 deploys, and
+> `/platform/`, the knowledgebase and `/orcasonar/` publish to both through the site pipeline. Every site builds with
+> `v0.3.1` of umccr/docs-toolkit, where the toolkit moved from this repository
+> ([ADR-0010](docs/design/adr/0010-toolkit-repository.md)). The chat panel answers in dev, where OrcaSonar runs.
+> [Project](docs/site/project.md) has where the platform stands and what is still open, and
+> [Deploying](docs/site/deploy.md) how to deploy it.
 
 ## How it fits together
 
 Each participating repository keeps its own Markdown and nothing else: no workflow, environment or secret. An
 organisation-wide GitHub webhook sends every push to a dispatcher, which starts one run of a shared site pipeline
-for pushes to a registered site. The pipeline builds the site with this repository's toolkit and publishes it to
-dev, then prod. Readers sign in with their UMCCR Google Workspace account, the same way as in the UMCCR portal.
-The chat panel on every page asks [OrcaSonar](https://github.com/umccr/orcasonar), a separate service, which
-indexes the documents each publish exports.
+for pushes to a registered site. The pipeline builds the site with the release of the toolkit the registry pins and
+publishes it to dev, then prod. Readers sign in with their UMCCR Google Workspace account, the same way as in the
+UMCCR portal. The chat panel on every page asks [OrcaSonar](https://github.com/umccr/orcasonar), a separate service,
+which indexes the documents each publish exports.
 
 | Repository | Owns |
 | --- | --- |
-| `umccr/docs-platform` (this one) | hosting, sign-in, the site registry, the dispatcher and both pipelines; the toolkit, theme and conventions; the `/platform/` site |
+| `umccr/docs-platform` (this one) | hosting, sign-in, the site registry, the dispatcher and both pipelines; the conventions; the `/platform/` site |
+| `umccr/docs-toolkit` | the `umccr-docs` toolkit and the theme, released as git tags that the registry pins |
 | `umccr/infrastructure` | the `docs-app` Cognito client and the docs certificate (Terraform) |
 | `umccr/orcasonar` | the chat API, its knowledge base and the bucket documents are exported to |
 | participating repositories | their Markdown and `mkdocs.yml` |
@@ -37,7 +41,7 @@ write-ups elsewhere in [docs/](docs/README.md) are read here and never published
 | Pipeline | Starts on | Does |
 | --- | --- | --- |
 | `UMCCR-DocsInfrastructure` | a push to `main` under `bin/`, `infrastructure/` or `app/`, except Markdown | deploys `UMCCR-DocsHostingStack` to beta and, after approval, prod; its self-update deploys the dispatcher and the site pipeline |
-| `UMCCR-DocsSitesPipeline` | the dispatcher, once per release of a site; for `/platform/`, a push that changes `mkdocs.yml`, `docs/site/`, or the toolkit's package or engine pins | builds the site, then publishes it to dev and prod with no approval, one release at a time |
+| `UMCCR-DocsSitesPipeline` | the dispatcher, once per release of a site; for `/platform/`, a push that changes `mkdocs.yml` or `docs/site/` | builds the site with its `toolkitRef`, then publishes it to dev and prod with no approval, one release at a time |
 
 ## Layout
 
@@ -55,10 +59,6 @@ app/                code those stacks deploy
   dispatcher/       the webhook dispatcher Lambda
   static/           public files: 404 page, robots.txt, favicon
 test/               jest tests for all of the above, with cdk-nag
-toolkit/            the umccr-docs Python package (CLI, Obsidian adapter, export, publisher) and the theme
-  requirements/     hash-pinned engine and tool versions
-  templates/        mkdocs.yml templates for participating repositories
-  examples/         synthetic sites CI builds on every change (plain Markdown and an Obsidian vault)
 docs/
   site/             the /platform/ site, published by the site pipeline: the catalogue, the pages for readers and
                     site owners, and the platform's project pages (project, tech, design, deploy, runbook, changelog)
@@ -66,21 +66,23 @@ docs/
   plans/            the proposal and the implementation plan
   issues/           write-ups of problems found and how they were resolved
 mkdocs.yml          the /platform/ site's configuration
+requirements/       actionlint, zizmor and detect-secrets, hash-pinned for `make check` and CI
 scripts/            check-boundary.sh, the public-repository information-boundary check
 ```
 
 ## Development
 
 Node.js 22 or later with pnpm through Corepack, Python 3.12, and [pre-commit](https://pre-commit.com). The
-Makefile runs everything; the toolkit lives in a virtualenv, `.venv`.
+Makefile runs everything; the repository's tools and the toolkit live in a virtualenv, `.venv`.
 
 ```sh
 corepack enable
-make install     # pnpm packages; .venv with the hash-pinned engine, the dev tools and the toolkit; the git hook
-make check       # dependency audit, formatting, lint (CDK app and toolkit), workflows, pre-commit hooks
-make test        # jest with cdk-nag, and pytest
-make sites       # strict builds of the examples and the /platform/ site, as CI runs them
+make install     # pnpm packages; .venv with the dev tools and the toolkit at DOCS_TOOLKIT_REF; the git hook
+make check       # dependency audit, formatting, lint, workflows, pre-commit hooks
+make test        # jest with cdk-nag
+make sites       # the strict build of the /platform/ site, as CI runs it
 make serve       # preview the /platform/ site on http://127.0.0.1:8000
+make toolkit     # the toolkit again, after DOCS_TOOLKIT_REF moves; TOOLKIT_REF=<tag or commit> for another
 make synth       # the CDK app
 make fix         # formatting and lint fixes
 make audit-fix   # overrides forcing patched dependency versions
@@ -89,6 +91,12 @@ make audit-fix   # overrides forcing patched dependency versions
 `make install` installs the pre-commit hooks, including the information-boundary check, as a git hook: each commit
 runs them on the files it changes, and `make check` runs them on every tracked file. To run a toolkit command
 yourself, use `.venv/bin/umccr-docs`, or `source .venv/bin/activate` first.
+
+The toolkit is installed from [umccr/docs-toolkit](https://github.com/umccr/docs-toolkit) at the release
+`DOCS_TOOLKIT_REF` names in `infrastructure/sites.ts`, as the site pipeline installs it: the engine with hashes from
+that release's `requirements/build.txt`, then the package. To see an unreleased change on `/platform/`, run
+`make toolkit TOOLKIT_REF=<commit>` once the commit is pushed, or `.venv/bin/pip install --no-deps -e ../docs-toolkit`
+from a local clone. Work on the toolkit itself happens there.
 
 ## Repository visibility
 

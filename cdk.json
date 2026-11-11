@@ -14,7 +14,6 @@
       "pnpm-lock.yaml",
       "node_modules",
       "test",
-      "toolkit",
       "docs",
       "mkdocs.yml",
       "site",

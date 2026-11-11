@@ -42,7 +42,7 @@ export interface FetchRequest {
   readonly commit: string;
   readonly release: number;
   readonly configPath: string;
-  /** A docs-platform git ref. `self` is already resolved to the pushed commit. */
+  /** The `umccr/docs-toolkit` git ref the site builds with, from the registry: a release tag or a full commit. */
   readonly toolkitRef: string;
   readonly stages: string[];
   readonly deliveryId: string;
@@ -65,9 +65,6 @@ export interface DispatcherDeps {
   startFetch(request: FetchRequest): Promise<string>;
   log(entry: Record<string, unknown>): void;
 }
-
-/** Toolkit ref meaning "the pushed commit". Must match `SELF_TOOLKIT_REF` in `infrastructure/sites.ts`. */
-export const SELF_TOOLKIT_REF = 'self';
 
 /** GitHub caps a push event's commit list here; a capped list may not name every changed file. */
 export const MAX_LISTED_COMMITS = 2048;
@@ -247,7 +244,7 @@ export const createDispatcher =
         commit: push.after,
         release,
         configPath: route.configPath,
-        toolkitRef: route.toolkitRef === SELF_TOOLKIT_REF ? push.after : route.toolkitRef,
+        toolkitRef: route.toolkitRef,
         stages: route.stages,
         deliveryId,
       };

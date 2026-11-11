@@ -165,7 +165,7 @@ Step-by-step commands, checks and troubleshooting: [Deploying](../site/deploy.md
 - [x] Approve the infrastructure pipeline's prod stage (2026-10-21): `UMCCR-DocsHostingStack` is up in prod.
 - [ ] Release `v0.1.1` and rebuild both sites with it, so their pages have the theme's script again
       ([write-up](../issues/2026-10-21-theme-script-missing-from-wheel.md),
-      [releasing](../site/runbook.md#release-the-toolkit-and-theme)).
+      [moving sites to a release](../site/runbook.md#move-sites-to-a-toolkit-release)).
 - [ ] OrcaSonar in prod, from its repository: in each account, Anthropic's model agreements (manual), the
       data-retention decision, and the docs Cognito client; then its pipelines' PromoteToProd.
 - [ ] Check that a personal Google account cannot sign in to prod (the deploy guide's verification checklist).

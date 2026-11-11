@@ -8,9 +8,9 @@ import { DocsSitePublishing } from './site-publishing';
 
 /**
  * Repository paths that start the docs infrastructure pipeline when changed on `main`: the CDK app, the stacks and
- * the code they deploy (Lambdas, the edge function, the sign-in page). The toolkit, the theme and the platform site
- * (`docs/site/` and `mkdocs.yml`) live in this repository too, but they reach readers through the site pipeline, not
- * this one.
+ * the code they deploy (Lambdas, the edge function, the sign-in page). The platform site (`docs/site/` and
+ * `mkdocs.yml`) lives in this repository too, but it reaches readers through the site pipeline, not this one, as the
+ * toolkit and theme do from `umccr/docs-toolkit`.
  */
 export const DOCS_INFRASTRUCTURE_FILE_PATHS = [
   'bin/**',
@@ -24,7 +24,7 @@ export const DOCS_INFRASTRUCTURE_FILE_PATHS = [
 
 /**
  * Paths that must not start the pipeline although an include matches them: Markdown, such as a README beside the code.
- * An exclude wins over an include. Paths no include matches, such as `docs/`, `toolkit/` and `mkdocs.yml`, never start
+ * An exclude wins over an include. Paths no include matches, such as `docs/`, `scripts/` and `mkdocs.yml`, never start
  * the pipeline, so listing them would only use up the eight patterns a list may hold.
  */
 export const DOCS_INFRASTRUCTURE_EXCLUDED_FILE_PATHS = ['**/*.md'];
@@ -74,7 +74,7 @@ export class DocsInfrastructureDeploymentStack extends Stack {
         prod: STAGE_ENVIRONMENT[AppStage.PROD],
       },
       tags: { 'umccr-org:Product': 'Docs' },
-      // jest with cdk-nag covers the CDK app and the code it deploys; the toolkit's tests run in CI.
+      // jest with cdk-nag covers the CDK app and the code it deploys; the toolkit's tests run in umccr/docs-toolkit.
       tests: { UnitTest: { installCommands, commands: ['pnpm run test'] } },
       synth: { installCommands, commands: ['pnpm cdk synth'] },
     });

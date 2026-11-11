@@ -4,17 +4,14 @@ repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:
-      # The theme's copy of Mermaid, a 3.6 MB bundle, stays byte for byte as the mermaid package on npm ships it
-      # (docs/site/runbook.md, "Update pinned dependencies").
       - id: check-added-large-files
-        exclude: ^toolkit/src/umccr_docs/theme/assets/umccr/mermaid/
       - id: check-yaml
         args: ['--unsafe'] # mkdocs.yml may hold tags the contract then rejects with a clearer message
       # Design pages exported from the design documents stay byte for byte as exported.
       - id: end-of-file-fixer
-        exclude: ^(docs/design/(?!adr/)|toolkit/src/umccr_docs/theme/assets/umccr/mermaid/)
+        exclude: ^docs/design/(?!adr/)
       - id: trailing-whitespace
-        exclude: ^(docs/design/(?!adr/)|toolkit/src/umccr_docs/theme/assets/umccr/mermaid/)
+        exclude: ^docs/design/(?!adr/)
       - id: detect-private-key
       - id: detect-aws-credentials
         args: ['--allow-missing-credentials']
@@ -24,7 +21,7 @@ repos:
     hooks:
       - id: detect-secrets
         args: ['--baseline', '.secrets.baseline']
-        exclude: ^(toolkit/requirements/.*\.txt|pnpm-lock\.yaml)$
+        exclude: ^(requirements/.*\.txt|pnpm-lock\.yaml)$
 
   - repo: local
     hooks:
@@ -33,20 +30,6 @@ repos:
         entry: scripts/check-boundary.sh
         language: system
         pass_filenames: false
-      # The virtualenv's ruff, pinned in toolkit/requirements/dev.txt, as `make check` and CI use. A commit from an
-      # editor often runs without .venv/bin on its PATH.
-      - id: ruff
-        name: ruff
-        entry: .venv/bin/ruff check toolkit
-        language: system
-        pass_filenames: false
-        files: ^toolkit/
-      - id: ruff-format
-        name: ruff format
-        entry: .venv/bin/ruff format --check toolkit
-        language: system
-        pass_filenames: false
-        files: ^toolkit/
       - id: eslint
         name: eslint (CDK app)
         entry: pnpm lint

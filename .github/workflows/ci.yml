@@ -13,8 +13,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  toolkit:
-    name: Toolkit tests and lint
+  site:
+    name: Strict build of the platform site
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -23,39 +23,12 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.12'
-      - name: Install
-        run: |
-          python -m pip install --require-hashes --no-deps -r toolkit/requirements/build.txt
-          python -m pip install --require-hashes -r toolkit/requirements/dev.txt
-          python -m pip install --no-deps ./toolkit
-      - run: ruff check toolkit
-      - run: ruff format --check toolkit
-      - run: pytest toolkit
-
-  sites:
-    name: Strict builds of the examples and the platform site
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-        with:
-          python-version: '3.12'
-      - name: Install
-        run: |
-          python -m pip install --require-hashes --no-deps -r toolkit/requirements/build.txt
-          python -m pip install --no-deps ./toolkit
-      # The root mkdocs.yml is the platform site. Its folder, `.`, would name RUNNER_TEMP itself, which the build
-      # would replace, so it builds into $RUNNER_TEMP/platform.
+      # The toolkit at DOCS_TOOLKIT_REF, from umccr/docs-toolkit, as the site pipeline installs it, then the same build
+      # and checks as `make sites`. The toolkit's own tests and the strict builds of its examples run there.
+      - name: Install the toolkit
+        run: python -m venv .venv && make toolkit
       - name: Build and check
-        run: |
-          for config in toolkit/examples/basic-site/mkdocs.yml toolkit/examples/obsidian-vault/mkdocs.yml mkdocs.yml; do
-            site="$RUNNER_TEMP/$(dirname "$config" | tr '/' '-' | sed 's/^\.$/platform/')"
-            umccr-docs check --config "$config"
-            umccr-docs build --config "$config" --site-dir "$site"
-            umccr-docs verify-site "$site"
-          done
+        run: make sites
 
   infrastructure:
     name: CDK app tests, lint and synth
@@ -86,7 +59,7 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.12'
-      - run: python -m pip install --require-hashes -r toolkit/requirements/dev.txt
+      - run: python -m pip install --require-hashes -r requirements/dev.txt
       - name: actionlint
         run: actionlint
       - name: zizmor

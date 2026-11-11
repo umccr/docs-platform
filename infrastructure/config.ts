@@ -39,7 +39,8 @@ export const COGNITO_OAUTH_DOMAIN_PARAMETER = '/data_portal/client/oauth_domain'
 
 /**
  * The stage role every site publish assumes, from the site pipeline in the toolchain account. One role for all sites:
- * each run narrows it to its own site with a session policy (see the toolkit's `publish --role-arn`).
+ * each run narrows it to its own site with a session policy (see `umccr-docs publish --role-arn`, in
+ * umccr/docs-toolkit).
  */
 export const DOCS_PUBLISHER_ROLE_NAME = 'docs-publisher';
 export const DOCS_PUBLISHER_ROLE_PATH = '/docs/';
