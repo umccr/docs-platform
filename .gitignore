@@ -4,16 +4,6 @@ site/
 !/docs/site/
 .umccr-docs/
 
-# Python
-__pycache__/
-*.py[cod]
-*.egg-info/
-.venv/
-.pytest_cache/
-.ruff_cache/
-dist/
-build/
-
 # Local state and credentials
 .env
 *.tfstate
@@ -27,8 +17,7 @@ node_modules/
 cdk.out/
 .cdk.staging
 *.d.ts
-# Compiled JS is never committed. Exceptions: config files, the hand-written edge function, and the theme's script.
+# Compiled JS is never committed. Exceptions: config files and the hand-written edge function.
 *.js
 !jest.config.js
 !app/**/*.js
-!toolkit/src/umccr_docs/theme/**/*.js

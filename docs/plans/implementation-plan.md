@@ -165,7 +165,7 @@ Step-by-step commands, checks and troubleshooting: [Deploying](../site/deploy.md
 - [x] Approve the infrastructure pipeline's prod stage (2026-10-21): `UMCCR-DocsHostingStack` is up in prod.
 - [ ] Release `v0.1.1` and rebuild both sites with it, so their pages have the theme's script again
       ([write-up](../issues/2026-10-21-theme-script-missing-from-wheel.md),
-      [releasing](../site/runbook.md#release-the-toolkit-and-theme)).
+      [moving sites to a release](../site/runbook.md#move-sites-to-a-toolkit-release)).
 - [ ] OrcaSonar in prod, from its repository: in each account, Anthropic's model agreements (manual), the
       data-retention decision, and the docs Cognito client; then its pipelines' PromoteToProd.
 - [ ] Check that a personal Google account cannot sign in to prod (the deploy guide's verification checklist).
@@ -177,7 +177,8 @@ Step-by-step commands, checks and troubleshooting: [Deploying](../site/deploy.md
 
 ### After launch
 
-- [ ] Name the owners' team in `.github/CODEOWNERS` and require their review on `main` (deferred 2026-10-20).
+- [x] Dropped on 2026-11-17: the repository keeps no `.github/CODEOWNERS`; a reviewed pull request on `main` is the
+      gate.
 - [ ] Release `v1.0.0` once ADR-0003 is settled, the first users' feedback is in, and a team outside platform
       depends on the contract with a site of its own ([versioning](../site/runbook.md#versioning)).
 

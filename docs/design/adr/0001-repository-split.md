@@ -1,7 +1,9 @@
 # 0001: Repository split
 
-**Status:** superseded in part by [0008](0008-infrastructure-in-docs-platform.md), 2026-10-12. The Terraform split
-stands; the hosting moved from `umccr/frontend-infrastructure-pipelines` to this repository.
+**Status:** superseded in part by [0008](0008-infrastructure-in-docs-platform.md), 2026-10-12, and by
+[0010](0010-toolkit-repository.md), 2026-11-11. The Terraform split stands; the hosting moved from
+`umccr/frontend-infrastructure-pipelines` to this repository, and the toolkit and theme from it to
+`umccr/docs-toolkit`.
 
 ## Context
 

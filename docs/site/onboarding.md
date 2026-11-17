@@ -13,16 +13,19 @@ The slug is the site's path. It is permanent, so choose it with care:
 
 ## 2. Add the configuration
 
-Copy a template from this repository's
-[`toolkit/templates/`](https://github.com/umccr/docs-platform/tree/main/toolkit/templates) into your repository:
+Copy a template from the toolkit's
+[`templates/`](https://github.com/umccr/docs-toolkit/tree/main/templates) into your repository:
 `mkdocs.yml` at the repository root, from `mkdocs.yml`, or `mkdocs-obsidian.yml` for an Obsidian vault. Set
 `site_name`, `site_url` (`https://docs.umccr.org/<slug>/`), `repo_url` and `docs_dir`.
 
-Preview locally the way the site pipeline builds:
+Preview locally the way the site pipeline builds, with the release your site will build with: `DOCS_TOOLKIT_REF`
+in [`infrastructure/sites.ts`](https://github.com/umccr/docs-platform/blob/main/infrastructure/sites.ts).
 
 ```sh
-pip install --require-hashes --no-deps -r <docs-platform>/toolkit/requirements/build.txt
-pip install --no-deps <docs-platform>/toolkit
+git clone --branch <release> https://github.com/umccr/docs-toolkit.git <docs-toolkit>
+python3.12 -m venv <docs-toolkit>/.venv && source <docs-toolkit>/.venv/bin/activate
+pip install --require-hashes --no-deps -r <docs-toolkit>/requirements/build.txt
+pip install --no-deps <docs-toolkit>
 umccr-docs serve
 ```
 
@@ -32,16 +35,19 @@ Fix anything `umccr-docs check` and the strict build report; see [Authoring](aut
 
 Ask the platform team, or open a pull request against
 [`infrastructure/sites.ts`](https://github.com/umccr/docs-platform/blob/main/infrastructure/sites.ts) in this
-repository. The entry names:
+repository. The entry needs three fields; the rest have defaults that suit a repository laid out like the templates:
 
-| Field | Example | Meaning |
+| Field | Default | Meaning |
 | --- | --- | --- |
-| `slug` | `my-service` | the site's path |
-| `repo`, `branch` | `umccr/my-service`, `main` | pushes to this branch publish the site |
+| `slug` | required, such as `my-service` | the site's path |
+| `repo` | required, such as `umccr/my-service` | the repository that holds the site |
+| `title` | required | the site's name in the catalogue |
+| `description` | none | one line for the catalogue |
+| `branch` | `main` | pushes to this branch publish the site |
 | `configPath` | `mkdocs.yml` | where your configuration is |
-| `docsPaths` | `docs/**`, `mkdocs.yml` | a push that changes none of these publishes nothing |
-| `toolkitRef` | a release tag | the toolkit and theme version your site builds with |
-| `stages` | dev and prod | where it is published |
+| `docsPaths` | `docs/**` and `mkdocs.yml`, beside your configuration | a push that changes none of these publishes nothing |
+| `toolkitRef` | `DOCS_TOOLKIT_REF` | the release of the toolkit and theme, from umccr/docs-toolkit, your site builds with |
+| `stages` | dev, then prod | where it is published |
 
 When the pull request merges, the infrastructure pipeline adds your site to the routing table, the catalogue and
 the dispatcher. If the organisation's AWS Connector for GitHub app is limited to selected repositories, an

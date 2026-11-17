@@ -51,7 +51,7 @@ import {
   ORCASONAR_INGEST_BUCKET_NAME_PREFIX,
   ORCASONAR_INGEST_BUCKET_PARAMETER,
 } from '../config';
-import { DocsSite } from '../sites';
+import { ResolvedDocsSite } from '../sites';
 import { TOOLCHAIN_ENVIRONMENT } from '../stages';
 import { renderViewerRequestCode } from './viewer-request';
 
@@ -557,7 +557,7 @@ export class DocsHostingStack extends Stack {
 }
 
 /** Catalogue rendered by the platform site. Titles and paths only; repositories stay out of it. */
-export const catalogueFor = (sites: DocsSite[]) => ({
+export const catalogueFor = (sites: ResolvedDocsSite[]) => ({
   sites: sites.map((site) => ({
     slug: site.slug,
     title: site.title,

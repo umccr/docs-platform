@@ -34,8 +34,8 @@ const ROUTES: DispatchRoute[] = [
     repo: 'umccr/docs-platform',
     branch: 'main',
     configPath: 'mkdocs.yml',
-    docsPaths: ['mkdocs.yml', 'docs/site/**', 'toolkit/src/**'],
-    toolkitRef: 'self',
+    docsPaths: ['mkdocs.yml', 'docs/site/**'],
+    toolkitRef: 'v1.1.0',
     stages: ['beta', 'prod'],
   },
 ];
@@ -256,17 +256,17 @@ describe('dispatcher', () => {
     expect(started).toHaveLength(1);
   });
 
-  test("builds docs-platform's own site with the toolkit at the pushed commit", async () => {
+  test("builds docs-platform's own site with its registry entry's toolkit ref, as any other site", async () => {
     const { deps: d, started } = deps();
     await createDispatcher(d)(
       request(
         push({
           repository: { full_name: 'umccr/docs-platform' },
-          commits: [{ modified: ['toolkit/src/umccr_docs/theme/assets/umccr/umccr.js'] }],
+          commits: [{ modified: ['docs/site/runbook.md'] }],
         })
       )
     );
-    expect(started[0]).toMatchObject({ slug: 'platform', toolkitRef: COMMIT });
+    expect(started[0]).toMatchObject({ slug: 'platform', commit: COMMIT, toolkitRef: 'v1.1.0' });
   });
 
   test('rejects a request without a valid signature', async () => {

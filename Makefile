@@ -1,74 +1,37 @@
-# Shortcuts for this repository: the CDK app through pnpm, and the Python toolkit in a virtualenv (.venv).
-# Run `make install` once, then `make check` and `make test` before pushing; CI runs the same checks.
+# Shortcuts for this repository: the CDK app through pnpm, and the checks through pre-commit. Run `make install` once,
+# then `make check` and `make test` before pushing; CI runs the same checks.
 
 PNPM ?= pnpm
-PYTHON ?= python3.12
-VENV ?= .venv
 
-BIN := $(VENV)/bin
+.PHONY: install check fix audit-fix test synth clean
 
-# Recipes call the virtualenv's tools by path: make 3.81, as macOS ships it, runs a simple command without a shell and
-# looks it up on its own PATH, ignoring this one. The export still reaches child processes, so pre-commit's hooks find
-# ruff and the toolkit.
-export PATH := $(abspath $(BIN)):$(PATH)
-
-SITE_CONFIGS := toolkit/examples/basic-site/mkdocs.yml toolkit/examples/obsidian-vault/mkdocs.yml mkdocs.yml
-
-.PHONY: install check fix audit-fix test sites serve synth clean
-
-# The CDK app's dependencies; a virtualenv with the hash-pinned engine, the dev tools and the toolkit; and the git hook
-# that runs the pre-commit hooks on each commit, with their environments, so a first commit has nothing to download.
+# The CDK app's dependencies, and the git hook that runs the pre-commit hooks on each commit, with their environments,
+# so a first commit has nothing to download.
 install:
 	@$(PNPM) install --frozen-lockfile
-	@test -x $(BIN)/python || $(PYTHON) -m venv $(VENV)
-	@$(BIN)/pip install --quiet --require-hashes --no-deps -r toolkit/requirements/build.txt
-	@$(BIN)/pip install --quiet --require-hashes -r toolkit/requirements/dev.txt
-	@$(BIN)/pip install --quiet --no-deps -e ./toolkit
 	@pre-commit install --install-hooks
 
-# Dependency audit, formatting, lint, the workflows, then the pre-commit hooks (secrets, the information boundary).
+# Dependency audit, then every pre-commit hook on every tracked file: secrets, the workflows (actionlint, zizmor), and
+# the CDK app's lint and formatting.
 check:
 	@$(PNPM) audit
-	@$(PNPM) format:check
-	@$(PNPM) lint
-	@$(BIN)/ruff check toolkit
-	@$(BIN)/ruff format --check toolkit
-	@$(BIN)/actionlint
-	@$(BIN)/zizmor --no-progress .github/workflows
 	@pre-commit run --all-files
 
 fix:
 	@$(PNPM) format
 	@$(PNPM) lint:fix
-	@$(BIN)/ruff check --fix toolkit
-	@$(BIN)/ruff format toolkit
 
 # Adds overrides that force patched versions; prefer `pnpm update <package>` when the patch is in range.
 audit-fix:
 	@$(PNPM) audit --fix
 
-# jest with cdk-nag for the CDK app; pytest for the toolkit, including strict builds of the examples.
+# jest with cdk-nag for the CDK app.
 test:
 	@$(PNPM) test
-	@$(BIN)/pytest toolkit
-
-# Strict builds and pre-publish checks of the examples and the /platform/ site, as CI runs them. Each builds into a
-# folder named for its config's folder; the root mkdocs.yml, the /platform/ site, into build/sites/platform.
-sites:
-	@for config in $(SITE_CONFIGS); do \
-	  site="build/sites/$$(dirname "$$config" | tr '/' '-' | sed 's/^\.$$/platform/')"; \
-	  $(BIN)/umccr-docs check --config "$$config" && \
-	  $(BIN)/umccr-docs build --config "$$config" --site-dir "$$site" && \
-	  $(BIN)/umccr-docs verify-site "$$site" || exit 1; \
-	done
-
-# Preview the /platform/ site on http://127.0.0.1:8000.
-serve:
-	@$(BIN)/umccr-docs serve --config mkdocs.yml
 
 synth:
 	@$(PNPM) cdk synth --quiet
 
-# Build output only; the virtualenv and node_modules stay.
+# Build output, and what previewing the /platform/ site leaves behind; node_modules stays.
 clean:
-	@rm -rf cdk.out build .umccr-docs toolkit/examples/*/.umccr-docs
+	@rm -rf cdk.out site .umccr-docs

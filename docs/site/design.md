@@ -20,6 +20,7 @@ in [`infrastructure/`](https://github.com/umccr/docs-platform/tree/main/infrastr
 | D9 | Chat is OrcaSonar's: docs hosts the panel, calls OrcaSonar's API with the reader's Cognito ID token, and exports documents to its ingest bucket. | [ADR-0007](../design/adr/0007-chat-through-orcasonar.md) |
 | D10 | The pilot publishes the vault's `PlatformServices/` folder in full, with wikilinks resolved and Bases views rendered as tables. When a note name exists in several folders, links resolve by `prefer_folders`. | |
 | D11 | Repository names in the public site registry are acceptable. | |
+| D12 | The toolkit and theme are in their own public repository, `umccr/docs-toolkit`, released as git tags with immutable GitHub releases; the registry pins a release for every site, `/platform/` included. | [ADR-0010](../design/adr/0010-toolkit-repository.md) |
 
 Open: the build engine. Material for MkDocs 9.7 on MkDocs 1.6 builds everything today; Zensical 0.0.66 also builds
 both examples and the pilot vault. See [ADR-0003](../design/adr/0003-build-engine.md).
@@ -30,9 +31,10 @@ The [design records](../design/adr/README.md) give each decision's reasons, and 
 
 Each participating repository keeps its own Markdown and nothing else: no workflow, environment or secret. An
 organisation-wide GitHub webhook sends every push to a dispatcher, which starts one run of a shared site pipeline
-for pushes to a registered site. The pipeline builds the site with this repository's toolkit and publishes it to dev,
-then prod. Readers sign in with their UMCCR Google Workspace account, the same way as in the UMCCR portal, and
-CloudFront checks the sign-in on every request before it serves anything:
+for pushes to a registered site. The pipeline builds the site with the release of the toolkit the registry pins,
+from `umccr/docs-toolkit`, and publishes it to dev, then prod. Readers sign in with their UMCCR Google Workspace
+account, the same way as in the UMCCR portal, and CloudFront checks the sign-in on every request before it serves
+anything:
 
 ```text
 Reader ──HTTPS──▶ CloudFront (docs distribution)
@@ -71,7 +73,7 @@ catalogue, built from `docs/site/`.
 
 | Slug                       | Repository                       | Builds with                       |
 | -------------------------- | -------------------------------- | --------------------------------- |
-| `platform`                 | `umccr/docs-platform`            | the pushed commit                 |
+| `platform`                 | `umccr/docs-platform`            | `DOCS_TOOLKIT_REF`, a release tag |
 | `management-knowledgebase` | `umccr/management-knowledgebase` | `DOCS_TOOLKIT_REF`, a release tag |
 | `orcasonar`                | `umccr/orcasonar`                | `DOCS_TOOLKIT_REF`, a release tag |
 
@@ -94,11 +96,11 @@ push ─▶ organisation webhook ─▶ dispatcher (Lambda) ─▶ fetch build (
   `codestar_github_arn` connection), zips it without `.git` to `sources/<slug>/<commit>.zip` (kept 30 days), and
   starts the site pipeline with that object and the release's variables.
 - **UMCCR-DocsSitesPipeline**: CodePipeline V2 in queued mode: one release at a time, in the order they start, since a
-  publish is not atomic and two releases of one site must not overlap. Build runs the toolkit at the site's
-  `toolkitRef` (a release tag or commit, never a branch) with no write access. Each publish step runs as
-  `docs-sites-publish`, whose only permission is to assume the stage's `docs-publisher` role; the toolkit narrows
-  that role to the release's site with a session policy. No approval: a failure in beta stops the release before
-  prod, and failed runs post to the alerts Slack channel.
+  publish is not atomic and two releases of one site must not overlap. Build runs the toolkit at the site's `toolkitRef`
+  (a release tag or commit of `umccr/docs-toolkit`, never a branch) with no write access. Each publish step runs as
+  `docs-sites-publish`, whose only permission is to assume the stage's `docs-publisher` role; the toolkit narrows that
+  role to the release's site with a session policy. No approval: a failure in beta stops the release before prod, and
+  failed runs post to the alerts Slack channel.
 - **`docs-publisher`**: one role per stage account (path `/docs/`). It trusts only `docs-sites-publish` in the
   toolchain account, may list, read, put and delete under `sites/*`, and may read the SSM parameters
   `/docs/content-bucket-name` and `/orcasonar/ingest-bucket-name`. For the documents it exports, it may do the same
@@ -190,8 +192,8 @@ The toolchain stack `DocsInfrastructurePipeline` (`bin/deploy.ts`) holds pipelin
 and dispatched publishing. Pipeline 1 is self-mutating: it deploys `UMCCR-DocsHostingStack` to beta and, after
 approval, prod, and its self-update deploys the rest of the toolchain stack. It is built by
 [`deployment-pipeline.ts`](https://github.com/umccr/docs-platform/blob/main/infrastructure/toolchain/deployment-pipeline.ts), the same construct OrcaSonar
-uses. It is started by changes under `bin/`, `infrastructure/` and `app/`, never by the platform site, docs, toolkit
-or example changes. [Deploying](deploy.md) has the commands for every step.
+uses. It is started by changes under `bin/`, `infrastructure/` and `app/`, never by the platform site or docs
+changes. [Deploying](deploy.md) has the commands for every step.
 
 Before a stage's first deploy:
 

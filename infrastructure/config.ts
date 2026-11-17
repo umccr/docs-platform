@@ -1,5 +1,5 @@
 import { AppStage } from './stages';
-import { DocsSite, getDocsSites } from './sites';
+import { getDocsSites, ResolvedDocsSite } from './sites';
 
 /**
  * Per-stage configuration for the docs hosting stack (`docs.<stage>.umccr.org`).
@@ -39,7 +39,8 @@ export const COGNITO_OAUTH_DOMAIN_PARAMETER = '/data_portal/client/oauth_domain'
 
 /**
  * The stage role every site publish assumes, from the site pipeline in the toolchain account. One role for all sites:
- * each run narrows it to its own site with a session policy (see the toolkit's `publish --role-arn`).
+ * each run narrows it to its own site with a session policy (see `umccr-docs publish --role-arn`, in
+ * umccr/docs-toolkit).
  */
 export const DOCS_PUBLISHER_ROLE_NAME = 'docs-publisher';
 export const DOCS_PUBLISHER_ROLE_PATH = '/docs/';
@@ -96,7 +97,7 @@ export interface DocsHostingStackConfig {
   readonly appStage: AppStage;
   readonly domainNames: string[];
   readonly canonicalHost?: string;
-  readonly sites: DocsSite[];
+  readonly sites: ResolvedDocsSite[];
   /** OrcaSonar's API base URL, for the chat panel. */
   readonly sonarApiUrl: string;
   readonly sessionLifetimeSeconds: number;
