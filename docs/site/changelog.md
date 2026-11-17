@@ -9,12 +9,12 @@ below. They are released in [umccr/docs-toolkit](https://github.com/umccr/docs-t
 [changelog](https://github.com/umccr/docs-toolkit/blob/main/CHANGELOG.md); entries here are under the date they
 merged, and `## Unreleased` holds what has not.
 
-## Unreleased
+## 2026-11-12
 
 The toolkit and theme move to their own repository, [umccr/docs-toolkit](https://github.com/umccr/docs-toolkit),
 with their history and their tags from `v0.2.0` ([ADR-0010](../design/adr/0010-toolkit-repository.md)). Nothing
 changes for readers or site owners: every site, `/platform/` included, builds with `v0.3.1`, which holds the same
-files there as it did here. Rename this heading to the date it merges.
+files there as it did here.
 
 - The site pipeline clones `umccr/docs-toolkit` at a site's `toolkitRef`. Its tags from `v0.2.0` are this
   repository's, file for file; `v0.1.x`, which no site uses, stays here only.
@@ -22,13 +22,21 @@ files there as it did here. Rename this heading to the date it merges.
   which the registry now refuses), and publishes on changes to `mkdocs.yml` and `docs/site/` only. The merge's own
   `/platform/` release stops at Build, and is started again by hand once pipeline 1's self-update is done
   ([runbook](runbook.md#a-merge-that-changes-platforms-own-registry-entry)).
-- `make install` and CI install the toolkit at `DOCS_TOOLKIT_REF` from umccr/docs-toolkit, as the site pipeline
-  does, and `make toolkit TOOLKIT_REF=<ref>` installs another release or commit. The repository's own tools,
-  actionlint, zizmor and detect-secrets, are pinned in `requirements/dev.txt`.
-- CI's checks are now "Strict build of the platform site", "CDK app tests, lint and synth" and "Workflows, secrets
-  and information boundary": `main`'s ruleset needs the first in place of "Toolkit tests and lint" and "Strict builds
-  of the examples and the platform site" ([repository settings](runbook.md#repository-settings)).
+- CI installs the toolkit at `DOCS_TOOLKIT_REF` from umccr/docs-toolkit, as the site pipeline does. The repository
+  keeps no virtualenv of its own: `/platform/` is previewed like any other site
+  ([onboarding](onboarding.md#2-add-the-configuration)), and the Makefile runs only the CDK app and the checks.
+- The checks all run through pre-commit, on each commit, in `make check` and in CI: actionlint and zizmor join
+  detect-secrets as hooks, each pinned to a commit. The information-boundary script is gone. Credentials are still
+  caught by detect-secrets, GitHub secret scanning and GitGuardian, and account IDs and resource names may now appear
+  where they are needed ([SECURITY.md](../../SECURITY.md)).
+- CI's checks are now "Strict build of the platform site", "CDK app tests, lint and synth" and "Workflows and
+  secrets", in place of "Toolkit tests and lint", "Strict builds of the examples and the platform site" and
+  "Workflows, secrets and information boundary" ([repository settings](runbook.md#repository-settings)).
 - The toolkit's tests, the theme script's among them, its examples and its templates are in umccr/docs-toolkit.
+- A registry entry needs only `slug`, `repo` and `title`. The other fields have defaults (`main`, `mkdocs.yml`,
+  `docs/**` and the configuration, `DOCS_TOOLKIT_REF`, beta then prod), so each site sets only what differs; the
+  three sites' routes, slugs and catalogue are as they were.
+- `.github/CODEOWNERS`, a placeholder with no rule in force, is gone.
 
 ## v0.3.1
 

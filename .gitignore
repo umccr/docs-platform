@@ -1,12 +1,8 @@
 # Build output: never commit a generated site (see docs/site/publishing.md). docs/site/ itself is the platform
-# site's source; the site/ it builds into is still ignored. `make sites` builds into build/.
+# site's source; the site/ it builds into is still ignored.
 site/
 !/docs/site/
 .umccr-docs/
-build/
-
-# The virtualenv with the repository's tools and the toolkit
-.venv/
 
 # Local state and credentials
 .env

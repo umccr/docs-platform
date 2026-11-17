@@ -4,7 +4,7 @@ Every step to deploy docs.umccr.org from this repository: the Terraform it depen
 OrcaSonar, the chat service, has its own guide in [umccr/orcasonar](https://github.com/umccr/orcasonar/blob/main/docs/deploy.md); [step 7](#step-7-orcasonar) covers where the two meet.
 Operating the platform once it is deployed is in the [runbook](runbook.md). This page is `docs/site/deploy.md` in [umccr/docs-platform](https://github.com/umccr/docs-platform), so it can be read on GitHub before docs.umccr.org is up, or while it is down.
 
-> **This repository is public.** The commands below print account IDs, ARNs, bucket names and secret values. Keep them in your terminal or a private note: never paste them into this repository, a pull request or an issue.
+> **This repository is public.** Some commands below print secret values: keep those in your terminal or a private note, never in this repository, a pull request or an issue. Account IDs, ARNs and bucket names are not secrets, but leave them out of these pages unless one is needed.
 
 ## What gets deployed
 
@@ -79,7 +79,7 @@ Everything runs in ap-southeast-2, except the docs certificate, which CloudFront
 | AWS CLI                              | v2                                                                                                                                                                                                                                   | every step                                                       |
 | Terraform                            | 1.5.7 or later                                                                                                                                                                                                                       | step 1                                                           |
 | Node.js with Corepack                | 22 or later (`.nvmrc`); Corepack provides pnpm 10.34.5. If another pnpm is first on your `PATH`, run `corepack pnpm@10.34.5 …` instead: a newer pnpm rewrites `packageManager` in `package.json` and adds itself to `pnpm-lock.yaml` | steps 3 and 4                                                    |
-| Python                               | 3.12                                                                                                                                                                                                                                 | step 3, where `make install` creates `.venv`; publishing by hand |
+| Python                               | 3.12, to preview a site or publish one by hand                                                                                                                                                                                       | step 3, where `make install` creates `.venv`; publishing by hand |
 | [pre-commit](https://pre-commit.com) | any recent                                                                                                                                                                                                                           | step 3, where `make install` installs its git hook               |
 | `git`, `curl`, `dig`, `jq`           | any recent                                                                                                                                                                                                                           | every step                                                       |
 
@@ -551,13 +551,13 @@ To check, open any page on `https://docs.dev.umccr.org/` signed in, open the cha
 
 | A change to                                                                         | Deploys through                                                                                                                    |
 | ----------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `bin/`, `infrastructure/`, `app/`                                                   | merge to `main`, then pipeline 1: the self-update (toolchain changes), beta, PromoteToProd, prod                                   |
+| the CDK app: `bin/`, `infrastructure/`, `app/`, its package and config files        | merge to `main`, then pipeline 1: the self-update (toolchain changes), beta, PromoteToProd, prod                                   |
 | the site registry, `infrastructure/sites.ts`                                        | the same; see [registering a site](runbook.md#register-a-site)                                                                     |
 | `mkdocs.yml`, `docs/site/`                                                          | merge to `main`, then `UMCCR-DocsSitesPipeline`: `/platform/` in dev, then prod                                                    |
 | a site's docs, in its own repository                                                | push, then `UMCCR-DocsSitesPipeline`                                                                                               |
 | the toolkit and theme, in umccr/docs-toolkit                                        | a release there, then the sites' `toolkitRef`; see [moving sites to a toolkit release](runbook.md#move-sites-to-a-toolkit-release) |
 | the session key                                                                     | see the [runbook](runbook.md#rotate-the-session-key)                                                                               |
-| the rest of `docs/`, `requirements/`, `scripts/`, and Markdown outside `docs/site/` | nothing deploys; CI runs                                                                                                           |
+| the rest of `docs/`, `.github/`, the Makefile, and Markdown outside `docs/site/`    | nothing deploys; CI runs                                                                                                           |
 
 ## Verification checklist
 
@@ -670,11 +670,11 @@ nobody has committed or reviewed on the site and into OrcaSonar's index. The pip
 to do the same by hand, build from a clean export of the commit, as the knowledgebase example below does. Outside a
 git checkout the toolkit takes every file in the folder.
 
+Install the toolkit at the release `DOCS_TOOLKIT_REF` names, as [Onboarding](onboarding.md#2-add-the-configuration)
+shows, and keep its virtualenv active. Then:
+
 ```sh
 cd docs-platform
-python3.12 -m venv .venv && source .venv/bin/activate
-make toolkit      # the toolkit at DOCS_TOOLKIT_REF, from umccr/docs-toolkit, as the pipeline installs it
-
 aws sso login --profile dev && export AWS_PROFILE=dev AWS_REGION=ap-southeast-2
 export UMCCR_DOCS_SOURCE_REPO=umccr/docs-platform UMCCR_DOCS_COMMIT=$(git rev-parse HEAD)
 DOCS_BUCKET=$(aws ssm get-parameter --name /docs/content-bucket-name --query Parameter.Value --output text)

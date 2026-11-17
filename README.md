@@ -40,7 +40,7 @@ write-ups elsewhere in [docs/](docs/README.md) are read here and never published
 
 | Pipeline | Starts on | Does |
 | --- | --- | --- |
-| `UMCCR-DocsInfrastructure` | a push to `main` under `bin/`, `infrastructure/` or `app/`, except Markdown | deploys `UMCCR-DocsHostingStack` to beta and, after approval, prod; its self-update deploys the dispatcher and the site pipeline |
+| `UMCCR-DocsInfrastructure` | a push to `main` that changes the CDK app: `bin/`, `infrastructure/`, `app/`, `cdk.json`, `package.json`, `pnpm-lock.yaml` or `tsconfig.json`, except Markdown | deploys `UMCCR-DocsHostingStack` to beta and, after approval, prod; its self-update deploys the dispatcher and the site pipeline |
 | `UMCCR-DocsSitesPipeline` | the dispatcher, once per release of a site; for `/platform/`, a push that changes `mkdocs.yml` or `docs/site/` | builds the site with its `toolkitRef`, then publishes it to dev and prod with no approval, one release at a time |
 
 ## Layout
@@ -66,40 +66,34 @@ docs/
   plans/            the proposal and the implementation plan
   issues/           write-ups of problems found and how they were resolved
 mkdocs.yml          the /platform/ site's configuration
-requirements/       actionlint, zizmor and detect-secrets, hash-pinned for `make check` and CI
-scripts/            check-boundary.sh, the public-repository information-boundary check
 ```
 
 ## Development
 
-Node.js 22 or later with pnpm through Corepack, Python 3.12, and [pre-commit](https://pre-commit.com). The
-Makefile runs everything; the repository's tools and the toolkit live in a virtualenv, `.venv`.
+Node.js 22 or later with pnpm through Corepack, and [pre-commit](https://pre-commit.com). The Makefile runs the CDK
+app through pnpm, and the checks through pre-commit.
 
 ```sh
 corepack enable
-make install     # pnpm packages; .venv with the dev tools and the toolkit at DOCS_TOOLKIT_REF; the git hook
-make check       # dependency audit, formatting, lint, workflows, pre-commit hooks
+make install     # pnpm packages; the git hook
+make check       # dependency audit, then the pre-commit hooks: secrets, workflows, lint and formatting
 make test        # jest with cdk-nag
-make sites       # the strict build of the /platform/ site, as CI runs it
-make serve       # preview the /platform/ site on http://127.0.0.1:8000
-make toolkit     # the toolkit again, after DOCS_TOOLKIT_REF moves; TOOLKIT_REF=<tag or commit> for another
 make synth       # the CDK app
 make fix         # formatting and lint fixes
 make audit-fix   # overrides forcing patched dependency versions
 ```
 
-`make install` installs the pre-commit hooks, including the information-boundary check, as a git hook: each commit
-runs them on the files it changes, and `make check` runs them on every tracked file. To run a toolkit command
-yourself, use `.venv/bin/umccr-docs`, or `source .venv/bin/activate` first.
+`make install` installs the pre-commit hooks as a git hook: each commit runs them on the files it changes, and
+`make check` runs them on every tracked file, as CI does.
 
-The toolkit is installed from [umccr/docs-toolkit](https://github.com/umccr/docs-toolkit) at the release
-`DOCS_TOOLKIT_REF` names in `infrastructure/sites.ts`, as the site pipeline installs it: the engine with hashes from
-that release's `requirements/build.txt`, then the package. To see an unreleased change on `/platform/`, run
-`make toolkit TOOLKIT_REF=<commit>` once the commit is pushed, or `.venv/bin/pip install --no-deps -e ../docs-toolkit`
-from a local clone. Work on the toolkit itself happens there.
+The `/platform/` site builds with the toolkit from [umccr/docs-toolkit](https://github.com/umccr/docs-toolkit), at the
+release `DOCS_TOOLKIT_REF` names in `infrastructure/sites.ts`, and CI builds it strictly on every pull request. To
+preview it, install the toolkit as any site owner does ([Onboarding](docs/site/onboarding.md#2-add-the-configuration))
+and run `umccr-docs serve` here. A docs-toolkit checkout with `make install` done there previews it with that
+checkout's toolkit: `../docs-toolkit/.venv/bin/umccr-docs serve`.
 
 ## Repository visibility
 
-This repository is public. It must hold only generic platform code and documentation: no private documentation,
-generated sites, credentials, account identifiers or security findings. AWS account IDs reach the CDK app only
-through `@orcabus/platform-cdk-constructs`, never as literals here. See [SECURITY.md](SECURITY.md).
+This repository is public. It must hold no credentials, private documentation, generated sites or security findings.
+AWS account IDs, ARNs and resource names are not secrets and may appear where they are needed, though the CDK app
+takes account IDs from `@orcabus/platform-cdk-constructs`. See [SECURITY.md](SECURITY.md).

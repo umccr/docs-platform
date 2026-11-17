@@ -56,8 +56,8 @@ Every change keeps to these. [Design](design.md) has the reasons.
 6. **A merge here changes no other site.** Every site builds with a toolkit release tag that the registry pins, and
    moves to a new one deliberately; a release in `umccr/docs-toolkit` changes no site until then.
 7. **One pipeline for every site.** Adding a site adds a registry entry, never a pipeline, role or secret.
-8. **This repository is public.** It holds generic platform code and documentation only: no account IDs, ARNs, bucket
-   names, credentials or private content ([SECURITY.md](../../SECURITY.md)).
+8. **This repository is public.** It holds platform code and documentation, never credentials or private content.
+   Account IDs and resource names may appear where they are needed ([SECURITY.md](../../SECURITY.md)).
 
 ## Stages
 
@@ -98,7 +98,6 @@ deploy is tracked in its repository.
 | Whether sites ask the dispatcher through GitHub OIDC instead of the public function URL; proposed and deferred on 2026-10-15. | [ADR-0009](../design/adr/0009-dispatch-from-github-actions.md) |
 | `umccr/docs-toolkit`'s rulesets and release immutability, and immutable releases for the tags it carried over, `v0.2.0` to `v0.3.1`. | [its repository settings](https://github.com/umccr/docs-toolkit/blob/main/CONTRIBUTING.md#repository-settings) |
 | The `ci` checks required on `main`, and the `v*` tags protected. | [Repository settings](runbook.md#repository-settings) |
-| The owners' team named in `.github/CODEOWNERS`, and their review required on `main`. | `.github/CODEOWNERS` |
 | `umccr/infrastructure`'s docs branch merged; it is already applied to dev and prod. | `umccr/infrastructure` |
 | A private security review, an accessibility check and an operational readiness review, and a check that a personal Google account cannot sign in to prod. | the [implementation plan](../plans/implementation-plan.md#production) |
 | Secret scanning, push protection and Dependabot for this repository. | the repository's settings |
@@ -111,7 +110,7 @@ The [implementation plan](../plans/implementation-plan.md#6-rollout) tracks the 
 | Term | Meaning |
 | --- | --- |
 | site, slug | one documentation site, served at `/<slug>/`. The slug is also its prefix in the docs bucket and in OrcaSonar's ingest bucket, and never changes once published |
-| registry | `DOCS_SITES` in `infrastructure/sites.ts`: each site's repository, branch, `mkdocs.yml`, docs paths, toolkit ref and stages. The dispatcher's routes, the edge function's slug table and the catalogue all come from it |
+| registry | `DOCS_SITES` in `infrastructure/sites.ts`: each site's slug, repository and title, and, where it differs from the defaults, its branch, `mkdocs.yml`, docs paths, toolkit ref and stages. The dispatcher's routes, the edge function's slug table and the catalogue all come from it |
 | docs paths | the globs whose changes publish a site; a push that changes none of them starts nothing |
 | toolkit, theme | `umccr-docs`, the Python package in `umccr/docs-toolkit` that checks, builds, verifies, exports and publishes a site, and the theme it ships |
 | toolkit ref | the `umccr/docs-toolkit` release tag or commit a site builds with: `DOCS_TOOLKIT_REF` unless the site pins its own |

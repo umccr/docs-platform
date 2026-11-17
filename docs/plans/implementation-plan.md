@@ -177,7 +177,8 @@ Step-by-step commands, checks and troubleshooting: [Deploying](../site/deploy.md
 
 ### After launch
 
-- [ ] Name the owners' team in `.github/CODEOWNERS` and require their review on `main` (deferred 2026-10-20).
+- [x] Dropped on 2026-11-17: the repository keeps no `.github/CODEOWNERS`; a reviewed pull request on `main` is the
+      gate.
 - [ ] Release `v1.0.0` once ADR-0003 is settled, the first users' feedback is in, and a team outside platform
       depends on the contract with a site of its own ([versioning](../site/runbook.md#versioning)).
 

@@ -60,7 +60,7 @@ const TOOLKIT_REPOSITORY = 'https://github.com/umccr/docs-toolkit.git';
 /**
  * Install the toolkit at `TOOLKIT_REF`, with the engine pinned by hash from the same ref. docs-toolkit is public, so
  * the clone needs no credentials. Its tags from `v0.2.0` hold what `toolkit/` held at the same tags here (ADR-0010);
- * `v0.1.x`, with its pins outside `toolkit/`, did not move. `make toolkit` installs the same for `make install` and CI.
+ * `v0.1.x`, with its pins outside `toolkit/`, did not move. CI installs the same to build `/platform/`.
  */
 const INSTALL_TOOLKIT = [
   `git clone --quiet ${TOOLKIT_REPOSITORY} "$TOOLKIT_DIR"`,

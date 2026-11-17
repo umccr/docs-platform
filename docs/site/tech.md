@@ -19,12 +19,11 @@ fits together, in [Design](design.md).
 | Toolkit and theme | `umccr-docs` from [umccr/docs-toolkit](https://github.com/umccr/docs-toolkit), at the release `DOCS_TOOLKIT_REF` names: Python 3.12, Material for MkDocs on MkDocs 1.6, and the theme's copy of Mermaid. Its [CONTRIBUTING.md](https://github.com/umccr/docs-toolkit/blob/main/CONTRIBUTING.md) lists their versions |
 | Tests | jest `^30.5.1` with ts-jest for the CDK app and the code it deploys |
 | Lint and format | ESLint `^10.14.0` with typescript-eslint and Prettier `^3.9.6` for the CDK app |
-| Repository checks | pre-commit; detect-secrets `1.5.0`; actionlint and zizmor `1.30.1` for the workflows; `scripts/check-boundary.sh` |
+| Repository checks | pre-commit, `4.7.0` in CI, with its hooks pinned by commit: detect-secrets `1.5.0`; actionlint `1.7.12` and zizmor `1.30.1` for the workflows; pre-commit-hooks `6.0.0` |
 
-The CDK app's versions are the ranges in `package.json`, and `pnpm-lock.yaml` pins what is installed. The
-repository's own Python tools are pinned with hashes in `requirements/dev.txt`, and the toolkit's dependencies in
-its own repository. Everything runs in ap-southeast-2, except the docs certificate, which CloudFront needs in
-us-east-1.
+The CDK app's versions are the ranges in `package.json`, and `pnpm-lock.yaml` pins what is installed. The checks are
+pinned in `.pre-commit-config.yaml`, and the toolkit's dependencies in its own repository. Everything runs in
+ap-southeast-2, except the docs certificate, which CloudFront needs in us-east-1.
 
 ## Layout
 
@@ -49,8 +48,6 @@ docs-platform/
 │   ├── plans/                 # the proposal and the implementation plan
 │   └── issues/                # write-ups of problems found and how they were resolved
 ├── mkdocs.yml                 # this site's configuration
-├── requirements/dev.txt       # hash-pinned versions of the repository's own tools, from dev.in
-├── scripts/check-boundary.sh  # the public-repository information-boundary check
 └── Makefile                   # every command below
 ```
 
@@ -60,23 +57,20 @@ package, its tests and examples, and the `mkdocs.yml` templates sites start from
 
 ## Commands
 
-Node.js 22 or later with pnpm through Corepack, Python 3.12, and [pre-commit](https://pre-commit.com). Run
-`corepack enable` once.
+Node.js 22 or later with pnpm through Corepack, and [pre-commit](https://pre-commit.com). Run `corepack enable` once.
 
 | Command | Does |
 | --- | --- |
-| `make install` | pnpm packages; `.venv` with the dev tools and the toolkit at `DOCS_TOOLKIT_REF`; the pre-commit git hook |
-| `make check` | dependency audit, formatting, lint, the workflows, and the pre-commit hooks on every tracked file |
+| `make install` | pnpm packages, and the pre-commit git hook with its hooks' environments |
+| `make check` | dependency audit, then the pre-commit hooks on every tracked file: secrets, the workflows with actionlint and zizmor, and the CDK app's lint and formatting |
 | `make test` | jest with cdk-nag |
-| `make sites` | the strict build and pre-publish checks of this site into `build/sites/platform`, as CI runs them |
-| `make serve` | this site on `http://127.0.0.1:8000`, rebuilt as its pages change |
-| `make toolkit` | the toolkit at `DOCS_TOOLKIT_REF`, from umccr/docs-toolkit as the site pipeline installs it, again after it moves; `TOOLKIT_REF=` another release tag or full commit |
 | `make synth` | the CDK app |
 | `make fix` | formatting and lint fixes |
 | `make audit-fix` | overrides that force patched dependency versions |
-| `make clean` | build output; the virtualenv and `node_modules` stay |
+| `make clean` | build output, and what a preview of this site leaves; `node_modules` stays |
 
-To run a toolkit command yourself, use `.venv/bin/umccr-docs`, or `source .venv/bin/activate` first.
+CI builds this site strictly with the toolkit at `DOCS_TOOLKIT_REF`. To preview it, install the toolkit as any site
+owner does ([Onboarding](onboarding.md#2-add-the-configuration)) and run `umccr-docs serve` at the repository root.
 
 ## Tests and CI
 
@@ -84,8 +78,8 @@ To run a toolkit command yourself, use `.venv/bin/umccr-docs`, or `source .venv/
   function in a harness against cookies the session Lambda's code minted; and covers the session Lambda and its
   signing key, the dispatcher, the sign-in page, the site registry, and pipeline 1's trigger paths.
 - **CI** (`.github/workflows/ci.yml`), on every pull request and every push to `main`: "Strict build of the platform
-  site", with the toolkit at `DOCS_TOOLKIT_REF`; "CDK app tests, lint and synth"; and "Workflows, secrets and
-  information boundary". `main`'s ruleset should require all three
+  site", with the toolkit at `DOCS_TOOLKIT_REF`; "CDK app tests, lint and synth"; and "Workflows and secrets", the
+  pre-commit hooks. `main`'s ruleset should require all three
   ([Repository settings](runbook.md#repository-settings)).
 - **Pipeline 1** runs the jest tests again before it synthesizes.
 - **The toolkit's tests**, its theme script's among them, and the strict builds of its examples run in
@@ -93,13 +87,14 @@ To run a toolkit command yourself, use `.venv/bin/umccr-docs`, or `source .venv/
 
 ## Conventions
 
-- **This repository is public.** It holds generic platform code and documentation only. Account IDs reach the CDK app
-  only through `@orcabus/platform-cdk-constructs`, and the site pipeline reads bucket names from SSM at run time, so
-  neither is written here. `scripts/check-boundary.sh` and detect-secrets enforce part of this, in CI and in the
-  pre-commit hook; reviewers enforce the rest ([SECURITY.md](../../SECURITY.md)).
-- **Everything is pinned.** The repository's Python tools by hash (`requirements/dev.txt`, regenerated with
-  `uv pip compile` from `dev.in`), npm packages by `pnpm-lock.yaml`, every third-party action by full commit SHA with
-  its version in a comment, and each site's toolkit by a release tag or commit of umccr/docs-toolkit, never a branch.
+- **This repository is public.** It holds platform code and documentation, never credentials or private content.
+  Account IDs and resource names are not secrets and may appear where they are needed, though the CDK app takes
+  account IDs from `@orcabus/platform-cdk-constructs` and the site pipeline reads bucket names from SSM at run time.
+  detect-secrets and pre-commit's key checks catch credentials on each commit and in CI, and GitHub secret scanning
+  and GitGuardian on each push; reviewers check the rest ([SECURITY.md](../../SECURITY.md)).
+- **Everything is pinned.** Each pre-commit hook by commit SHA with its version in a comment, and pre-commit itself by
+  version in CI; npm packages by `pnpm-lock.yaml`; every third-party action by full commit SHA with its version in a
+  comment; and each site's toolkit by a release tag or commit of umccr/docs-toolkit, never a branch.
 - **Changes reach `main` through pull requests.** Review there is the only gate before prod for `/platform/`, which
   publishes from each merge with no approval, and for the registry, which moves sites to a toolkit release. The
   toolkit's own changes are reviewed in umccr/docs-toolkit.
@@ -118,11 +113,11 @@ To run a toolkit command yourself, use `.venv/bin/umccr-docs`, or `source .venv/
 | When you change | Also change |
 | --- | --- |
 | a site's entry in `infrastructure/sites.ts` | nothing else here: the dispatcher's routes, the edge function's slug table and the catalogue all derive from it. The site's `mkdocs.yml` needs `site_url` `https://docs.umccr.org/<slug>/`. For `/platform/`, `test/sites.test.ts` too |
-| `DOCS_TOOLKIT_REF` | release its tag in umccr/docs-toolkit first: until the tag exists, every site's releases stop at Build, and CI cannot build `/platform/`. Keep its line as it is: the Makefile reads it, and `test/sites.test.ts` checks it |
+| `DOCS_TOOLKIT_REF` | release its tag in umccr/docs-toolkit first: until the tag exists, every site's releases stop at Build, and CI cannot build `/platform/`. Keep its line as it is: CI reads it, and `test/sites.test.ts` checks it |
 | `DOCS_DOMAIN_NAMES` | the Cognito callback URLs (`umccr/infrastructure` `cognito_aai/app_docs.tf`) and the certificate (`umccr_docs_domain`) |
 | `SONAR_API_URLS` | OrcaSonar's hosts: the content pages' Content Security Policy and `/_auth/env.js` take their values from it |
 | OrcaSonar's stateful stack or ingest bucket name | `ORCASONAR_INGEST_BUCKET_NAME_PREFIX` in `infrastructure/config.ts` |
-| where umccr/docs-toolkit keeps its engine pins | `INSTALL_TOOLKIT` in `infrastructure/toolchain/sites-pipeline.ts`, which must still install every ref a site or a rollback may name, and the Makefile's `toolkit` target |
+| where umccr/docs-toolkit keeps its engine pins | `INSTALL_TOOLKIT` in `infrastructure/toolchain/sites-pipeline.ts`, which must still install every ref a site or a rollback may name, and CI's "Install the toolkit" step |
 | pipeline 1's trigger paths | the literal lists in `test/pipeline-stack.test.ts`; CodePipeline takes at most 8 patterns in each |
 | the session key | `DOCS_SESSION_KEY_GENERATION` in `infrastructure/config.ts`, never the secret's value ([Rotate the session key](runbook.md#rotate-the-session-key)) |
 

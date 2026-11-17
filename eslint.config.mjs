@@ -15,10 +15,7 @@ export default defineConfig([
     // under app/ is linted via the JS override below.
     'docs',
     'site',
-    // `make sites` builds into build/sites/.
-    'build',
     '.umccr-docs',
-    '.venv',
   ]),
 
   // Base configs.

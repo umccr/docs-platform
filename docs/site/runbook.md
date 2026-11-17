@@ -53,21 +53,27 @@ Append a `DocsSite` to `DOCS_SITES` in [`infrastructure/sites.ts`](https://githu
 export const EXAMPLE_SITE: DocsSite = {
   slug: 'example', // URL path and S3 prefix; immutable once published
   repo: 'umccr/example', // the repository the dispatcher clones
-  branch: 'main', // pushes to this branch publish the site
-  configPath: 'mkdocs.yml',
-  docsPaths: ['docs/**', 'mkdocs.yml'], // a push that changes none of these publishes nothing
-  toolkitRef: DOCS_TOOLKIT_REF, // or a docs-platform release tag or full commit SHA, never a branch
-  stages: [AppStage.BETA, AppStage.PROD],
   title: 'Example',
   description: 'One line for the catalogue.',
 };
 ```
 
+Only `slug`, `repo` and `title` are required. A field left out takes its default, so set one only where the site
+differs from the templates' layout:
+
+| Field | Default |
+| --- | --- |
+| `description` | none |
+| `branch` | `main`: pushes to it publish the site |
+| `configPath` | `mkdocs.yml` |
+| `docsPaths` | `docs/**` and the configuration file, in the configuration's folder: a push that changes none of them publishes nothing |
+| `toolkitRef` | `DOCS_TOOLKIT_REF`; or a docs-toolkit release tag or full commit SHA of the site's own, never a branch |
+| `stages` | beta (dev), then prod: the platform's two stages |
+
 - **Slug**: lowercase letters, digits and inner hyphens, at most 49 characters. It must not reveal a confidential
   project or repository name. `sites` is reserved.
-- **Docs paths**: globs relative to the repository root. Keep them tight in code repositories, so code-only pushes
-  don't rebuild the site.
-- **Stages**: sites publish to beta (dev) and prod, the platform's two stages.
+- **Docs paths**: globs relative to the repository root. Set them when the pages are not in `docs/`, as for an
+  Obsidian vault, and keep them tight in code repositories, so code-only pushes don't rebuild the site.
 - **Registry visibility**: this repository is public, so the repository name becomes public too.
 
 Merging starts `DocsInfrastructurePipeline`. Its self-update gives the dispatcher the new routing entry, and each
@@ -328,8 +334,9 @@ such as `toolkit/v0.4.0`, change:
 | the [changelog](changelog.md) | an entry, under the date it merges: the release the sites move to, what it changes for them, and a link to its notes |
 | `README.md`, [Deploying](deploy.md), [Project](project.md) | the version the sites build with, in the status lines and the site table, and a row in the project's timeline |
 
-Run `make toolkit`, then `make check`, `make test` and `make sites`: `/platform/` builds with the new release, as CI
-then builds it. Open the pull request.
+Run `make check` and `make test`, and open the pull request: CI's "Strict build of the platform site" builds
+`/platform/` with the new release. To look at it before then, preview it with that release
+([Onboarding](onboarding.md#2-add-the-configuration)).
 
 ### 2. Deploy
 
@@ -433,12 +440,9 @@ release. umccr/docs-toolkit has
 An organisation owner sets these under **Settings → Rules → Rulesets**:
 
 - **`main`**: require a pull request with one approval, and the `ci` checks to pass ("Strict build of the platform
-  site", "CDK app tests, lint and synth", "Workflows, secrets and information boundary"); block force pushes and
-  deletion.
+  site", "CDK app tests, lint and synth", "Workflows and secrets"); block force pushes and deletion.
 - **`v*` tags**: only the platform owners may create them, and nobody may update or delete one. New toolkit releases
   are tagged in umccr/docs-toolkit; the tags here are the releases from before it moved.
-- **Code owners**, later: once the owners' team is named in [`.github/CODEOWNERS`](https://github.com/umccr/docs-platform/blob/main/.github/CODEOWNERS), which
-  holds a placeholder for now, require their review on `main` too.
 
 ### Roll back a release
 
@@ -452,8 +456,8 @@ object, with `TOOLKIT_REF` set to the previous tag. Re-running an existing relea
 ### Update pinned dependencies
 
 - CDK app: `pnpm update`, then `pnpm test` and a template diff before merging.
-- The repository's tools: edit `requirements/dev.in` and regenerate `requirements/dev.txt` with the command at the
-  top of the file. The hashes change with it.
+- The checks: `pre-commit autoupdate --freeze` pins every hook to its newest release's commit, with the version in a
+  comment (`--repo <url>` for one hook); then `make check`. pre-commit itself is pinned in `.github/workflows/ci.yml`.
 - Actions: every third-party action is pinned to a full commit SHA with its version in a comment. Update both.
 - The engine, the toolkit's own dependencies and the theme's copy of Mermaid are pinned in umccr/docs-toolkit
   ([its steps](https://github.com/umccr/docs-toolkit/blob/main/CONTRIBUTING.md#update-pinned-dependencies)), and

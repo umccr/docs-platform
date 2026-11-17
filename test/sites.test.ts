@@ -11,21 +11,21 @@ import {
   DocsSite,
   getDocsSites,
   MAX_SLUG_LENGTH,
+  resolveDocsSite,
   validateDocsSites,
 } from '../infrastructure/sites';
 
-const site = (overrides: Partial<DocsSite>): DocsSite => ({
+/** A site with only the required fields, and whatever a test sets. */
+const site = (overrides: Partial<DocsSite> = {}): DocsSite => ({
   slug: 'example',
   repo: 'umccr/example',
-  branch: 'main',
-  configPath: 'mkdocs.yml',
-  docsPaths: ['docs/**', 'mkdocs.yml'],
-  toolkitRef: 'v1.0.0',
-  stages: [AppStage.BETA, AppStage.PROD],
   title: 'Example',
-  description: 'Example site',
   ...overrides,
 });
+
+/** A registered site with its defaults filled in, as the dispatcher and the hosting stack see it. */
+const registered = (slug: string) =>
+  resolveDocsSite(DOCS_SITES.find((entry) => entry.slug === slug)!);
 
 describe('registry', () => {
   test('is valid', () => {
@@ -40,8 +40,7 @@ describe('registry', () => {
   });
 
   test('publishes the knowledge base from its own repository, on pushes that change the vault', () => {
-    const knowledgebase = DOCS_SITES.find((entry) => entry.slug === 'management-knowledgebase');
-    expect(knowledgebase).toMatchObject({
+    expect(registered('management-knowledgebase')).toMatchObject({
       repo: 'umccr/management-knowledgebase',
       branch: 'main',
       docsPaths: ['PlatformServices/**', 'mkdocs.yml'],
@@ -49,7 +48,7 @@ describe('registry', () => {
   });
 
   test('publishes OrcaSonar from its docs folder, and not on pushes that change only its code', () => {
-    const orcasonar = DOCS_SITES.find((entry) => entry.slug === 'orcasonar')!;
+    const orcasonar = registered('orcasonar');
     expect(orcasonar).toMatchObject({
       repo: 'umccr/orcasonar',
       branch: 'main',
@@ -66,7 +65,7 @@ describe('registry', () => {
   });
 
   test('builds the platform site from docs/site with the toolkit release every site builds with', () => {
-    const platform = DOCS_SITES.find((entry) => entry.slug === 'platform')!;
+    const platform = registered('platform');
     expect(platform).toMatchObject({
       repo: 'umccr/docs-platform',
       configPath: 'mkdocs.yml',
@@ -80,12 +79,12 @@ describe('registry', () => {
     expect(publishes('mkdocs.yml')).toBe(true);
     expect(publishes('docs/design/adr/0008-infrastructure-in-docs-platform.md')).toBe(false);
     expect(publishes('docs/plans/implementation-plan.md')).toBe(false);
-    expect(publishes('requirements/dev.txt')).toBe(false);
-    expect(publishes('scripts/check-boundary.sh')).toBe(false);
+    expect(publishes('.pre-commit-config.yaml')).toBe(false);
+    expect(publishes('Makefile')).toBe(false);
     expect(publishes('app/session/index.ts')).toBe(false);
   });
 
-  test('names DOCS_TOOLKIT_REF on the one line the Makefile reads it from', () => {
+  test('names DOCS_TOOLKIT_REF on the one line CI reads it from', () => {
     const registry = fs.readFileSync(
       path.join(__dirname, '..', 'infrastructure', 'sites.ts'),
       'utf8'
@@ -93,6 +92,47 @@ describe('registry', () => {
     expect(registry.split('\n')).toContain(
       `export const DOCS_TOOLKIT_REF = '${DOCS_TOOLKIT_REF}';`
     );
+  });
+});
+
+describe('defaults', () => {
+  test('fill in every field an entry leaves out', () => {
+    expect(resolveDocsSite(site())).toEqual({
+      slug: 'example',
+      repo: 'umccr/example',
+      title: 'Example',
+      description: '',
+      branch: 'main',
+      configPath: 'mkdocs.yml',
+      docsPaths: ['docs/**', 'mkdocs.yml'],
+      toolkitRef: DOCS_TOOLKIT_REF,
+      stages: [AppStage.BETA, AppStage.PROD],
+    });
+  });
+
+  test('look for the pages beside a configuration kept in a folder', () => {
+    expect(resolveDocsSite(site({ configPath: 'handbook/mkdocs.yml' })).docsPaths).toEqual([
+      'handbook/docs/**',
+      'handbook/mkdocs.yml',
+    ]);
+  });
+
+  test('never replace what an entry sets', () => {
+    const custom = {
+      description: 'One line',
+      branch: 'docs',
+      configPath: 'site/mkdocs.yml',
+      docsPaths: ['site/**'],
+      toolkitRef: 'v9.9.9',
+      stages: [AppStage.BETA],
+    };
+    expect(resolveDocsSite(site(custom))).toEqual({ ...site(), ...custom });
+  });
+
+  test('publish a site to the stages it names only', () => {
+    const betaOnly = site({ stages: [AppStage.BETA] });
+    expect(getDocsSites(AppStage.BETA, [betaOnly]).map((entry) => entry.slug)).toEqual(['example']);
+    expect(getDocsSites(AppStage.PROD, [betaOnly])).toEqual([]);
   });
 });
 
@@ -112,6 +152,10 @@ describe('validation', () => {
 
   test('accepts the longest allowed slug', () => {
     expect(() => validateDocsSites([site({ slug: 'a'.repeat(MAX_SLUG_LENGTH) })])).not.toThrow();
+  });
+
+  test.each(['', '   '])('rejects the title %p: the catalogue shows it', (title) => {
+    expect(() => validateDocsSites([site({ title })])).toThrow(/title/);
   });
 
   test('rejects the reserved slug "sites"', () => {
@@ -210,5 +254,11 @@ describe('catalogue', () => {
       '/orcasonar/',
     ]);
     expect(JSON.stringify(catalogue)).not.toContain('umccr/');
+  });
+
+  test('gives a site without a description an empty one', () => {
+    expect(catalogueFor(getDocsSites(AppStage.PROD, [site()])).sites).toEqual([
+      { slug: 'example', title: 'Example', description: '', url: '/example/' },
+    ]);
   });
 });

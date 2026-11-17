@@ -24,7 +24,7 @@ export const DOCS_INFRASTRUCTURE_FILE_PATHS = [
 
 /**
  * Paths that must not start the pipeline although an include matches them: Markdown, such as a README beside the code.
- * An exclude wins over an include. Paths no include matches, such as `docs/`, `scripts/` and `mkdocs.yml`, never start
+ * An exclude wins over an include. Paths no include matches, such as `docs/`, `.github/` and `mkdocs.yml`, never start
  * the pipeline, so listing them would only use up the eight patterns a list may hold.
  */
 export const DOCS_INFRASTRUCTURE_EXCLUDED_FILE_PATHS = ['**/*.md'];

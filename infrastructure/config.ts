@@ -1,5 +1,5 @@
 import { AppStage } from './stages';
-import { DocsSite, getDocsSites } from './sites';
+import { getDocsSites, ResolvedDocsSite } from './sites';
 
 /**
  * Per-stage configuration for the docs hosting stack (`docs.<stage>.umccr.org`).
@@ -97,7 +97,7 @@ export interface DocsHostingStackConfig {
   readonly appStage: AppStage;
   readonly domainNames: string[];
   readonly canonicalHost?: string;
-  readonly sites: DocsSite[];
+  readonly sites: ResolvedDocsSite[];
   /** OrcaSonar's API base URL, for the chat panel. */
   readonly sonarApiUrl: string;
   readonly sessionLifetimeSeconds: number;

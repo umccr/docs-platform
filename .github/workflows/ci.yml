@@ -23,12 +23,21 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.12'
-      # The toolkit at DOCS_TOOLKIT_REF, from umccr/docs-toolkit, as the site pipeline installs it, then the same build
-      # and checks as `make sites`. The toolkit's own tests and the strict builds of its examples run there.
+      # The toolkit at DOCS_TOOLKIT_REF, from umccr/docs-toolkit, as the site pipeline installs it: the engine with
+      # hashes from that release's requirements/build.txt, then the package. The toolkit's own tests and the strict
+      # builds of its examples run there.
       - name: Install the toolkit
-        run: python -m venv .venv && make toolkit
+        run: |
+          ref="$(sed -n "s/^export const DOCS_TOOLKIT_REF = '\([^']*\)';$/\1/p" infrastructure/sites.ts)"
+          : "${ref:?no DOCS_TOOLKIT_REF line in infrastructure/sites.ts}"
+          python -m pip install --require-hashes --no-deps \
+            -r "https://raw.githubusercontent.com/umccr/docs-toolkit/$ref/requirements/build.txt"
+          python -m pip install --no-deps "git+https://github.com/umccr/docs-toolkit.git@$ref"
       - name: Build and check
-        run: make sites
+        run: |
+          umccr-docs check --config mkdocs.yml
+          umccr-docs build --config mkdocs.yml --site-dir "$RUNNER_TEMP/platform"
+          umccr-docs verify-site "$RUNNER_TEMP/platform"
 
   infrastructure:
     name: CDK app tests, lint and synth
@@ -50,7 +59,7 @@ jobs:
       - run: pnpm cdk synth --quiet
 
   repository:
-    name: Workflows, secrets and information boundary
+    name: Workflows and secrets
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -59,12 +68,10 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.12'
-      - run: python -m pip install --require-hashes -r requirements/dev.txt
-      - name: actionlint
-        run: actionlint
-      - name: zizmor
-        run: zizmor --no-progress .github/workflows
-      - name: detect-secrets
-        run: git ls-files -z -- ':!pnpm-lock.yaml' | xargs -0 detect-secrets-hook --baseline .secrets.baseline
-      - name: Information boundary
-        run: scripts/check-boundary.sh
+      - run: python -m pip install pre-commit==4.7.0
+      # Every hook in .pre-commit-config.yaml, as `make check` runs them: detect-secrets, actionlint, zizmor and the
+      # file checks. ESLint and Prettier need the CDK app's packages, so they run in the job above instead.
+      - name: pre-commit
+        run: pre-commit run --all-files --show-diff-on-failure
+        env:
+          SKIP: eslint,prettier

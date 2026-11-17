@@ -48,8 +48,8 @@ git.
   installs the engine with hashes from that ref's `requirements/build.txt`, then the package with `--no-deps`. These
   are the steps it took before, from another URL and without the `toolkit/` folder. pip cannot check a hash for a
   git checkout, so the toolkit's own integrity rests on the immutable tag or a full commit, as it did here, and the
-  engine stays hash-pinned. `make toolkit` does the same for `make install` and CI, at `DOCS_TOOLKIT_REF`, with pip
-  reading the pins and the package from GitHub instead of a clone. Authors install a release the same way:
+  engine stays hash-pinned. CI does the same at `DOCS_TOOLKIT_REF` to build `/platform/`, with pip reading the pins
+  and the package from GitHub instead of a clone. Authors install a release the same way:
 
   ```sh
   git clone --branch v0.3.1 https://github.com/umccr/docs-toolkit.git
@@ -89,11 +89,11 @@ git.
   `/platform/` before the other sites move. Moving sites to a release stays a pull request here that changes
   `DOCS_TOOLKIT_REF`, and `/platform/` moves with it.
 - CI splits. `umccr/docs-toolkit` runs the toolkit's tests and lint, the theme script's tests, the strict example
-  builds, and the information boundary check, since it is public too. This repository's CI installs the toolkit at
+  builds, and the same secret and workflow checks as this repository. This repository's CI installs the toolkit at
   `DOCS_TOOLKIT_REF` to build `/platform/` strictly, so a release must be on GitHub before the registry names it.
 - Write access to `umccr/docs-toolkit` reaches every site: its code builds each site, and its `publish` narrows the
   `docs-publisher` role to one site. It needs the rules this repository has: a reviewed pull request and passing
-  checks on `main`, `v*` tags created only by the platform owners, code owners, secret scanning and Dependabot, plus
+  checks on `main`, `v*` tags created only by the platform owners, secret scanning and Dependabot, plus
   release immutability.
 - The release steps split between the repositories. The version, the toolkit's changelog and the tag are in
   `umccr/docs-toolkit`; moving the sites stays here, and this repository's changelog records which release the sites
