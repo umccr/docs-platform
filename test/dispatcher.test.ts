@@ -35,7 +35,7 @@ const ROUTES: DispatchRoute[] = [
     branch: 'main',
     configPath: 'mkdocs.yml',
     docsPaths: ['mkdocs.yml', 'docs/site/**'],
-    toolkitRef: 'v1.1.0',
+    toolkitRef: 'latest',
     stages: ['beta', 'prod'],
   },
 ];
@@ -256,7 +256,7 @@ describe('dispatcher', () => {
     expect(started).toHaveLength(1);
   });
 
-  test("builds docs-platform's own site with its registry entry's toolkit ref, as any other site", async () => {
+  test("passes a site's toolkit ref on as the registry has it, latest included: the fetch build resolves it", async () => {
     const { deps: d, started } = deps();
     await createDispatcher(d)(
       request(
@@ -266,7 +266,7 @@ describe('dispatcher', () => {
         })
       )
     );
-    expect(started[0]).toMatchObject({ slug: 'platform', commit: COMMIT, toolkitRef: 'v1.1.0' });
+    expect(started[0]).toMatchObject({ slug: 'platform', commit: COMMIT, toolkitRef: 'latest' });
   });
 
   test('rejects a request without a valid signature', async () => {

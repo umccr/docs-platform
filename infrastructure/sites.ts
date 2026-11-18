@@ -49,9 +49,10 @@ export interface DocsSite {
   readonly docsPaths?: string[];
 
   /**
-   * Git ref of `umccr/docs-toolkit` whose toolkit and theme build the site: a release tag such as `v1.2.0`, or a full
-   * commit SHA. Never a branch, whose next merge would change how the site builds without a registry change.
-   * Default: {@link DOCS_TOOLKIT_REF}, the release every site builds with.
+   * The release of `umccr/docs-toolkit` whose toolkit and theme build the site. {@link LATEST_TOOLKIT_REF} is the
+   * latest release on GitHub when each release of the site starts, so a toolkit release reaches the site at its next
+   * push. A release tag such as `v1.2.0`, or a full commit SHA, pins the site to it. Never a branch: each run builds
+   * with one fixed ref, which its `TOOLKIT_REF` variable names. Default: {@link DOCS_TOOLKIT_REF}.
    */
   readonly toolkitRef?: string;
 
@@ -69,11 +70,17 @@ export const SITE_PUBLISH_STAGES: readonly AppStage[] = [AppStage.BETA, AppStage
 export const MAX_SLUG_LENGTH = 49;
 
 /**
- * The toolkit every site builds with: a release tag of `umccr/docs-toolkit`. Release it there before the merge that
- * moves this to it: until the tag exists, the sites' releases stop at Build (docs/site/runbook.md). Keep it on one
- * line, as it is: CI reads it from there to build `/platform/`.
+ * The `toolkitRef` that follows `umccr/docs-toolkit`'s releases: its latest release on GitHub, the newest that is
+ * neither a draft nor a pre-release. The fetch build looks it up when a release of the site starts, and starts the
+ * site pipeline with that tag, so every stage of the run installs the same release (ADR-0011).
  */
-export const DOCS_TOOLKIT_REF = 'v0.3.1';
+export const LATEST_TOOLKIT_REF = 'latest';
+
+/**
+ * The toolkit a site builds with unless it pins its own: the latest release ({@link LATEST_TOOLKIT_REF}). Keep it on
+ * one line, as it is: CI reads it from there to build `/platform/` the way the site pipeline does.
+ */
+export const DOCS_TOOLKIT_REF = 'latest';
 
 const DEFAULT_BRANCH = 'main';
 
@@ -108,8 +115,12 @@ const REPO_PATTERN = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/;
 /** Branch names: no spaces, no `..`, no leading or trailing slash. */
 const REF_PATTERN = /^(?!\/)(?!.*\.\.)(?!.*\/$)[A-Za-z0-9._/-]+$/;
 
-/** Toolkit refs that only move with the registry: a release tag (`v1.2.0`, `v2.0.0-rc.1`) or a full commit SHA. */
-const TOOLKIT_REF_PATTERN = /^(?:v\d+\.\d+\.\d+(?:-[0-9A-Za-z.]+)?|[0-9a-f]{40})$/;
+/**
+ * Toolkit refs: `latest` ({@link LATEST_TOOLKIT_REF}), a release tag (`v1.2.0`, `v2.0.0-rc.1`) or a full commit SHA.
+ * Never a branch, which would build sites with toolkit code nobody released, and could move between a run's Build and
+ * its publish steps.
+ */
+const TOOLKIT_REF_PATTERN = /^(?:latest|v\d+\.\d+\.\d+(?:-[0-9A-Za-z.]+)?|[0-9a-f]{40})$/;
 
 /** Relative paths and globs: no leading slash, no `..` segment. */
 const PATH_PATTERN = /^(?!\/)(?!.*(?:^|\/)\.\.(?:\/|$))[^\s]+$/;
@@ -164,8 +175,8 @@ export const DOCS_SITES: DocsSite[] = [
 
 /**
  * Throw if the registry is unusable, once each entry's defaults are filled in: an invalid, reserved or duplicate slug,
- * a missing title, a malformed repository, branch or path, a toolkit ref that is not a release tag or commit, two sites
- * on one repository and branch, or a site with no stage to publish to.
+ * a missing title, a malformed repository, branch or path, a toolkit ref that is not `latest`, a release tag or a
+ * commit, two sites on one repository and branch, or a site with no stage to publish to.
  */
 export const validateDocsSites = (sites: DocsSite[]): void => {
   const seen = new Set<string>();
@@ -217,8 +228,8 @@ export const validateDocsSites = (sites: DocsSite[]): void => {
     }
     if (!TOOLKIT_REF_PATTERN.test(site.toolkitRef)) {
       throw new Error(
-        `Docs site '${site.slug}' has toolkit ref '${site.toolkitRef}'; use a release tag such as v1.2.0 ` +
-          'or a full commit SHA, never a branch'
+        `Docs site '${site.slug}' has toolkit ref '${site.toolkitRef}'; use ${LATEST_TOOLKIT_REF}, a release ` +
+          'tag such as v1.2.0 or a full commit SHA, never a branch'
       );
     }
 

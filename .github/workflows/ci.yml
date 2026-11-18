@@ -23,13 +23,24 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.12'
-      # The toolkit at DOCS_TOOLKIT_REF, from umccr/docs-toolkit, as the site pipeline installs it: the engine with
-      # hashes from that release's requirements/build.txt, then the package. The toolkit's own tests and the strict
-      # builds of its examples run there.
+      # The toolkit at DOCS_TOOLKIT_REF, from umccr/docs-toolkit, as the site pipeline installs it. `latest` is the
+      # latest release, found as the fetch build finds it (RESOLVE_LATEST_TOOLKIT in
+      # infrastructure/toolchain/fetch-build.ts), so a toolkit release shows here on the next run. Then the engine
+      # with hashes from that release's requirements/build.txt, and the package. The toolkit's own tests and the
+      # strict builds of its examples run there.
       - name: Install the toolkit
         run: |
           ref="$(sed -n "s/^export const DOCS_TOOLKIT_REF = '\([^']*\)';$/\1/p" infrastructure/sites.ts)"
           : "${ref:?no DOCS_TOOLKIT_REF line in infrastructure/sites.ts}"
+          if [ "$ref" = latest ]; then
+            location="$(curl -fsS --retry 3 --max-time 30 -o /dev/null -w '%{redirect_url}' https://github.com/umccr/docs-toolkit/releases/latest)"
+            ref="${location#https://github.com/umccr/docs-toolkit/releases/tag/}"
+            if [[ ! "$ref" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "::error::umccr/docs-toolkit has no latest release to build with: GitHub answered '$location'"
+              exit 1
+            fi
+          fi
+          echo "Building /platform/ with umccr/docs-toolkit $ref" | tee -a "$GITHUB_STEP_SUMMARY"
           python -m pip install --require-hashes --no-deps \
             -r "https://raw.githubusercontent.com/umccr/docs-toolkit/$ref/requirements/build.txt"
           python -m pip install --no-deps "git+https://github.com/umccr/docs-toolkit.git@$ref"

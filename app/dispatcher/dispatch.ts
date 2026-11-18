@@ -42,7 +42,10 @@ export interface FetchRequest {
   readonly commit: string;
   readonly release: number;
   readonly configPath: string;
-  /** The `umccr/docs-toolkit` git ref the site builds with, from the registry: a release tag or a full commit. */
+  /**
+   * The `umccr/docs-toolkit` ref the site builds with, from the registry: `latest`, which the fetch build resolves to
+   * the latest release's tag, a release tag or a full commit.
+   */
   readonly toolkitRef: string;
   readonly stages: string[];
   readonly deliveryId: string;

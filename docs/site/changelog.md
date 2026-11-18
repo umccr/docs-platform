@@ -1,13 +1,31 @@
 # Changelog
 
-All notable changes to the docs platform: the infrastructure, the site registry, and the release of the toolkit and
-theme the sites build with. Sites pick a toolkit release up when their registry entry's `toolkitRef` moves to it; see
-[moving sites to a toolkit release](runbook.md#move-sites-to-a-toolkit-release).
+All notable changes to the docs platform: the infrastructure and the site registry. Sites build with the latest
+release of the toolkit and theme, unless the registry pins one; see [toolkit releases](runbook.md#toolkit-releases).
 
 The `umccr-docs` toolkit and its theme were released from this repository up to `v0.3.1`, and those releases are
 below. They are released in [umccr/docs-toolkit](https://github.com/umccr/docs-toolkit) since, with their own
 [changelog](https://github.com/umccr/docs-toolkit/blob/main/CHANGELOG.md); entries here are under the date they
 merged, and `## Unreleased` holds what has not.
+
+## Unreleased
+
+Sites build with umccr/docs-toolkit's latest release unless the registry pins one
+([ADR-0011](../design/adr/0011-latest-toolkit-release.md)), so a toolkit release reaches each site at its next push,
+with no pull request here. Nothing changes for site owners. Once pipeline 1's self-update is done, each site's next push
+moves it from `v0.3.1` to the latest release, `v0.3.2` today.
+
+- `DOCS_TOOLKIT_REF` is `latest`, and the registry takes `latest` as a `toolkitRef`, besides a release tag or a full
+  commit.
+- The fetch build looks the latest release up on GitHub when a release of a site starts, and starts the site pipeline
+  with its tag: Build and both publish steps install the same release, a retry keeps it, and the run's `TOOLKIT_REF`
+  names it. The site pipeline refuses a run whose `TOOLKIT_REF` is not a tag or a full commit, and its logs print the
+  toolkit's version.
+- CI builds `/platform/` with the latest release too, and names it in the job's summary.
+- The runbook's "Move sites to a toolkit release" is now [Toolkit releases](runbook.md#toolkit-releases): what to
+  check after a release, rebuilding the sites that should not wait, pinning a site, and rolling a release back.
+- [Authoring](authoring.md#obsidian-vaults) lists what `v0.3.2` added to Bases blocks: `this`, the note the block is in,
+  and a view's own `filters`.
 
 ## 2026-11-12
 

@@ -14,4 +14,5 @@ identifiers and security findings; the threat model and review findings are kept
 | [0007](0007-chat-through-orcasonar.md) | Chat on docs pages is a client of OrcaSonar's API; docs exports documents to it | Accepted |
 | [0008](0008-infrastructure-in-docs-platform.md) | docs.umccr.org's infrastructure and pipelines live in this repository | Accepted; superseded in part by 0010 |
 | [0009](0009-dispatch-from-github-actions.md) | Sites' workflows would ask the dispatcher through GitHub OIDC, replacing the webhook and the function URL | Proposed; deferred |
-| [0010](0010-toolkit-repository.md) | The toolkit and theme move to their own public repository, `umccr/docs-toolkit`, versioned by git tags with immutable releases and installed from git | Accepted |
+| [0010](0010-toolkit-repository.md) | The toolkit and theme move to their own public repository, `umccr/docs-toolkit`, versioned by git tags with immutable releases and installed from git | Accepted; amended by 0011 |
+| [0011](0011-latest-toolkit-release.md) | Sites build with the toolkit's latest release, resolved to its tag when each release of a site starts, unless the registry pins one | Accepted |

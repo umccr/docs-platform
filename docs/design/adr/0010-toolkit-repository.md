@@ -1,7 +1,9 @@
 # 0010: The toolkit in its own repository
 
 **Status:** accepted, 2026-11-11. Supersedes the toolkit part of [0001](0001-repository-split.md) and
-[0008](0008-infrastructure-in-docs-platform.md), which kept the toolkit and theme in this repository.
+[0008](0008-infrastructure-in-docs-platform.md), which kept the toolkit and theme in this repository. Amended by
+[0011](0011-latest-toolkit-release.md): sites build with the latest release unless the registry pins one, so moving
+them no longer takes a pull request here.
 
 ## Context
 

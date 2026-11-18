@@ -382,10 +382,10 @@ Before deploying:
   from the merge on, a merge to `main` publishes `/platform/` to prod with no approval, and deploys infrastructure
   to beta.
 - **Merge** the pull requests: `umccr/infrastructure`, then this repository, then `umccr/management-knowledgebase`.
-- **Toolkit**: the release `DOCS_TOOLKIT_REF` names must be tagged in
-  [umccr/docs-toolkit](https://github.com/umccr/docs-toolkit) already. Every site builds with it, so their releases
-  stop at Build ("has no ref") until it exists, and CI cannot build `/platform/`. (The first merge, on 2026-10-21,
-  was tagged `v0.1.0` here, while the toolkit was still in this repository.)
+- **Toolkit**: [umccr/docs-toolkit](https://github.com/umccr/docs-toolkit) must have a latest release, which every
+  site that pins none builds with. Until it has one, their fetch builds stop ("has no latest release") and CI cannot
+  build `/platform/`. A site pinned to a tag needs that tag there. (The first merge, on 2026-10-21, was tagged `v0.1.0`
+  here, while the toolkit was still in this repository.)
 - **GitHub access**: the AWS Connector for GitHub app must be able to read `umccr/docs-platform` (step 5), or the
   first run fails at its source.
 
@@ -489,14 +489,15 @@ A release starts when a push to a registered site's branch changes one of its `d
 
 | Site                         | Repository and branch                   | Paths that publish it               | Builds with                  |
 | ---------------------------- | --------------------------------------- | ----------------------------------- | ---------------------------- |
-| `/platform/`                 | `umccr/docs-platform` `main`            | `mkdocs.yml`, `docs/site/**`        | `DOCS_TOOLKIT_REF`, `v0.3.1` |
-| `/management-knowledgebase/` | `umccr/management-knowledgebase` `main` | `PlatformServices/**`, `mkdocs.yml` | `DOCS_TOOLKIT_REF`, `v0.3.1` |
-| `/orcasonar/`                | `umccr/orcasonar` `main`                | `docs/**`, `mkdocs.yml`             | `DOCS_TOOLKIT_REF`, `v0.3.1` |
+| `/platform/`                 | `umccr/docs-platform` `main`            | `mkdocs.yml`, `docs/site/**`        | `latest`, `DOCS_TOOLKIT_REF` |
+| `/management-knowledgebase/` | `umccr/management-knowledgebase` `main` | `PlatformServices/**`, `mkdocs.yml` | `latest`, `DOCS_TOOLKIT_REF` |
+| `/orcasonar/`                | `umccr/orcasonar` `main`                | `docs/**`, `mkdocs.yml`             | `latest`, `DOCS_TOOLKIT_REF` |
 
-`DOCS_TOOLKIT_REF` is a release of umccr/docs-toolkit. The webhook exists before this repository is merged, so the
-merge itself starts the first `/platform/` release: it is a push under `docs/site/`. The other sites' first releases
-start with their next push under their paths. A release that stopped at Build because the toolkit's tag was not
-there yet (step 4) builds once it is: re-run it ([runbook](runbook.md#re-run-or-force-a-release)).
+`latest` is umccr/docs-toolkit's latest release when the site's release starts, and the run's `TOOLKIT_REF` names
+its tag. The webhook exists before this repository is merged, so the merge itself starts the first `/platform/`
+release: it is a push under `docs/site/`. The other sites' first releases start with their next push under their
+paths. A push whose fetch build found no toolkit release (step 4) starts no run: once there is one, redeliver it
+([runbook](runbook.md#re-run-or-force-a-release)).
 
 The dispatcher starts the fetch build within seconds, and the fetch build starts `UMCCR-DocsSitesPipeline` a minute
 or two later. Each run's variables name the site, the commit and the release number. Releases run one at a time, so
@@ -529,8 +530,7 @@ OrcaSonar deploys from its own repository; see its [deploy guide](https://github
   more (step 6) to fill the index straight away.
 - **Chat**: once OrcaSonar's stateless stack serves `https://sonar.<stage>.umccr.org/api/v1`, the chat panel
   answers. The hosting stack's Content Security Policy and `env.js` already point there.
-- **Theme**: the chat panel ships with the toolkit, so a site has it once its `toolkitRef` names a release that
-  includes it.
+- **Theme**: the chat panel ships with the toolkit, so a site has it once it builds with a release that includes it.
 
 To check, open any page on `https://docs.dev.umccr.org/` signed in, open the chat panel, and ask something the site answers. The answer streams in, with its sources linking to docs pages.
 
@@ -555,7 +555,7 @@ To check, open any page on `https://docs.dev.umccr.org/` signed in, open the cha
 | the site registry, `infrastructure/sites.ts`                                        | the same; see [registering a site](runbook.md#register-a-site)                                                                     |
 | `mkdocs.yml`, `docs/site/`                                                          | merge to `main`, then `UMCCR-DocsSitesPipeline`: `/platform/` in dev, then prod                                                    |
 | a site's docs, in its own repository                                                | push, then `UMCCR-DocsSitesPipeline`                                                                                               |
-| the toolkit and theme, in umccr/docs-toolkit                                        | a release there, then the sites' `toolkitRef`; see [moving sites to a toolkit release](runbook.md#move-sites-to-a-toolkit-release) |
+| the toolkit and theme, in umccr/docs-toolkit                                        | a release there; each site that pins none builds with it at its next push. See [toolkit releases](runbook.md#toolkit-releases)     |
 | the session key                                                                     | see the [runbook](runbook.md#rotate-the-session-key)                                                                               |
 | the rest of `docs/`, `.github/`, the Makefile, and Markdown outside `docs/site/`    | nothing deploys; CI runs                                                                                                           |
 
@@ -613,7 +613,9 @@ aws logs tail "$LOG_GROUP" --since 1h
 | The fetch build cannot clone                                                                                                       | the connector app's repository access, or the connection's status                                                                                                            | step 5; step 2                                                                                                                                                                                                          |
 | `UMCCR-DocsSitesPipeline` fails at Source: `The object with key 'sources/<slug>/<commit>.zip' returned a Forbidden error`          | the source action's role may read only its configured placeholder key, `sources/unset.zip`: CDK grants an S3 source action nothing more, and every run overrides the key     | deploy a version whose `SourceActionRole` may read `sources/*`, then re-run the release ([runbook](runbook.md#re-run-or-force-a-release))                                                                               |
 | A release fails at Build: `docs-toolkit at <ref> has no engine pins` (before ADR-0010: `docs-platform at <ref> has no toolkit`)    | the site's `toolkitRef` names a docs-toolkit commit from before `v0.2.0`, whose engine pins were outside the toolkit's folder                                                | point the site's `toolkitRef` at a release from `v0.2.0`; to try a branch once, start the run with `TOOLKIT_REF` set to it                                                                                              |
-| A release fails at Build: `docs-toolkit has no ref <ref>` (before ADR-0010: `docs-platform has no ref <ref>`)                      | the site's `toolkitRef` names a tag or commit umccr/docs-toolkit does not have, such as a release the registry moved to before it was tagged                                 | push the tag ([docs-toolkit's release steps](https://github.com/umccr/docs-toolkit/blob/main/CONTRIBUTING.md#release)), then re-run the release ([runbook](runbook.md#re-run-or-force-a-release))                       |
+| A release fails at Build: `docs-toolkit has no ref <ref>` (before ADR-0010: `docs-platform has no ref <ref>`)                      | the site's `toolkitRef`, or a hand-started run's `TOOLKIT_REF`, names a tag or commit umccr/docs-toolkit does not have                                                       | push the tag ([docs-toolkit's release steps](https://github.com/umccr/docs-toolkit/blob/main/CONTRIBUTING.md#release)), then re-run the release ([runbook](runbook.md#re-run-or-force-a-release))                       |
+| The fetch build fails: `umccr/docs-toolkit has no latest release to build with`, or `Could not ask GitHub for the latest release`  | GitHub gave no release tag: umccr/docs-toolkit has no published release, or GitHub did not answer. The fetch build's CodeBuild log says which; it posts no alert             | release one, or wait for GitHub; then redeliver the push ([runbook](runbook.md#re-run-or-force-a-release))                                                                                                              |
+| A release fails at Build: `TOOLKIT_REF '<ref>' is not a docs-toolkit release tag or full commit`                                   | a run was started by hand with `latest` or a branch: only the fetch build resolves `latest`                                                                                  | start it again with the tag ([runbook](runbook.md#start-a-release-by-hand), step 3)                                                                                                                                     |
 | Publish fails: `AccessDenied` on `AssumeRole`                                                                                      | the stage has no `docs/docs-publisher` role: its hosting stack is missing or older than this design                                                                          | deploy the stage's hosting stack (step 3 or 8)                                                                                                                                                                          |
 | Publish fails: `/docs/content-bucket-name is missing here`                                                                         | the same                                                                                                                                                                     | the same                                                                                                                                                                                                                |
 | Publish fails: `AccessDenied` on `ListObjectsV2` for OrcaSonar's ingest bucket                                                     | the stage's hosting stack predates the publisher's grant for that bucket (OrcaSonar's bucket policy only defers to IAM), or OrcaSonar's stateful stack or bucket was renamed | deploy the current hosting stack (pipeline 1); after a rename, update `ORCASONAR_INGEST_BUCKET_NAME_PREFIX` in `infrastructure/config.ts`                                                                               |
@@ -670,8 +672,8 @@ nobody has committed or reviewed on the site and into OrcaSonar's index. The pip
 to do the same by hand, build from a clean export of the commit, as the knowledgebase example below does. Outside a
 git checkout the toolkit takes every file in the folder.
 
-Install the toolkit at the release `DOCS_TOOLKIT_REF` names, as [Onboarding](onboarding.md#2-add-the-configuration)
-shows, and keep its virtualenv active. Then:
+Install the toolkit's latest release, or the release the site pins, as
+[Onboarding](onboarding.md#2-add-the-configuration) shows, and keep its virtualenv active. Then:
 
 ```sh
 cd docs-platform

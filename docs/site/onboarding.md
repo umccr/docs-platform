@@ -18,8 +18,8 @@ Copy a template from the toolkit's
 `mkdocs.yml` at the repository root, from `mkdocs.yml`, or `mkdocs-obsidian.yml` for an Obsidian vault. Set
 `site_name`, `site_url` (`https://docs.umccr.org/<slug>/`), `repo_url` and `docs_dir`.
 
-Preview locally the way the site pipeline builds, with the release your site will build with: `DOCS_TOOLKIT_REF`
-in [`infrastructure/sites.ts`](https://github.com/umccr/docs-platform/blob/main/infrastructure/sites.ts).
+Preview locally the way the site pipeline builds, with the release your site will build with: the toolkit's
+[latest release](https://github.com/umccr/docs-toolkit/releases/latest), unless your registry entry pins another.
 
 ```sh
 git clone --branch <release> https://github.com/umccr/docs-toolkit.git <docs-toolkit>
@@ -46,7 +46,7 @@ repository. The entry needs three fields; the rest have defaults that suit a rep
 | `branch` | `main` | pushes to this branch publish the site |
 | `configPath` | `mkdocs.yml` | where your configuration is |
 | `docsPaths` | `docs/**` and `mkdocs.yml`, beside your configuration | a push that changes none of these publishes nothing |
-| `toolkitRef` | `DOCS_TOOLKIT_REF` | the release of the toolkit and theme, from umccr/docs-toolkit, your site builds with |
+| `toolkitRef` | `latest` | the release of the toolkit and theme your site builds with: umccr/docs-toolkit's latest when each release of your site starts, or a release tag that pins it |
 | `stages` | dev, then prod | where it is published |
 
 When the pull request merges, the infrastructure pipeline adds your site to the routing table, the catalogue and

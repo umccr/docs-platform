@@ -83,11 +83,12 @@ Both pipelines run in the toolchain account: `UMCCR-DocsInfrastructure` deploys 
 | 2026-10-30 | `v0.2.1`: bare URLs are links on every site, and the knowledgebase's Tasks queries publish as task lists. OrcaSonar's own pages registered as `/orcasonar/`. |
 | 2026-11-04 | `v0.3.0`: a GitHub link under each page's title instead of "Edit this page", no classification banner, "On this page" marks the section a link went to, and Mermaid diagrams. `v0.3.1`: links labelled with code are rewritten like any other, so the knowledgebase publishes again. |
 | 2026-11-11 | The toolkit and theme move to their own repository, `umccr/docs-toolkit`, with their history and their tags from `v0.2.0` ([ADR-0010](../design/adr/0010-toolkit-repository.md)); every site, `/platform/` too, builds with `v0.3.1` from there. |
+| 2026-11-18 | Sites build with umccr/docs-toolkit's latest release, looked up when each release starts, unless the registry pins one ([ADR-0011](../design/adr/0011-latest-toolkit-release.md)): a toolkit release no longer needs a pull request here. |
 
 Today `UMCCR-DocsHostingStack` runs in dev and prod, deployed by pipeline 1, and `/platform/`, the knowledgebase and
 `/orcasonar/` (the `docs/` folder of OrcaSonar's repository) publish to both through the site pipeline, and all three
-build with `v0.3.1` of umccr/docs-toolkit. The chat panel answers in dev, where OrcaSonar runs. OrcaSonar's own prod
-deploy is tracked in its repository.
+build with umccr/docs-toolkit's latest release. The chat panel answers in dev, where OrcaSonar runs. OrcaSonar's own
+prod deploy is tracked in its repository.
 
 ## Open items
 
@@ -96,7 +97,7 @@ deploy is tracked in its repository.
 | The build engine: Material for MkDocs on MkDocs 1.6, or Zensical, after a side-by-side comparison in beta. | [ADR-0003](../design/adr/0003-build-engine.md) |
 | Prod's canonical host: `DOCS_CANONICAL_HOST` set to `docs.umccr.org`, so the other prod host redirects to it. | `infrastructure/config.ts`; [Deploying](deploy.md#step-8-prod), step 3 |
 | Whether sites ask the dispatcher through GitHub OIDC instead of the public function URL; proposed and deferred on 2026-10-15. | [ADR-0009](../design/adr/0009-dispatch-from-github-actions.md) |
-| `umccr/docs-toolkit`'s rulesets and release immutability, and immutable releases for the tags it carried over, `v0.2.0` to `v0.3.1`. | [its repository settings](https://github.com/umccr/docs-toolkit/blob/main/CONTRIBUTING.md#repository-settings) |
+| `umccr/docs-toolkit`'s rulesets, and immutable releases for the tags it carried over, `v0.2.0` to `v0.3.1`, made with `--latest=false` so that none becomes the sites' toolkit. | [its repository settings](https://github.com/umccr/docs-toolkit/blob/main/CONTRIBUTING.md#repository-settings) |
 | The `ci` checks required on `main`, and the `v*` tags protected. | [Repository settings](runbook.md#repository-settings) |
 | `umccr/infrastructure`'s docs branch merged; it is already applied to dev and prod. | `umccr/infrastructure` |
 | A private security review, an accessibility check and an operational readiness review, and a check that a personal Google account cannot sign in to prod. | the [implementation plan](../plans/implementation-plan.md#production) |
@@ -113,7 +114,7 @@ The [implementation plan](../plans/implementation-plan.md#6-rollout) tracks the 
 | registry | `DOCS_SITES` in `infrastructure/sites.ts`: each site's slug, repository and title, and, where it differs from the defaults, its branch, `mkdocs.yml`, docs paths, toolkit ref and stages. The dispatcher's routes, the edge function's slug table and the catalogue all come from it |
 | docs paths | the globs whose changes publish a site; a push that changes none of them starts nothing |
 | toolkit, theme | `umccr-docs`, the Python package in `umccr/docs-toolkit` that checks, builds, verifies, exports and publishes a site, and the theme it ships |
-| toolkit ref | the `umccr/docs-toolkit` release tag or commit a site builds with: `DOCS_TOOLKIT_REF` unless the site pins its own |
+| toolkit ref | the `umccr/docs-toolkit` release a site builds with: `latest` (`DOCS_TOOLKIT_REF`), which each release resolves to the latest release's tag, unless the site pins a tag or commit |
 | contract | what a site's `mkdocs.yml` and Markdown may contain; see [Authoring](authoring.md) |
 | release | one build and publish of one site, numbered per site; an older release never replaces a newer one |
 | dispatcher | the Lambda the organisation webhook sends every push to; it starts a release for a push that changes a registered site |

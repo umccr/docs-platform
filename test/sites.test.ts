@@ -10,10 +10,12 @@ import {
   DOCS_TOOLKIT_REF,
   DocsSite,
   getDocsSites,
+  LATEST_TOOLKIT_REF,
   MAX_SLUG_LENGTH,
   resolveDocsSite,
   validateDocsSites,
 } from '../infrastructure/sites';
+import { RESOLVE_LATEST_TOOLKIT } from '../infrastructure/toolchain/fetch-build';
 
 /** A site with only the required fields, and whatever a test sets. */
 const site = (overrides: Partial<DocsSite> = {}): DocsSite => ({
@@ -93,6 +95,24 @@ describe('registry', () => {
       `export const DOCS_TOOLKIT_REF = '${DOCS_TOOLKIT_REF}';`
     );
   });
+
+  test('has CI look up the latest toolkit release as the fetch build does', () => {
+    const ci = fs.readFileSync(
+      path.join(__dirname, '..', '.github', 'workflows', 'ci.yml'),
+      'utf8'
+    );
+    const lookup = RESOLVE_LATEST_TOOLKIT.join('\n');
+    // The same link, the same tag taken from its redirect, and the same check that it is a release.
+    for (const part of [
+      "-w '%{redirect_url}' https://github.com/umccr/docs-toolkit/releases/latest",
+      '#https://github.com/umccr/docs-toolkit/releases/tag/}',
+      '=~ ^v[0-9]+\\.[0-9]+\\.[0-9]+$ ]]',
+    ]) {
+      expect(lookup).toContain(part);
+      expect(ci).toContain(part);
+    }
+    expect(ci).toContain(`if [ "$ref" = ${LATEST_TOOLKIT_REF} ]; then`);
+  });
 });
 
 describe('defaults', () => {
@@ -105,7 +125,7 @@ describe('defaults', () => {
       branch: 'main',
       configPath: 'mkdocs.yml',
       docsPaths: ['docs/**', 'mkdocs.yml'],
-      toolkitRef: DOCS_TOOLKIT_REF,
+      toolkitRef: 'latest',
       stages: [AppStage.BETA, AppStage.PROD],
     });
   });
@@ -205,14 +225,14 @@ describe('validation', () => {
     ).toThrow(/toolkit ref 'self'/);
   });
 
-  test.each(['', 'v1 .0', '../v1', 'main', 'feat/docs', 'v1.2', 'a1b2c3d'])(
-    'rejects the toolkit ref %p: only a release tag or a full commit pins a build',
+  test.each(['', 'v1 .0', '../v1', 'main', 'feat/docs', 'v1.2', 'a1b2c3d', 'Latest', 'latest-1'])(
+    'rejects the toolkit ref %p: only latest, a release tag or a full commit',
     (toolkitRef) => {
       expect(() => validateDocsSites([site({ toolkitRef })])).toThrow(/toolkit ref/);
     }
   );
 
-  test.each(['v1.0.0', 'v2.10.3', 'v2.0.0-rc.1', 'a'.repeat(40)])(
+  test.each(['latest', 'v1.0.0', 'v2.10.3', 'v2.0.0-rc.1', 'a'.repeat(40)])(
     'accepts the toolkit ref %p',
     (toolkitRef) => {
       expect(() => validateDocsSites([site({ toolkitRef })])).not.toThrow();

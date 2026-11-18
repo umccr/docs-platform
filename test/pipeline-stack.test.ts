@@ -1,5 +1,13 @@
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { App, Stack } from 'aws-cdk-lib';
@@ -15,10 +23,15 @@ import {
 import { MAX_TRIGGER_FILE_PATHS } from '../infrastructure/toolchain/deployment-pipeline';
 import { DocsHostingStack } from '../infrastructure/stage/hosting-stack';
 import { AppStage, STAGE_ENVIRONMENT, TOOLCHAIN_ENVIRONMENT } from '../infrastructure/stages';
-import { fetchBuildSpec, REFUSE_ESCAPING_SYMLINKS } from '../infrastructure/toolchain/fetch-build';
+import {
+  fetchBuildSpec,
+  REFUSE_ESCAPING_SYMLINKS,
+  RESOLVE_LATEST_TOOLKIT,
+} from '../infrastructure/toolchain/fetch-build';
 import {
   DOCS_SITES_NOTIFICATION_RULE_NAME,
   DOCS_SITES_PIPELINE_NAME,
+  REFUSE_UNPINNED_TOOLKIT_REF,
 } from '../infrastructure/toolchain/sites-pipeline';
 import {
   acknowledgeFindings,
@@ -340,9 +353,13 @@ describe('site publishing', () => {
     return specs;
   };
 
-  test('stops with a reason, before pip, when the toolkit ref is missing or has no engine pins', () => {
+  test('stops with a reason, before pip, when the toolkit ref is unresolved, missing or has no engine pins', () => {
     for (const spec of toolkitBuildSpecs()) {
-      for (const reason of ['has no ref', 'has no engine pins']) {
+      for (const reason of [
+        'is not a docs-toolkit release tag or full commit',
+        'has no ref',
+        'has no engine pins',
+      ]) {
         const check = spec.indexOf(reason);
         expect(check).toBeGreaterThan(-1);
         expect(check).toBeLessThan(spec.indexOf('pip install --quiet --require-hashes'));
@@ -360,7 +377,30 @@ describe('site publishing', () => {
       // The toolkit is at the clone's root; nothing installs from docs-platform any more.
       expect(spec).not.toContain('$TOOLKIT_DIR/toolkit');
       expect(spec).not.toContain('umccr/docs-platform.git');
+      // Each log says which release built or published the site.
+      expect(spec).toContain('umccr-docs --version');
     }
+  });
+
+  describe('toolkit ref check', () => {
+    const run = (toolkitRef: string) => {
+      const result = spawnSync('bash', ['-c', REFUSE_UNPINNED_TOOLKIT_REF], {
+        env: { PATH: process.env.PATH, TOOLKIT_REF: toolkitRef },
+        encoding: 'utf8',
+      });
+      return { status: result.status ?? -1, output: result.stdout + result.stderr };
+    };
+
+    test.each(['v0.3.2', 'v0.4.0-rc.1', 'a'.repeat(40)])('lets a run with %p install', (ref) => {
+      expect(run(ref).status).toBe(0);
+    });
+
+    // `latest` reaches a run only when it is started by hand: Build and each publish step would look it up apart.
+    test.each(['latest', 'main', '', 'v0.3', 'a1b2c3d'])('stops a run with %p', (ref) => {
+      const { status, output } = run(ref);
+      expect(status).toBe(1);
+      expect(output).toContain('is not a docs-toolkit release tag or full commit');
+    });
   });
 
   test('lets the source action read any object a run names, not only the configured key', () => {
@@ -438,6 +478,104 @@ describe('site publishing', () => {
     expect(script).toContain('sources/$SLUG/$COMMIT.zip');
     expect(script).toContain('start-pipeline-execution --cli-input-json');
     expect(script).toContain('S3_OBJECT_KEY');
+  });
+
+  test('resolves a latest toolkit ref before it stores the source and starts the run', () => {
+    const script = JSON.stringify(fetchBuildSpec());
+    const lookup = script.indexOf('/releases/latest');
+    expect(lookup).toBeGreaterThan(-1);
+    expect(lookup).toBeLessThan(script.indexOf('aws s3 cp'));
+    expect(script.indexOf('aws s3 cp')).toBeLessThan(script.indexOf('start-pipeline-execution'));
+  });
+
+  describe('latest toolkit release', () => {
+    const RELEASES = 'https://github.com/umccr/docs-toolkit/releases';
+
+    /**
+     * Runs the lookup with `curl` replaced by a stub that prints `location`, as curl prints the redirect it got, or
+     * fails as curl does without a network when `location` is undefined. Returns the exit status, the output with the
+     * exported `TOOLKIT_REF`, and curl's arguments for each call.
+     */
+    const resolve = (toolkitRef: string, location?: string) => {
+      const bin = mkdtempSync(join(tmpdir(), 'resolve-toolkit-'));
+      try {
+        const calls = join(bin, 'calls');
+        writeFileSync(
+          join(bin, 'curl'),
+          [
+            '#!/bin/sh',
+            'printf "%s\\n" "$*" >> "$CURL_CALLS"',
+            'if [ -z "${CURL_LOCATION+set}" ]; then echo "curl: (6) Could not resolve host" >&2; exit 6; fi',
+            'printf "%s" "$CURL_LOCATION"',
+          ].join('\n'),
+          { mode: 0o755 }
+        );
+        const env: Record<string, string> = {
+          PATH: `${bin}:${process.env.PATH}`,
+          TOOLKIT_REF: toolkitRef,
+          CURL_CALLS: calls,
+        };
+        if (location !== undefined) {
+          env.CURL_LOCATION = location;
+        }
+        const script = [
+          'set -euo pipefail',
+          ...RESOLVE_LATEST_TOOLKIT,
+          // What the start request reads: the variable as the environment has it.
+          'echo "TOOLKIT_REF=$(printenv TOOLKIT_REF)"',
+        ].join('\n');
+        const result = spawnSync('bash', ['-c', script], { env, encoding: 'utf8' });
+        return {
+          status: result.status ?? -1,
+          output: result.stdout + result.stderr,
+          curl: existsSync(calls) ? readFileSync(calls, 'utf8').trim().split('\n') : [],
+        };
+      } finally {
+        rmSync(bin, { recursive: true, force: true });
+      }
+    };
+
+    test('replaces latest with the tag GitHub redirects its latest release to', () => {
+      const { status, output, curl } = resolve('latest', `${RELEASES}/tag/v0.3.2`);
+      expect(status).toBe(0);
+      expect(output).toContain('Building with umccr/docs-toolkit v0.3.2, its latest release');
+      expect(output).toContain('TOOLKIT_REF=v0.3.2');
+      // One request, for the redirect itself: following it would fetch the release page instead.
+      expect(curl).toHaveLength(1);
+      expect(curl[0]).toContain(`${RELEASES}/latest`);
+      expect(curl[0]).not.toMatch(/(^| )(-L|--location)( |$)/);
+    });
+
+    test.each(['v0.3.1', 'v0.4.0-rc.1', 'a'.repeat(40)])(
+      'leaves the pinned ref %p as it is, without asking GitHub',
+      (ref) => {
+        const { status, output, curl } = resolve(ref, `${RELEASES}/tag/v9.9.9`);
+        expect(status).toBe(0);
+        expect(output).toContain(`TOOLKIT_REF=${ref}`);
+        expect(curl).toEqual([]);
+      }
+    );
+
+    test.each([
+      ['no release yet', RELEASES],
+      ['no redirect', ''],
+      [
+        'a release of another repository',
+        'https://github.com/someone/docs-toolkit/releases/tag/v9.9.9',
+      ],
+      ['a tag that is not a release version', `${RELEASES}/tag/v0.4.0-rc.1`],
+    ])('stops when GitHub answers with %s', (_label, location) => {
+      const { status, output } = resolve('latest', location);
+      expect(status).toBe(1);
+      expect(output).toContain('umccr/docs-toolkit has no latest release to build with');
+      expect(output).not.toContain('TOOLKIT_REF=');
+    });
+
+    test('stops when GitHub cannot be reached', () => {
+      const { status, output } = resolve('latest');
+      expect(status).toBe(1);
+      expect(output).toContain('Could not ask GitHub for the latest release of umccr/docs-toolkit');
+    });
   });
 
   test('stores symlinks as links, and runs Python isolated from the checkout', () => {
