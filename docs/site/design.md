@@ -73,9 +73,9 @@ catalogue, built from `docs/site/`.
 
 | Slug                       | Repository                       | Builds with                       |
 | -------------------------- | -------------------------------- | --------------------------------- |
-| `platform`                 | `umccr/docs-platform`            | `DOCS_TOOLKIT_REF`, a release tag |
-| `management-knowledgebase` | `umccr/management-knowledgebase` | `DOCS_TOOLKIT_REF`, a release tag |
-| `orcasonar`                | `umccr/orcasonar`                | `DOCS_TOOLKIT_REF`, a release tag |
+| `platform`                 | `umccr/docs-platform`            | `latest`, `DOCS_TOOLKIT_REF`      |
+| `management-knowledgebase` | `umccr/management-knowledgebase` | `latest`, `DOCS_TOOLKIT_REF`      |
+| `orcasonar`                | `umccr/orcasonar`                | `latest`, `DOCS_TOOLKIT_REF`      |
 
 ## Publishing
 
@@ -94,13 +94,15 @@ push ─▶ organisation webhook ─▶ dispatcher (Lambda) ─▶ fetch build (
   delivery ID so a redelivery starts nothing, takes the site's next release number, and starts the fetch build.
 - **Fetch build**: clones the repository at the pushed commit through the AWS Connector for GitHub (the
   `codestar_github_arn` connection), zips it without `.git` to `sources/<slug>/<commit>.zip` (kept 30 days), and
-  starts the site pipeline with that object and the release's variables.
+  starts the site pipeline with that object and the release's variables. A toolkit ref of `latest` becomes the tag of
+  umccr/docs-toolkit's latest release first, so the whole run builds and publishes with one release
+  ([ADR-0011](../design/adr/0011-latest-toolkit-release.md)).
 - **UMCCR-DocsSitesPipeline**: CodePipeline V2 in queued mode: one release at a time, in the order they start, since a
-  publish is not atomic and two releases of one site must not overlap. Build runs the toolkit at the site's `toolkitRef`
-  (a release tag or commit of `umccr/docs-toolkit`, never a branch) with no write access. Each publish step runs as
-  `docs-sites-publish`, whose only permission is to assume the stage's `docs-publisher` role; the toolkit narrows that
-  role to the release's site with a session policy. No approval: a failure in beta stops the release before prod, and
-  failed runs post to the alerts Slack channel.
+  publish is not atomic and two releases of one site must not overlap. Build runs the toolkit at the run's `TOOLKIT_REF`
+  (a release tag or commit of `umccr/docs-toolkit`, never `latest` or a branch) with no write access. Each publish step
+  runs as `docs-sites-publish`, whose only permission is to assume the stage's `docs-publisher` role; the toolkit
+  narrows that role to the release's site with a session policy. No approval: a failure in beta stops the release before
+  prod, and failed runs post to the alerts Slack channel.
 - **`docs-publisher`**: one role per stage account (path `/docs/`). It trusts only `docs-sites-publish` in the
   toolchain account, may list, read, put and delete under `sites/*`, and may read the SSM parameters
   `/docs/content-bucket-name` and `/orcasonar/ingest-bucket-name`. For the documents it exports, it may do the same

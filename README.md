@@ -5,12 +5,12 @@ infrastructure and its pipelines, sign-in, the site registry, the conventions pa
 and the platform's own `/platform/` site. The `umccr-docs` build toolkit and the theme every site shares, with its
 chat panel, are in [umccr/docs-toolkit](https://github.com/umccr/docs-toolkit).
 
-> **Status:** 2026-11-11. Hosting, sign-in and the dispatcher run in dev and prod, which pipeline 1 deploys, and
+> **Status:** 2026-11-18. Hosting, sign-in and the dispatcher run in dev and prod, which pipeline 1 deploys, and
 > `/platform/`, the knowledgebase and `/orcasonar/` publish to both through the site pipeline. Every site builds with
-> `v0.3.1` of umccr/docs-toolkit, where the toolkit moved from this repository
-> ([ADR-0010](docs/design/adr/0010-toolkit-repository.md)). The chat panel answers in dev, where OrcaSonar runs.
-> [Project](docs/site/project.md) has where the platform stands and what is still open, and
-> [Deploying](docs/site/deploy.md) how to deploy it.
+> the latest release of umccr/docs-toolkit, where the toolkit moved from this repository
+> ([ADR-0010](docs/design/adr/0010-toolkit-repository.md), [ADR-0011](docs/design/adr/0011-latest-toolkit-release.md)).
+> The chat panel answers in dev, where OrcaSonar runs. [Project](docs/site/project.md) has where the platform stands and
+> what is still open, and [Deploying](docs/site/deploy.md) how to deploy it.
 
 ## How it fits together
 
@@ -86,11 +86,12 @@ make audit-fix   # overrides forcing patched dependency versions
 `make install` installs the pre-commit hooks as a git hook: each commit runs them on the files it changes, and
 `make check` runs them on every tracked file, as CI does.
 
-The `/platform/` site builds with the toolkit from [umccr/docs-toolkit](https://github.com/umccr/docs-toolkit), at the
-release `DOCS_TOOLKIT_REF` names in `infrastructure/sites.ts`, and CI builds it strictly on every pull request. To
-preview it, install the toolkit as any site owner does ([Onboarding](docs/site/onboarding.md#2-add-the-configuration))
-and run `umccr-docs serve` here. A docs-toolkit checkout with `make install` done there previews it with that
-checkout's toolkit: `../docs-toolkit/.venv/bin/umccr-docs serve`.
+The `/platform/` site builds with the toolkit's latest release from
+[umccr/docs-toolkit](https://github.com/umccr/docs-toolkit) (`DOCS_TOOLKIT_REF` in `infrastructure/sites.ts` is
+`latest`), and CI builds it strictly with that release on every pull request. To preview it, install the toolkit as any
+site owner does ([Onboarding](docs/site/onboarding.md#2-add-the-configuration)) and run `umccr-docs serve` here. A
+docs-toolkit checkout with `make install` done there previews it with that checkout's toolkit:
+`../docs-toolkit/.venv/bin/umccr-docs serve`.
 
 ## Repository visibility
 

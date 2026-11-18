@@ -42,8 +42,9 @@ export const DOCS_SITES_NOTIFICATION_RULE_NAME = `${DOCS_SITES_PIPELINE_NAME}-Fa
 export const DOCS_SITES_SOURCE_ACTION_NAME = 'Source';
 
 /**
- * Variables every run carries, set by the fetch build from the dispatcher's request. None has a default, so a run
- * started without them fails at once instead of publishing the wrong site.
+ * Variables every run carries, set by the fetch build from the dispatcher's request, with a toolkit ref of `latest`
+ * resolved to its release tag. None has a default, so a run started without them fails at once instead of publishing
+ * the wrong site.
  */
 export const DOCS_SITES_PIPELINE_VARIABLES = {
   SLUG: 'the site, from the registry',
@@ -51,18 +52,30 @@ export const DOCS_SITES_PIPELINE_VARIABLES = {
   COMMIT: 'the pushed commit',
   RELEASE: "the site's release number; a publish skips if a newer release is live",
   CONFIG_PATH: "path of the site's mkdocs.yml",
-  TOOLKIT_REF: 'docs-toolkit git ref whose toolkit builds and publishes the site',
+  TOOLKIT_REF:
+    'docs-toolkit release tag or full commit that builds and publishes the site (never latest)',
   STAGES: 'comma-separated stages the site publishes to (beta, prod)',
 } as const;
 
 const TOOLKIT_REPOSITORY = 'https://github.com/umccr/docs-toolkit.git';
 
 /**
- * Install the toolkit at `TOOLKIT_REF`, with the engine pinned by hash from the same ref. docs-toolkit is public, so
- * the clone needs no credentials. Its tags from `v0.2.0` hold what `toolkit/` held at the same tags here (ADR-0010);
- * `v0.1.x`, with its pins outside `toolkit/`, did not move. CI installs the same to build `/platform/`.
+ * Stops a run whose `TOOLKIT_REF` is not a release tag or a full commit. The fetch build resolves `latest` before the
+ * run starts, so every stage installs the same release; a run started by hand with `latest` would let Build and each
+ * publish step look it up again, and a toolkit release in between would publish files another release built.
+ */
+export const REFUSE_UNPINNED_TOOLKIT_REF =
+  '[[ "$TOOLKIT_REF" =~ ^(v[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.]+)?|[0-9a-f]{40})$ ]] || ' +
+  '{ echo "TOOLKIT_REF \'$TOOLKIT_REF\' is not a docs-toolkit release tag or full commit: the fetch build resolves latest, so a release started by hand names the tag"; exit 1; }';
+
+/**
+ * Install the toolkit at `TOOLKIT_REF`, with the engine pinned by hash from the same ref, and log its version.
+ * docs-toolkit is public, so the clone needs no credentials. Its tags from `v0.2.0` hold what `toolkit/` held at the
+ * same tags here (ADR-0010); `v0.1.x`, with its pins outside `toolkit/`, did not move. CI installs the same to build
+ * `/platform/`.
  */
 const INSTALL_TOOLKIT = [
+  REFUSE_UNPINNED_TOOLKIT_REF,
   `git clone --quiet ${TOOLKIT_REPOSITORY} "$TOOLKIT_DIR"`,
   // A ref that does not exist, such as a release tag the registry names before the tag is pushed.
   'git -C "$TOOLKIT_DIR" checkout --quiet "$TOOLKIT_REF" || { echo "docs-toolkit has no ref $TOOLKIT_REF: push the tag, or point the site toolkitRef at a ref that exists"; exit 1; }',
@@ -71,6 +84,7 @@ const INSTALL_TOOLKIT = [
   'test -f "$TOOLKIT_DIR/requirements/build.txt" || { echo "docs-toolkit at $TOOLKIT_REF has no engine pins (requirements/build.txt): point the site toolkitRef at a release from v0.2.0"; exit 1; }',
   'python -m pip install --quiet --require-hashes --no-deps -r "$TOOLKIT_DIR/requirements/build.txt"',
   'python -m pip install --quiet --no-deps "$TOOLKIT_DIR"',
+  'umccr-docs --version',
 ];
 
 const PYTHON_VERSION = '3.12';

@@ -102,10 +102,17 @@ A link to a note that is not in the vault, such as one nobody has written yet, s
 as Obsidian shows an unresolved link. The build warns with the note and line, and publishes the rest of the site.
 
 **Bases.** The build supports `filters` with nested `and`, `or` and `not`; `==` and `!=`; `.contains(...)`;
-`.contains(link("note"))`; `file.inFolder("Folder")`; and `table` views with `name`, `order`, `sort` and `limit`,
-using frontmatter properties and `file.name`, `file.folder` and `file.path`. `properties.<name>.displayName`
-renames a column. Without a sort order, text sorts alphabetically. Tables reflect the vault when the site was
-built, so they update on the next publish.
+`.contains(link("note"))`, where `link("Folder/note")` matches by the note's name; `file.inFolder("Folder")`; and
+`table` views with `name`, `filters`, `order`, `sort` and `limit`, using frontmatter properties and `file.name`,
+`file.folder` and `file.path`. A view's `filters` narrow the block's. `properties.<name>.displayName` renames a
+column. Without a sort order, text sorts alphabetically. Tables reflect the vault when the site was built, so they
+update on the next publish.
+
+`this` is the note the block is in, as in Obsidian. `this.file.name`, `this.file.path`, `this.file.folder` and
+`this.<property>` can be a value (`type == this.type`), a link target (`link(this.file.name)`, or `link(this.parent)`
+for a frontmatter link), or the property a filter tests. A domain note lists the projects that link to it with
+`domains.contains(link(this.file.name))`. A `this` property that is missing or a list stops the build, rather than
+match nothing.
 
 **Tasks.** A ```` ```tasks ```` block lists the vault's checkboxes that match it, as the Tasks plugin does: the same
 order and groups, each task's fields (`➕ 2026-10-01`, `📅 ...`, `✅ ...`; only the emoji in `short mode`) and a link to
@@ -126,9 +133,9 @@ Paths are from `docs_dir`, such as `Projects/alpha.md`, so keep `docs_dir` at th
 `.obsidian/`. Like Bases tables, lists reflect the vault when the site was built, and `14 days ago` counts back from
 that day.
 
-**Not supported:** embeds (`![[...]]`), block references (`[[note#^block]]`), Dataview, `this` in Bases filters,
-formulas, view types other than `table`, and in Tasks blocks, placeholders (`{{query.file.path}}`), `show tree`,
-`explain` and the filters, sorts and groups not listed above. The build stops and names the note and line rather
+**Not supported:** embeds (`![[...]]`), block references (`[[note#^block]]`), Dataview, Bases formulas, view types
+other than `table`, and in Tasks blocks, placeholders (`{{query.file.path}}`), `show tree`, `explain` and the
+filters, sorts and groups not listed above. The build stops and names the note and line rather
 than publish something wrong.
 
 ## Checking your work

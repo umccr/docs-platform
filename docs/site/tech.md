@@ -16,7 +16,7 @@ fits together, in [Design](design.md).
 | Package manager | pnpm `10.34.5` through Corepack |
 | Sign-in page | Amplify `^6.22.1`, bundled by esbuild `^0.28.2` when the app is synthesized |
 | Lambdas | the session Lambda checks tokens with `aws-jwt-verify` `^5.2.1`; the dispatcher matches docs paths with `minimatch` `^11.0.4`. AWS SDK v3: `client-secrets-manager` in both, `client-dynamodb` and `client-codebuild` in the dispatcher |
-| Toolkit and theme | `umccr-docs` from [umccr/docs-toolkit](https://github.com/umccr/docs-toolkit), at the release `DOCS_TOOLKIT_REF` names: Python 3.12, Material for MkDocs on MkDocs 1.6, and the theme's copy of Mermaid. Its [CONTRIBUTING.md](https://github.com/umccr/docs-toolkit/blob/main/CONTRIBUTING.md) lists their versions |
+| Toolkit and theme | `umccr-docs` from [umccr/docs-toolkit](https://github.com/umccr/docs-toolkit), at its latest release unless a site pins one (`DOCS_TOOLKIT_REF`): Python 3.12, Material for MkDocs on MkDocs 1.6, and the theme's copy of Mermaid. Its [CONTRIBUTING.md](https://github.com/umccr/docs-toolkit/blob/main/CONTRIBUTING.md) lists their versions |
 | Tests | jest `^30.5.1` with ts-jest for the CDK app and the code it deploys |
 | Lint and format | ESLint `^10.14.0` with typescript-eslint and Prettier `^3.9.6` for the CDK app |
 | Repository checks | pre-commit, `4.7.0` in CI, with its hooks pinned by commit: detect-secrets `1.5.0`; actionlint `1.7.12` and zizmor `1.30.1` for the workflows; pre-commit-hooks `6.0.0` |
@@ -69,8 +69,9 @@ Node.js 22 or later with pnpm through Corepack, and [pre-commit](https://pre-com
 | `make audit-fix` | overrides that force patched dependency versions |
 | `make clean` | build output, and what a preview of this site leaves; `node_modules` stays |
 
-CI builds this site strictly with the toolkit at `DOCS_TOOLKIT_REF`. To preview it, install the toolkit as any site
-owner does ([Onboarding](onboarding.md#2-add-the-configuration)) and run `umccr-docs serve` at the repository root.
+CI builds this site strictly with the toolkit's latest release, as the site pipeline does. To preview it, install the
+toolkit as any site owner does ([Onboarding](onboarding.md#2-add-the-configuration)) and run `umccr-docs serve` at the
+repository root.
 
 ## Tests and CI
 
@@ -78,9 +79,9 @@ owner does ([Onboarding](onboarding.md#2-add-the-configuration)) and run `umccr-
   function in a harness against cookies the session Lambda's code minted; and covers the session Lambda and its
   signing key, the dispatcher, the sign-in page, the site registry, and pipeline 1's trigger paths.
 - **CI** (`.github/workflows/ci.yml`), on every pull request and every push to `main`: "Strict build of the platform
-  site", with the toolkit at `DOCS_TOOLKIT_REF`; "CDK app tests, lint and synth"; and "Workflows and secrets", the
-  pre-commit hooks. `main`'s ruleset should require all three
-  ([Repository settings](runbook.md#repository-settings)).
+  site", with the toolkit's latest release, which its summary names; "CDK app tests, lint and synth"; and "Workflows and
+  secrets", the pre-commit hooks. `main`'s ruleset should require all three ([Repository
+  settings](runbook.md#repository-settings)).
 - **Pipeline 1** runs the jest tests again before it synthesizes.
 - **The toolkit's tests**, its theme script's among them, and the strict builds of its examples run in
   umccr/docs-toolkit's CI.
@@ -94,10 +95,11 @@ owner does ([Onboarding](onboarding.md#2-add-the-configuration)) and run `umccr-
   and GitGuardian on each push; reviewers check the rest ([SECURITY.md](../../SECURITY.md)).
 - **Everything is pinned.** Each pre-commit hook by commit SHA with its version in a comment, and pre-commit itself by
   version in CI; npm packages by `pnpm-lock.yaml`; every third-party action by full commit SHA with its version in a
-  comment; and each site's toolkit by a release tag or commit of umccr/docs-toolkit, never a branch.
+  comment; and each release of a site by one toolkit release, the latest's tag or the tag or commit the site pins, never
+  a branch.
 - **Changes reach `main` through pull requests.** Review there is the only gate before prod for `/platform/`, which
-  publishes from each merge with no approval, and for the registry, which moves sites to a toolkit release. The
-  toolkit's own changes are reviewed in umccr/docs-toolkit.
+  publishes from each merge with no approval, and for the registry. The toolkit's changes are reviewed in
+  umccr/docs-toolkit, and reach the sites with its next release.
 - **Nothing is named for OrcaBus.** The pipelines and the hosting stack are `UMCCR-Docs…`, tagged
   `umccr-org:Product: Docs`, though the repository follows the OrcaBus service layout.
 - **The platform's pages are in `docs/site/`**, and publish with the merge that changes them. A link from them to a
@@ -105,15 +107,17 @@ owner does ([Onboarding](onboarding.md#2-add-the-configuration)) and run `umccr-
   [design record](../design/adr/README.md); a problem that needs a lasting record, a [write-up](../issues/README.md).
 - **Toolkit releases** are semantic versions, `0.y.z` until the contract and the engine settle, tagged in
   umccr/docs-toolkit with a changelog entry and a GitHub release
-  ([its release steps](https://github.com/umccr/docs-toolkit/blob/main/CONTRIBUTING.md#release)). The registry then
-  moves sites to one: [Move sites to a toolkit release](runbook.md#move-sites-to-a-toolkit-release).
+  ([its release steps](https://github.com/umccr/docs-toolkit/blob/main/CONTRIBUTING.md#release)). Every site that
+  pins none builds with the latest from its next push ([Toolkit releases](runbook.md#toolkit-releases),
+  [ADR-0011](../design/adr/0011-latest-toolkit-release.md)).
 
 ## Change these together
 
 | When you change | Also change |
 | --- | --- |
 | a site's entry in `infrastructure/sites.ts` | nothing else here: the dispatcher's routes, the edge function's slug table and the catalogue all derive from it. The site's `mkdocs.yml` needs `site_url` `https://docs.umccr.org/<slug>/`. For `/platform/`, `test/sites.test.ts` too |
-| `DOCS_TOOLKIT_REF` | release its tag in umccr/docs-toolkit first: until the tag exists, every site's releases stop at Build, and CI cannot build `/platform/`. Keep its line as it is: CI reads it, and `test/sites.test.ts` checks it |
+| `DOCS_TOOLKIT_REF` | nothing for a toolkit release: it is `latest`. Keep its line as it is: CI reads it, and `test/sites.test.ts` checks it. A tag there would pin every site that pins none of its own, and must be released in umccr/docs-toolkit first |
+| how the latest release is found, `RESOLVE_LATEST_TOOLKIT` in `infrastructure/toolchain/fetch-build.ts` | CI's "Install the toolkit" step, which finds it the same way; `test/sites.test.ts` checks that they match |
 | `DOCS_DOMAIN_NAMES` | the Cognito callback URLs (`umccr/infrastructure` `cognito_aai/app_docs.tf`) and the certificate (`umccr_docs_domain`) |
 | `SONAR_API_URLS` | OrcaSonar's hosts: the content pages' Content Security Policy and `/_auth/env.js` take their values from it |
 | OrcaSonar's stateful stack or ingest bucket name | `ORCASONAR_INGEST_BUCKET_NAME_PREFIX` in `infrastructure/config.ts` |
@@ -131,8 +135,9 @@ owner does ([Onboarding](onboarding.md#2-add-the-configuration)) and run `umccr-
   is deferred.
 - **No approval before prod for site releases.** Documentation changes no data and no running system, and a failure in
   dev stops the release before prod.
-- **`/platform/` waits for the registry, like every site.** It builds with `DOCS_TOOLKIT_REF`, so a toolkit change
-  shows there only once the registry moves to its release; a release candidate can go to it first.
+- **A toolkit release changes the sites with no change here.** Sites that pin no release build with umccr/docs-toolkit's
+  latest, looked up when each release starts ([ADR-0011](../design/adr/0011-latest-toolkit-release.md)). Review and
+  release there are the gate, and each run still builds with one tag, which its variables record.
 - **Pipeline 1 ignores Markdown, even under `app/`.** A README beside the code deploys nothing.
 - **The toolkit builds untracked files.** A local preview shows a page before it is committed, so a hand publish
   builds from a clean export of the commit ([Publishing by hand](deploy.md#publishing-by-hand)).

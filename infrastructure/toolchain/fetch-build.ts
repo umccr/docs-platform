@@ -10,7 +10,31 @@ import { IPipeline } from 'aws-cdk-lib/aws-codepipeline';
 import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
 import { IBucket } from 'aws-cdk-lib/aws-s3';
 import { Construct } from 'constructs';
+import { LATEST_TOOLKIT_REF } from '../sites';
 import { DOCS_SITES_PIPELINE_VARIABLES, DOCS_SITES_SOURCE_ACTION_NAME } from './sites-pipeline';
+
+/** GitHub's link to the latest release redirects to `<this>/tag/<tag>`. */
+const TOOLKIT_RELEASES = 'https://github.com/umccr/docs-toolkit/releases';
+
+/**
+ * Replaces a `TOOLKIT_REF` of `latest` with the tag of umccr/docs-toolkit's latest release, so the site pipeline's run
+ * carries the tag: Build and every publish step install that release, a retry keeps it, and the run's variables show
+ * it. GitHub's link to the latest release answers with a redirect to the release's tag. It is a web page rather than
+ * the REST API, which allows 60 requests an hour per address without a token, and CodeBuild shares its addresses.
+ * Any other ref passes through unchanged.
+ */
+export const RESOLVE_LATEST_TOOLKIT = [
+  `if [ "$TOOLKIT_REF" = ${LATEST_TOOLKIT_REF} ]; then`,
+  `  location="$(curl -fsS --retry 3 --max-time 30 -o /dev/null -w '%{redirect_url}' ${TOOLKIT_RELEASES}/latest)" \\`,
+  '    || { echo "Could not ask GitHub for the latest release of umccr/docs-toolkit"; exit 1; }',
+  `  export TOOLKIT_REF="\${location#${TOOLKIT_RELEASES}/tag/}"`,
+  '  if [[ ! "$TOOLKIT_REF" =~ ^v[0-9]+\\.[0-9]+\\.[0-9]+$ ]]; then',
+  '    echo "umccr/docs-toolkit has no latest release to build with: GitHub answered \'$location\'"',
+  '    exit 1',
+  '  fi',
+  '  echo "Building with umccr/docs-toolkit $TOOLKIT_REF, its latest release"',
+  'fi',
+];
 
 /**
  * Stops the fetch build when the checkout has a symlink leading out of it or into its `.git`, before anything reads
@@ -36,9 +60,10 @@ export const REFUSE_ESCAPING_SYMLINKS = [
  * The fetch build's buildspec. The dispatcher passes it with every start (as a buildspec override), together with the
  * repository, the commit and the release's variables, so the project itself has no source of its own.
  *
- * It zips the checkout without `.git` to `sources/<slug>/<commit>.zip`, which keeps every release's files for 30
- * days, and starts the site pipeline on exactly that object. Symlinks are stored as links (`zip -y`), never as the
- * files they point at, so the toolkit's own symlink checks see them. The start request is written as JSON rather
+ * It resolves a toolkit ref of `latest` to a release tag ({@link RESOLVE_LATEST_TOOLKIT}), zips the checkout without
+ * `.git` to `sources/<slug>/<commit>.zip`, which keeps every release's files for 30 days, and starts the site pipeline
+ * on exactly that object. Symlinks are stored as links (`zip -y`), never as the files they point at, so the toolkit's
+ * own symlink checks see them. The start request is written as JSON rather
  * than CLI shorthand, because variable values such as `beta,prod` contain commas, by Python in isolated mode (`-I`):
  * the working directory is the site's checkout, and a module there such as `json.py` must not run with this role.
  */
@@ -50,6 +75,7 @@ export const fetchBuildSpec = (): Record<string, unknown> => ({
       commands: [
         [
           'set -euo pipefail',
+          ...RESOLVE_LATEST_TOOLKIT,
           'export KEY="sources/$SLUG/$COMMIT.zip"',
           ...REFUSE_ESCAPING_SYMLINKS,
           "zip -q -r -X -y /tmp/source.zip . -x '.git/*'",
