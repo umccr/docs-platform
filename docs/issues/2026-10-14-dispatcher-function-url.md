@@ -1,6 +1,7 @@
 # The dispatcher accepts unauthenticated calls through a public function URL
 
-**Status:** open; deferred 2026-10-15, keeping the current design for now
+**Status:** open; deferred 2026-10-15, keeping the current design for now; option A chosen 2026-11-19, with a revised
+plan
 **Found:** 2026-10-14, in the toolchain account's site publishing (`DocsInfrastructurePipeline`), while reviewing which
 resources accept calls from the internet
 
@@ -47,11 +48,17 @@ Open. The options compared on 2026-10-14:
 | B | An API Gateway REST API in front of the function | no | none | cents a month; about US$6–7 more with a WAF | API Gateway cannot check GitHub's signature (an authorizer never sees the body), so the method stays unauthenticated; an authorizer could only check a token in the URL or the caller's address. GitHub's webhook addresses change, and GitHub advises against allow-lists. AWS's best-practice checks for a new REST API stage expect a client certificate, execution logs and a WAF |
 | C | CloudFront with origin access control | — | — | — | not possible: for a request with a body, the caller must send the body's SHA-256 in a signed header, which GitHub's webhooks do not |
 | D | CodeBuild's own organisation webhook, with no function | yes: no function at all | none | about US$0 | CloudFormation cannot create the webhook for manual setup, so CodeBuild needs a personal access token or a person's OAuth grant that may create organisation webhooks. CodeBuild does not say whether its file-path filter sees every commit of a push. Needs a spike |
-| E | Keep the function URL | no | none | as today | **chosen for now**; optional hardening below |
+| E | Keep the function URL | no | none | as today | **chosen on 2026-10-15**, until A is deployed; optional hardening below |
 
 **When revisited, A is recommended**: it removes the public path entirely, gives the dispatcher GitHub's signature
 on the repository, branch and commit instead of a shared secret, costs nothing to run, and its only per-site cost is
 a short workflow file.
+
+**Revisited on 2026-11-19: A is chosen.** [ADR-0009](../design/adr/0009-dispatch-from-github-actions.md) and
+[the plan](../plans/publishing-from-github.md) were revised before implementing it. The role trusts GitHub's claims
+rather than token subjects, which GitHub now builds in two formats; umccr/infrastructure's Terraform owns the
+account's GitHub OIDC provider; the shared workflow holds the role's ARN, so the organisation needs no secret; and
+the site template moves to umccr/docs-toolkit.
 
 **Optional hardening while the URL stays:**
 
@@ -65,13 +72,14 @@ a short workflow file.
 **Next steps:**
 
 - [ ] Record the decision through the organisation's security process, privately ([SECURITY.md](../../SECURITY.md)).
-- [ ] Decide on the optional hardening.
-- [ ] Revisit before the production rollout ([implementation plan](../plans/implementation-plan.md), Production).
+- [ ] Decide on the optional hardening, for the time until option A is deployed.
+- [x] Revisit before the production rollout ([implementation plan](../plans/implementation-plan.md), Production):
+      option A, on 2026-11-19.
 - [ ] For option A, follow the plan's "What implementing it changes", then "Deploying it".
 
 ## Follow-ups
 
-- [ADR-0009](../design/adr/0009-dispatch-from-github-actions.md): proposed, deferred.
+- [ADR-0009](../design/adr/0009-dispatch-from-github-actions.md): proposed; deferred 2026-10-15, revised 2026-11-19.
 - [Plan: publishing from GitHub](../plans/publishing-from-github.md): diagrams, the changes, and the deploy steps.
 - [Implementation plan](../plans/implementation-plan.md): the risk row for the function URL, and a Production task
   to decide before prod.

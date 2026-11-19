@@ -2,7 +2,7 @@
 
 **Status:** accepted, 2026-10-12; amended 2026-10-20 (releases run one at a time). Supersedes the access and build
 parts of [0004](0004-publishing-contract.md). [0009](0009-dispatch-from-github-actions.md) proposes replacing the
-organisation webhook and the function URL; it is deferred.
+organisation webhook and the function URL; deferred on 2026-10-15, it was revised on 2026-11-19.
 
 ## Context
 

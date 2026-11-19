@@ -171,9 +171,10 @@ Step-by-step commands, checks and troubleshooting: [Deploying](../site/deploy.md
 - [ ] Check that a personal Google account cannot sign in to prod (the deploy guide's verification checklist).
 - [ ] Set the prod canonical host to `docs.umccr.org` in `infrastructure/config.ts`.
 - [ ] Private security review, accessibility check and operational readiness review.
-- [ ] Decide whether to replace the dispatcher's function URL with dispatch from GitHub Actions before prod
-      ([ADR-0009](../design/adr/0009-dispatch-from-github-actions.md), proposed and deferred 2026-10-15; the
-      [plan](publishing-from-github.md) and the [issue](../issues/2026-10-14-dispatcher-function-url.md)).
+- [x] Decide whether to replace the dispatcher's function URL with dispatch from GitHub Actions before prod: yes,
+      decided 2026-11-19 ([ADR-0009](../design/adr/0009-dispatch-from-github-actions.md), deferred 2026-10-15 and
+      revised 2026-11-19; the [issue](../issues/2026-10-14-dispatcher-function-url.md)).
+- [ ] Replace it: the [plan](publishing-from-github.md)'s "What implementing it changes", then "Deploying it".
 
 ### After launch
 
@@ -212,7 +213,7 @@ Step-by-step commands, checks and troubleshooting: [Deploying](../site/deploy.md
 | The session code at the edge is custom | small, and covered by tests that execute the generated function and check a Lambda-minted cookie end to end |
 | The session key is part of the edge function's code | readable only inside the stage account, by principals that can generally read the bucket anyway; one config change rotates it (ADR-0002) |
 | Amplify tokens are readable by any script on the origin | no project scripts; one platform script; strict CSP |
-| The function URL for the webhook is public | signature checked before anything is parsed; unregistered pushes stop at a lookup; the slug comes from the registry. Kept for now (2026-10-15); [ADR-0009](../design/adr/0009-dispatch-from-github-actions.md) proposes removing it |
+| The function URL for the webhook is public | signature checked before anything is parsed; unregistered pushes stop at a lookup; the slug comes from the registry. Kept for now (2026-10-15); to be removed by [ADR-0009](../design/adr/0009-dispatch-from-github-actions.md), revised 2026-11-19 |
 | A push event lists too few files (capped or force pushes) | the dispatcher publishes when it cannot tell, rather than miss a release |
 | Releases finish out of order | each publish compares its release number with the live marker |
 | A vault uses Obsidian features beyond the subset | the build names the note and line and stops |
